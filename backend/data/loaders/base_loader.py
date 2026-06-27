@@ -2,6 +2,7 @@
 
 import hashlib
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
@@ -163,6 +164,3 @@ class BaseLoader(ABC):
             word_count=word_count,
             page_count=page_count,
         )
-
-
-from datetime import datetime
