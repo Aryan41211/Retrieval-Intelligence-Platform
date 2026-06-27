@@ -1,6 +1,5 @@
 """Base loader for document ingestion."""
 
-import hashlib
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
@@ -13,7 +12,12 @@ from backend.core.exceptions import (
     UnsupportedDocumentTypeError,
     ValidationError,
 )
-from backend.data.models.document import Document, DocumentMetadata, DocumentSource, DocumentSourceType
+from backend.data.models.document import (
+    Document,
+    DocumentMetadata,
+    DocumentSource,
+    DocumentSourceType,
+)
 
 
 class BaseLoader(ABC):
@@ -86,6 +90,8 @@ class BaseLoader(ABC):
         Returns:
             Hexadecimal checksum string.
         """
+        import hashlib
+
         sha256 = hashlib.sha256()
         with open(file_path, "rb") as f:
             for chunk in iter(lambda: f.read(8192), b""):
@@ -101,6 +107,8 @@ class BaseLoader(ABC):
         Returns:
             SHA256 hash of content.
         """
+        import hashlib
+
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
     def detect_encoding(self, file_path: str | Path) -> str:
@@ -113,7 +121,6 @@ class BaseLoader(ABC):
             Detected encoding name.
         """
         default = self.config.get("default_encoding", "utf-8")
-        # For simplicity, return default. Real implementation would use charset_normalizer
         return default
 
     def build_source(self, path: Path, checksum: str) -> DocumentSource:
