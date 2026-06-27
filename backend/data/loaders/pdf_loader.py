@@ -1,0 +1,94 @@
+"""PDF document loader."""
+
+from pathlib import Path
+from typing import Any, Optional
+
+from backend.core.exceptions import (
+    DocumentLoadError,
+    EmptyDocumentError,
+    UnsupportedDocumentTypeError,
+)
+from backend.data.models.document import Document, DocumentSource, DocumentSourceType
+from backend.data.loaders.base_loader import BaseLoader
+
+
+class PDFLoader(BaseLoader):
+    """Load PDF documents using pypdf."""
+
+    def get_supported_extensions(self) -> list[str]:
+        return [".pdf"]
+
+    def load(self, file_path: str | Path) -> Document:
+        """Load a PDF document.
+
+        Args:
+            file_path: Path to the PDF file.
+
+        Returns:
+            Document object with extracted text.
+
+        Raises:
+            DocumentLoadError: If the PDF cannot be loaded.
+            EmptyDocumentError: If the PDF has no text content.
+        """
+        path = self.validate_file(file_path)
+        checksum = self.compute_checksum(path)
+        file_extension = path.suffix.lower()
+
+        try:
+            import pypdf  # noqa: F401
+
+            reader = pypdf.PdfReader(str(path))
+        except Exception as e:
+            raise DocumentLoadError(f"Failed to read PDF: {e}")
+
+        # Extract text from all pages
+        pages_text = []
+        for page_num, page in enumerate(reader.pages):
+            try:
+                text = page.extract_text() or ""
+                pages_text.append(text)
+            except Exception as e:
+                # Log warning but continue with other pages
+                continue
+
+        content = "\n\n".join(pages_text)
+
+        if not content.strip():
+            raise EmptyDocumentError(f"PDF contains no extractable text: {path}")
+
+        # Get page count
+        page_count = len(reader.pages)
+
+        # Try to get title from metadata
+        title = None
+        if reader.metadata and hasattr(reader.metadata, "title"):
+            title = reader.metadata.title
+
+        # Get author from metadata
+        author = None
+        if reader.metadata and hasattr(reader.metadata, "author"):
+            author = reader.metadata.author
+
+        # Build metadata
+        metadata = self.build_metadata(
+            title=title,
+            author=author,
+            char_count=len(content),
+            word_count=len(content.split()),
+            page_count=page_count,
+        )
+
+        # Build source
+        source = self.build_source(path, checksum)
+
+        return Document(
+            filename=path.name,
+            file_extension=file_extension,
+            source_path=str(path),
+            content=content,
+            metadata=metadata,
+            checksum=checksum,
+            file_size=path.stat().st_size,
+            source=source,
+        )
