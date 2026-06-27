@@ -1,6 +1,5 @@
 """Factory for creating document loaders."""
 
-
 from backend.core.exceptions import UnsupportedDocumentTypeError
 from backend.data.loaders.base_loader import BaseLoader
 from backend.data.loaders.docx_loader import DOCXLoader
@@ -38,8 +37,7 @@ class LoaderFactory:
         extension = extension.lower()
         if extension not in cls._loaders:
             raise UnsupportedDocumentTypeError(
-                f"No loader for extension: {extension}. "
-                f"Supported: {list(cls._loaders.keys())}"
+                f"No loader for extension: {extension}. " f"Supported: {list(cls._loaders.keys())}"
             )
 
         return cls._loaders[extension]()

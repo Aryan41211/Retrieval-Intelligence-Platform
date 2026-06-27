@@ -36,12 +36,14 @@ class DOCXLoader(BaseLoader):
         try:
             import docx  # python-docx
         except ImportError:
-            raise DocumentLoadError("python-docx not installed. Install with: pip install python-docx")
+            raise DocumentLoadError(
+                "python-docx not installed. Install with: pip install python-docx"
+            ) from None
 
         try:
             doc = docx.Document(str(path))
         except Exception as e:
-            raise DocumentLoadError(f"Failed to read DOCX: {e}")
+            raise DocumentLoadError(f"Failed to read DOCX: {e}") from e
 
         # Extract text from paragraphs
         paragraphs = []
@@ -67,7 +69,6 @@ class DOCXLoader(BaseLoader):
                 created_at = doc.core_properties.created
 
         # Count pages (approximation based on paragraph breaks)
-        # Real page count would require conversion to PDF or similar
         page_count = None
 
         metadata = self.build_metadata(

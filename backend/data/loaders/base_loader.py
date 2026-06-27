@@ -61,9 +61,7 @@ class BaseLoader(ABC):
             raise ValueError(f"File is empty: {path}")
 
         if file_size > max_size:
-            raise ValueError(
-                f"File exceeds maximum size ({file_size} > {max_size} bytes): {path}"
-            )
+            raise ValueError(f"File exceeds maximum size ({file_size} > {max_size} bytes): {path}")
 
         return path
 

@@ -56,7 +56,6 @@ class TextCleaner:
         Returns:
             Normalized text.
         """
-        # NFC normalization - compose characters
         import unicodedata
 
         text = unicodedata.normalize("NFC", text)
@@ -70,7 +69,6 @@ class TextCleaner:
             "\u2013": "-",  # En dash
             "\u2014": "--",  # Em dash
             "\u2022": "*",  # Bullet
-            "\u2023": " ",  # Two-em space to regular
         }
 
         for old, new in replacements.items():
@@ -114,10 +112,6 @@ class TextCleaner:
         Returns:
             Text with limited blank lines.
         """
-        # Replace more than max_consecutive_blanks blank lines with exactly that many
-        pattern = r"\n{" + str(self.max_consecutive_blanks + 1) + r",}"
-        replacement = "\n" * self.max_consecutive_blanks
-
         # Count consecutive newlines
         lines = text.split("\n")
         result_lines = []

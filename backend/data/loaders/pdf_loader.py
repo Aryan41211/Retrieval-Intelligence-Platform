@@ -34,15 +34,15 @@ class PDFLoader(BaseLoader):
         file_extension = path.suffix.lower()
 
         try:
-            import pypdf  # noqa: F401
+            import pypdf
 
             reader = pypdf.PdfReader(str(path))
         except Exception as e:
-            raise DocumentLoadError(f"Failed to read PDF: {e}")
+            raise DocumentLoadError(f"Failed to read PDF: {e}") from e
 
         # Extract text from all pages
         pages_text = []
-        for page_num, page in enumerate(reader.pages):
+        for _page_num, page in enumerate(reader.pages):
             try:
                 text = page.extract_text() or ""
                 pages_text.append(text)

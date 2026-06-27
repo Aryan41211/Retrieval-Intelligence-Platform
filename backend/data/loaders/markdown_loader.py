@@ -2,7 +2,6 @@
 
 import re
 from pathlib import Path
-from typing import Optional
 
 from backend.core.exceptions import (
     DocumentLoadError,
@@ -50,7 +49,9 @@ class MarkdownLoader(BaseLoader):
                 except UnicodeDecodeError:
                     continue
             else:
-                raise DocumentLoadError(f"Could not decode file with any encoding: {path}") from None
+                raise DocumentLoadError(
+                    f"Could not decode file with any encoding: {path}"
+                ) from None
 
         if not raw_content.strip():
             raise EmptyDocumentError(f"File is empty: {path}")
@@ -58,6 +59,7 @@ class MarkdownLoader(BaseLoader):
         # Try to strip markdown formatting to get plain text
         try:
             import html
+
             import markdown  # markdown package
 
             # Convert to html then strip tags
@@ -100,11 +102,26 @@ class MarkdownLoader(BaseLoader):
             Plain text without HTML tags.
         """
         # Remove script and style elements
-        text = re.sub(r"<script[^>]*>.*?</script>", "", html_content, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(
+            r"<script[^>]*>.*?</script>", "", html_content, flags=re.DOTALL | re.IGNORECASE
+        )
         text = re.sub(r"<style[^>]*>.*?</style>", "", text, flags=re.DOTALL | re.IGNORECASE)
 
         # Replace block elements with newlines
-        for tag in ["<p>", "</p>", "<div>", "</div>", "<br>", "<br/>", "<h1>", "</h1>", "<h2>", "</h2>", "<h3>", "</h3>"]:
+        for tag in [
+            "<p>",
+            "</p>",
+            "<div>",
+            "</div>",
+            "<br>",
+            "<br/>",
+            "<h1>",
+            "</h1>",
+            "<h2>",
+            "</h2>",
+            "<h3>",
+            "</h3>",
+        ]:
             text = text.replace(tag, "\n")
 
         # Remove all remaining tags
@@ -117,7 +134,7 @@ class MarkdownLoader(BaseLoader):
         lines = [line.strip() for line in text.split("\n")]
         return "\n".join(line for line in lines if line)
 
-    def _extract_title(self, content: str) -> Optional[str]:
+    def _extract_title(self, content: str) -> str | None:
         """Extract title from markdown content.
 
         Args:
