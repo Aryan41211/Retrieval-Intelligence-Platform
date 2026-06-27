@@ -1,7 +1,6 @@
 """Text preprocessing utilities for document cleaning."""
 
 import re
-from typing import Optional
 
 from backend.data.models.document import Document
 

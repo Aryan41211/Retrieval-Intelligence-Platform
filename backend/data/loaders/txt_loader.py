@@ -1,14 +1,13 @@
 """Plain text document loader."""
 
 from pathlib import Path
-from typing import Any, Optional
 
 from backend.core.exceptions import (
     DocumentLoadError,
     EmptyDocumentError,
 )
-from backend.data.models.document import Document
 from backend.data.loaders.base_loader import BaseLoader
+from backend.data.models.document import Document
 
 
 class TXTLoader(BaseLoader):
@@ -37,13 +36,13 @@ class TXTLoader(BaseLoader):
         encoding = self.detect_encoding(path)
 
         try:
-            with open(path, "r", encoding=encoding) as f:
+            with open(path, encoding=encoding) as f:
                 content = f.read()
         except UnicodeDecodeError:
             # Try common fallback encodings
             for fallback in ["utf-8", "latin-1", "cp1252"]:
                 try:
-                    with open(path, "r", encoding=fallback) as f:
+                    with open(path, encoding=fallback) as f:
                         content = f.read()
                     break
                 except UnicodeDecodeError:

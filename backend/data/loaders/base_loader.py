@@ -1,29 +1,15 @@
 """Base loader for document ingestion."""
 
+import hashlib
 from abc import ABC, abstractmethod
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
-
-from backend.core.exceptions import (
-    DocumentLoadError,
-    EncodingError,
-    EmptyDocumentError,
-    UnsupportedDocumentTypeError,
-    ValidationError,
-)
-from backend.data.models.document import (
-    Document,
-    DocumentMetadata,
-    DocumentSource,
-    DocumentSourceType,
-)
+from typing import Any
 
 
 class BaseLoader(ABC):
     """Abstract base class for document loaders."""
 
-    def __init__(self, config: Optional[dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
 
     @abstractmethod
@@ -32,7 +18,7 @@ class BaseLoader(ABC):
         ...
 
     @abstractmethod
-    def load(self, file_path: str | Path) -> Document:
+    def load(self, file_path: str | Path):
         """Load a document from the given file path.
 
         Args:
@@ -63,19 +49,19 @@ class BaseLoader(ABC):
         path = Path(file_path)
 
         if not path.exists():
-            raise ValidationError(f"File not found: {path}")
+            raise ValueError(f"File not found: {path}")
 
         if not path.is_file():
-            raise ValidationError(f"Not a file: {path}")
+            raise ValueError(f"Not a file: {path}")
 
         max_size = self.config.get("max_file_size_mb", 100) * 1024 * 1024
         file_size = path.stat().st_size
 
         if file_size == 0:
-            raise EmptyDocumentError(f"File is empty: {path}")
+            raise ValueError(f"File is empty: {path}")
 
         if file_size > max_size:
-            raise ValidationError(
+            raise ValueError(
                 f"File exceeds maximum size ({file_size} > {max_size} bytes): {path}"
             )
 
@@ -90,8 +76,6 @@ class BaseLoader(ABC):
         Returns:
             Hexadecimal checksum string.
         """
-        import hashlib
-
         sha256 = hashlib.sha256()
         with open(file_path, "rb") as f:
             for chunk in iter(lambda: f.read(8192), b""):
@@ -107,8 +91,6 @@ class BaseLoader(ABC):
         Returns:
             SHA256 hash of content.
         """
-        import hashlib
-
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
     def detect_encoding(self, file_path: str | Path) -> str:
@@ -120,54 +102,4 @@ class BaseLoader(ABC):
         Returns:
             Detected encoding name.
         """
-        default = self.config.get("default_encoding", "utf-8")
-        return default
-
-    def build_source(self, path: Path, checksum: str) -> DocumentSource:
-        """Build DocumentSource from file path.
-
-        Args:
-            path: File path.
-            checksum: File checksum.
-
-        Returns:
-            DocumentSource object.
-        """
-        return DocumentSource(
-            type=DocumentSourceType.FILE,
-            path=str(path),
-            checksum=checksum,
-            size_bytes=path.stat().st_size,
-            last_modified=datetime.fromtimestamp(path.stat().st_mtime) if path.exists() else None,
-        )
-
-    def build_metadata(
-        self,
-        title: Optional[str] = None,
-        author: Optional[str] = None,
-        language: Optional[str] = None,
-        page_count: Optional[int] = None,
-        char_count: int = 0,
-        word_count: int = 0,
-    ) -> DocumentMetadata:
-        """Build DocumentMetadata object.
-
-        Args:
-            title: Document title.
-            author: Document author.
-            language: Detected language.
-            page_count: Number of pages.
-            char_count: Character count.
-            word_count: Word count.
-
-        Returns:
-            DocumentMetadata object.
-        """
-        return DocumentMetadata(
-            title=title,
-            author=author,
-            language=language or self.config.get("default_language", "en"),
-            char_count=char_count,
-            word_count=word_count,
-            page_count=page_count,
-        )
+        return self.config.get("default_encoding", "utf-8")

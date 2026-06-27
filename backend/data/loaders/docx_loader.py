@@ -1,14 +1,13 @@
 """DOCX document loader."""
 
 from pathlib import Path
-from typing import Any, Optional
 
 from backend.core.exceptions import (
     DocumentLoadError,
     EmptyDocumentError,
 )
-from backend.data.models.document import Document
 from backend.data.loaders.base_loader import BaseLoader
+from backend.data.models.document import Document
 
 
 class DOCXLoader(BaseLoader):

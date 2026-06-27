@@ -1,14 +1,13 @@
 """Factory for creating document loaders."""
 
-from typing import Any, Optional
 
 from backend.core.exceptions import UnsupportedDocumentTypeError
-from backend.data.models.document import Document
 from backend.data.loaders.base_loader import BaseLoader
-from backend.data.loaders.pdf_loader import PDFLoader
 from backend.data.loaders.docx_loader import DOCXLoader
-from backend.data.loaders.txt_loader import TXTLoader
 from backend.data.loaders.markdown_loader import MarkdownLoader
+from backend.data.loaders.pdf_loader import PDFLoader
+from backend.data.loaders.txt_loader import TXTLoader
+from backend.data.models.document import Document
 
 
 class LoaderFactory:
@@ -59,7 +58,7 @@ class LoaderFactory:
     def load_document(
         cls,
         file_path: str,
-        encoding: Optional[str] = None,
+        encoding: str | None = None,
     ) -> Document:
         """Load a document from file path.
 

@@ -1,15 +1,13 @@
 """PDF document loader."""
 
 from pathlib import Path
-from typing import Any, Optional
 
 from backend.core.exceptions import (
     DocumentLoadError,
     EmptyDocumentError,
-    UnsupportedDocumentTypeError,
 )
-from backend.data.models.document import Document, DocumentSource, DocumentSourceType
 from backend.data.loaders.base_loader import BaseLoader
+from backend.data.models.document import Document
 
 
 class PDFLoader(BaseLoader):
@@ -48,7 +46,7 @@ class PDFLoader(BaseLoader):
             try:
                 text = page.extract_text() or ""
                 pages_text.append(text)
-            except Exception as e:
+            except Exception:
                 # Log warning but continue with other pages
                 continue
 

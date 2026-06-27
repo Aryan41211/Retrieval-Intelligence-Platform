@@ -1,14 +1,15 @@
 """Markdown document loader."""
 
+import re
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 from backend.core.exceptions import (
     DocumentLoadError,
     EmptyDocumentError,
 )
-from backend.data.models.document import Document
 from backend.data.loaders.base_loader import BaseLoader
+from backend.data.models.document import Document
 
 
 class MarkdownLoader(BaseLoader):
@@ -38,30 +39,30 @@ class MarkdownLoader(BaseLoader):
         encoding = self.detect_encoding(path)
 
         try:
-            with open(path, "r", encoding=encoding) as f:
+            with open(path, encoding=encoding) as f:
                 raw_content = f.read()
         except UnicodeDecodeError:
             for fallback in ["utf-8", "latin-1", "cp1252"]:
                 try:
-                    with open(path, "r", encoding=fallback) as f:
+                    with open(path, encoding=fallback) as f:
                         raw_content = f.read()
                     break
                 except UnicodeDecodeError:
                     continue
             else:
-                raise DocumentLoadError(f"Could not decode file with any encoding: {path}")
+                raise DocumentLoadError(f"Could not decode file with any encoding: {path}") from None
 
         if not raw_content.strip():
             raise EmptyDocumentError(f"File is empty: {path}")
 
         # Try to strip markdown formatting to get plain text
         try:
-            import markdown  # markdown package
             import html
+            import markdown  # markdown package
 
             # Convert to html then strip tags
             html_content = markdown.markdown(raw_content)
-            content = self._strip_html_tags(html_content)
+            content = self._strip_html_tags(html_content, html)
         except ImportError:
             # If markdown not installed, use raw content
             content = raw_content
@@ -88,17 +89,16 @@ class MarkdownLoader(BaseLoader):
             source=source,
         )
 
-    def _strip_html_tags(self, html_content: str) -> str:
+    def _strip_html_tags(self, html_content: str, html_module) -> str:
         """Strip HTML tags to get plain text.
 
         Args:
             html_content: HTML content string.
+            html_module: The html module for unescape.
 
         Returns:
             Plain text without HTML tags.
         """
-        import re
-
         # Remove script and style elements
         text = re.sub(r"<script[^>]*>.*?</script>", "", html_content, flags=re.DOTALL | re.IGNORECASE)
         text = re.sub(r"<style[^>]*>.*?</style>", "", text, flags=re.DOTALL | re.IGNORECASE)
@@ -111,8 +111,7 @@ class MarkdownLoader(BaseLoader):
         text = re.sub(r"<[^>]+>", "", text)
 
         # Decode HTML entities
-        import html
-        text = html.unescape(text)
+        text = html_module.unescape(text)
 
         # Clean up whitespace
         lines = [line.strip() for line in text.split("\n")]
@@ -127,8 +126,6 @@ class MarkdownLoader(BaseLoader):
         Returns:
             Title string or None.
         """
-        import re
-
         # Match first ATX-style heading (# Title)
         match = re.match(r"^#\s+(.+)$", content, re.MULTILINE)
         if match:
