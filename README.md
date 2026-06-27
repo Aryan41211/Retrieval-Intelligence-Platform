@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Retrieval Intelligence Platform
 
 A production-grade Retrieval-Augmented Generation platform focused on document retrieval, grounded generation, automated evaluation, explainable retrieval, and experiment tracking.
@@ -83,3 +84,6 @@ The Retrieval Intelligence Platform (RIP) is an enterprise-ready system designed
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+=======
+# Retrieval-Intelligence-Platform
+>>>>>>> 3fa06c59033a1766dd9f44b452285b8fb738dfba
