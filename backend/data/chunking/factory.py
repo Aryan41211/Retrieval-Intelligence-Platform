@@ -1,10 +1,16 @@
 """Factory for creating chunkers."""
 
+from typing import TYPE_CHECKING
+
 from backend.data.chunking.base_chunker import BaseChunker, ChunkingConfig
 from backend.data.chunking.markdown_chunker import MarkdownChunker
 from backend.data.chunking.recursive_chunker import RecursiveChunker
 from backend.data.chunking.sentence_chunker import SentenceChunker
 from backend.data.models.chunk import ChunkingStrategy
+
+if TYPE_CHECKING:
+    from backend.data.models.chunk import Chunk
+    from backend.data.models.document import Document
 
 
 class ChunkerFactory:
@@ -68,10 +74,10 @@ class ChunkerFactory:
     @classmethod
     def chunk(
         cls,
-        document,
+        document: "Document",
         strategy: ChunkingStrategy | None = None,
         config: ChunkingConfig | None = None,
-    ):
+    ) -> list["Chunk"]:
         """Chunk a document using the specified strategy.
 
         Args:
@@ -82,5 +88,6 @@ class ChunkerFactory:
         Returns:
             List of Chunk objects.
         """
+
         chunker = cls.create_chunker(strategy, config)
         return chunker.chunk(document)

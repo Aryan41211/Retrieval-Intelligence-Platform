@@ -7,10 +7,11 @@ from backend.data.chunking.base_chunker import BaseChunker
 from backend.data.models.chunk import Chunk, ChunkingStrategy
 from backend.data.models.document import Document
 
-SEARCH_WINDOW_SIZE = 50
-
 
 class RecursiveChunker(BaseChunker):
+    """Recursive chunker that splits on multiple separators."""
+
+    SEARCH_WINDOW_SIZE = 50
     """Recursive chunker that splits on multiple separators."""
 
     @property

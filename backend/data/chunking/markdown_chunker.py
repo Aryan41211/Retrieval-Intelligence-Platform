@@ -66,15 +66,15 @@ class MarkdownChunker(BaseChunker):
         Returns:
             List of section dictionaries.
         """
-        sections = []
+        sections: list[dict[str, Any]] = []
         lines = text.split("\n")
-        current_section = {"text": "", "start": 0, "end": 0, "title": None, "level": None}
+        current_section: dict[str, Any] = {"text": "", "start": 0, "end": 0, "title": None, "level": None}
 
         for i, line in enumerate(lines):
             heading_match = self.HEADING_PATTERN.match(line)
 
             if heading_match:
-                if current_section["text"].strip():
+                if isinstance(current_section["text"], str) and current_section["text"].strip():
                     current_section["end"] = i
                     sections.append(current_section)
 
@@ -89,10 +89,10 @@ class MarkdownChunker(BaseChunker):
                     "title": title,
                     "level": level,
                 }
-            else:
+            elif isinstance(current_section["text"], str):
                 current_section["text"] += line + "\n"
 
-        if current_section["text"].strip():
+        if isinstance(current_section["text"], str) and current_section["text"].strip():
             sections.append(current_section)
 
         return sections if sections else [{"text": text, "start": 0, "end": len(text), "title": None, "level": None}]
