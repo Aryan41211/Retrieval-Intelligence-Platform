@@ -1,7 +1,7 @@
 """Pytest configuration for loader tests."""
 
+
 import pytest
-from pathlib import Path
 
 
 @pytest.fixture

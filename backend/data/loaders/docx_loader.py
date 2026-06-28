@@ -2,10 +2,7 @@
 
 from pathlib import Path
 
-from backend.core.exceptions import (
-    DocumentLoadError,
-    EmptyDocumentError,
-)
+from backend.core.exceptions import DocumentLoadError, EmptyDocumentError
 from backend.data.loaders.base_loader import BaseLoader
 from backend.data.models.document import Document
 
@@ -14,6 +11,11 @@ class DOCXLoader(BaseLoader):
     """Load DOCX (Word) documents."""
 
     def get_supported_extensions(self) -> list[str]:
+        """Return list of supported extensions.
+
+        Returns:
+            List of supported file extensions.
+        """
         return [".docx"]
 
     def load(self, file_path: str | Path) -> Document:
@@ -33,6 +35,9 @@ class DOCXLoader(BaseLoader):
         checksum = self.compute_checksum(path)
         file_extension = path.suffix.lower()
 
+        if path.stat().st_size == 0:
+            raise DocumentLoadError(f"File is empty: {path}")
+
         try:
             import docx  # python-docx
         except ImportError:
@@ -45,7 +50,6 @@ class DOCXLoader(BaseLoader):
         except Exception as e:
             raise DocumentLoadError(f"Failed to read DOCX: {e}") from e
 
-        # Extract text from paragraphs
         paragraphs = []
         for para in doc.paragraphs:
             text = para.text.strip()
@@ -57,7 +61,6 @@ class DOCXLoader(BaseLoader):
         if not content.strip():
             raise EmptyDocumentError(f"DOCX contains no text content: {path}")
 
-        # Get title from core properties
         title = None
         author = None
         created_at = None
@@ -68,7 +71,6 @@ class DOCXLoader(BaseLoader):
             if doc.core_properties.created:
                 created_at = doc.core_properties.created
 
-        # Count pages (approximation based on paragraph breaks)
         page_count = None
 
         metadata = self.build_metadata(

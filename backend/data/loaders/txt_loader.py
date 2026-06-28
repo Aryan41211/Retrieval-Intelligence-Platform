@@ -2,10 +2,7 @@
 
 from pathlib import Path
 
-from backend.core.exceptions import (
-    DocumentLoadError,
-    EmptyDocumentError,
-)
+from backend.core.exceptions import DocumentLoadError, EmptyDocumentError
 from backend.data.loaders.base_loader import BaseLoader
 from backend.data.models.document import Document
 
@@ -34,21 +31,22 @@ class TXTLoader(BaseLoader):
         file_extension = path.suffix.lower()
 
         encoding = self.detect_encoding(path)
+        used_encoding = encoding
 
         try:
             with open(path, encoding=encoding) as f:
                 content = f.read()
         except UnicodeDecodeError:
-            # Try common fallback encodings
             for fallback in ["utf-8", "latin-1", "cp1252"]:
                 try:
                     with open(path, encoding=fallback) as f:
                         content = f.read()
+                    used_encoding = fallback
                     break
                 except UnicodeDecodeError:
                     continue
             else:
-                raise DocumentLoadError(f"Could not decode file with any encoding: {path}")
+                raise DocumentLoadError(f"Could not decode file with any encoding: {path}") from None
 
         if not content.strip():
             raise EmptyDocumentError(f"File is empty or contains only whitespace: {path}")
@@ -58,7 +56,7 @@ class TXTLoader(BaseLoader):
             word_count=len(content.split()),
         )
 
-        source = self.build_source(path, checksum)
+        source = self.build_source(path, checksum, encoding=used_encoding)
 
         return Document(
             filename=path.name,

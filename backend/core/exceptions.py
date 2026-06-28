@@ -1,15 +1,15 @@
 """Custom exceptions for the Retrieval Intelligence Platform."""
 
-from typing import Any, Optional
+from typing import Any
 
 
 class RipError(Exception):
     """Base exception for all RIP errors."""
 
     code: str = "RIP_ERROR"
-    details: Optional[dict[str, Any]] = None
+    details: dict[str, Any] | None = None
 
-    def __init__(self, message: str, details: Optional[dict[str, Any]] = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(message)
         self.details = details
 

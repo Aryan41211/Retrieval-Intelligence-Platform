@@ -47,6 +47,15 @@ Document File
 └─────────────────┘
 ```
 
+### How Ingestion Works
+
+1. **Loader Selection**: `LoaderFactory` inspects file extension and returns the appropriate loader
+2. **Document Loading**: Each loader extracts text content and extracts format-specific metadata (title, author, page count)
+3. **Validation**: Files are validated for existence, size limits, and content
+4. **Checksum**: SHA256 checksum is computed for deduplication and integrity
+5. **Preprocessing**: `TextCleaner` normalizes whitespace, unicode characters, and removes excessive blank lines
+6. **Output**: All loaders produce a standardized `Document` model instance
+
 ### Usage
 
 ```python
@@ -62,6 +71,25 @@ print(doc.content)  # Extracted text
 print(doc.metadata.title)
 print(doc.metadata.language)
 print(doc.checksum)
+
+# Clean the document
+from backend.data.preprocessing.text_cleaner import clean_document
+cleaned = clean_document(doc)
+```
+
+### Configuration
+
+All settings are configurable via environment variables (using pydantic-settings):
+
+```bash
+# Maximum file size in MB
+INGESTION_MAX_FILE_SIZE_MB=100
+
+# Default encoding for text files
+INGESTION_DEFAULT_ENCODING=utf-8
+
+# Default language for documents
+INGESTION_DEFAULT_LANGUAGE=en
 ```
 
 ### Error Handling
@@ -71,17 +99,19 @@ print(doc.checksum)
 | `EmptyDocumentError` | File is empty or contains only whitespace |
 | `UnsupportedDocumentTypeError` | File extension not supported |
 | `DocumentLoadError` | Could not read/parse the document |
+| `FileSizeError` | File exceeds maximum allowed size |
 | `ValidationError` | File validation failed |
 
 ## Folder Responsibilities
 
 | Folder | Purpose |
 |--------|---------|
-| `backend/loaders/` | Document loading implementations (PDF, DOCX, TXT, MD) |
-| `backend/preprocessing/` | Text cleaning and normalization |
-| `backend/models/` | Domain models (Document, DocumentMetadata, etc.) |
-| `backend/tests/` | Test suite |
-| `docs/architecture/` | System architecture documentation |
+| `backend/data/loaders/` | Document loading implementations (PDF, DOCX, TXT, MD) |
+| `backend/data/preprocessing/` | Text cleaning and normalization |
+| `backend/data/models/` | Domain models (Document, DocumentMetadata, etc.) |
+| `backend/core/exceptions.py` | Custom exception hierarchy |
+| `backend/configs/settings.py` | Configuration management via pydantic-settings |
+| `backend/tests/unit/test_loaders/` | Unit tests for loaders |
 
 ## Roadmap
 

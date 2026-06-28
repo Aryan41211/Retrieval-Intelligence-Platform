@@ -1,6 +1,5 @@
 """Unit tests for loader factory."""
 
-from pathlib import Path
 
 import pytest
 

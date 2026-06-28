@@ -1,12 +1,11 @@
 """Markdown document loader."""
 
+import html
 import re
 from pathlib import Path
+from typing import Any
 
-from backend.core.exceptions import (
-    DocumentLoadError,
-    EmptyDocumentError,
-)
+from backend.core.exceptions import DocumentLoadError, EmptyDocumentError
 from backend.data.loaders.base_loader import BaseLoader
 from backend.data.models.document import Document
 
@@ -15,6 +14,11 @@ class MarkdownLoader(BaseLoader):
     """Load Markdown documents."""
 
     def get_supported_extensions(self) -> list[str]:
+        """Return list of supported extensions.
+
+        Returns:
+            List of supported file extensions.
+        """
         return [".md", ".markdown"]
 
     def load(self, file_path: str | Path) -> Document:
@@ -26,16 +30,16 @@ class MarkdownLoader(BaseLoader):
         Returns:
             Document object with text content.
 
-        Note:
-            For markdown, we strip markdown formatting and return plain text
-            to be consistent with other loaders. The original markdown is
-            available in the source if needed.
+        Raises:
+            DocumentLoadError: If the file cannot be read.
+            EmptyDocumentError: If the file is empty.
         """
         path = self.validate_file(file_path)
         checksum = self.compute_checksum(path)
         file_extension = path.suffix.lower()
 
         encoding = self.detect_encoding(path)
+        used_encoding = encoding
 
         try:
             with open(path, encoding=encoding) as f:
@@ -45,6 +49,7 @@ class MarkdownLoader(BaseLoader):
                 try:
                     with open(path, encoding=fallback) as f:
                         raw_content = f.read()
+                    used_encoding = fallback
                     break
                 except UnicodeDecodeError:
                     continue
@@ -58,8 +63,6 @@ class MarkdownLoader(BaseLoader):
 
         # Try to strip markdown formatting to get plain text
         try:
-            import html
-
             import markdown  # markdown package
 
             # Convert to html then strip tags
@@ -78,7 +81,7 @@ class MarkdownLoader(BaseLoader):
             word_count=len(content.split()),
         )
 
-        source = self.build_source(path, checksum)
+        source = self.build_source(path, checksum, encoding=used_encoding)
 
         return Document(
             filename=path.name,
@@ -91,7 +94,7 @@ class MarkdownLoader(BaseLoader):
             source=source,
         )
 
-    def _strip_html_tags(self, html_content: str, html_module) -> str:
+    def _strip_html_tags(self, html_content: str, html_module: Any) -> str:
         """Strip HTML tags to get plain text.
 
         Args:

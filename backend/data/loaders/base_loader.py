@@ -2,8 +2,11 @@
 
 import hashlib
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from backend.data.models.document import Document, DocumentMetadata, DocumentSource
 
 
 class BaseLoader(ABC):
@@ -14,11 +17,15 @@ class BaseLoader(ABC):
 
     @abstractmethod
     def get_supported_extensions(self) -> list[str]:
-        """Return list of supported file extensions."""
+        """Return list of supported file extensions.
+
+        Returns:
+            List of file extensions (e.g., ['.pdf', '.docx']).
+        """
         ...
 
     @abstractmethod
-    def load(self, file_path: str | Path):
+    def load(self, file_path: str | Path) -> Document:
         """Load a document from the given file path.
 
         Args:
@@ -44,24 +51,24 @@ class BaseLoader(ABC):
             Path object for the file.
 
         Raises:
-            ValidationError: If file validation fails.
+            DocumentLoadError: If file cannot be accessed.
+            FileSizeError: If file exceeds maximum size.
         """
+        from backend.core.exceptions import DocumentLoadError, FileSizeError
+
         path = Path(file_path)
 
         if not path.exists():
-            raise ValueError(f"File not found: {path}")
+            raise DocumentLoadError(f"File not found: {path}")
 
         if not path.is_file():
-            raise ValueError(f"Not a file: {path}")
+            raise DocumentLoadError(f"Not a file: {path}")
 
         max_size = self.config.get("max_file_size_mb", 100) * 1024 * 1024
-        file_size = path.stat().st_size
-
-        if file_size == 0:
-            raise ValueError(f"File is empty: {path}")
-
-        if file_size > max_size:
-            raise ValueError(f"File exceeds maximum size ({file_size} > {max_size} bytes): {path}")
+        if path.stat().st_size > max_size:
+            raise FileSizeError(
+                f"File exceeds maximum size: {path}"
+            )
 
         return path
 
@@ -100,4 +107,73 @@ class BaseLoader(ABC):
         Returns:
             Detected encoding name.
         """
-        return self.config.get("default_encoding", "utf-8")
+        default: str = self.config.get("default_encoding", "utf-8")
+        return default
+
+    def build_metadata(
+        self,
+        title: str | None = None,
+        author: str | None = None,
+        language: str | None = None,
+        created_at: datetime | None = None,
+        modified_at: datetime | None = None,
+        char_count: int = 0,
+        word_count: int = 0,
+        page_count: int | None = None,
+        tags: list[str] | None = None,
+    ) -> DocumentMetadata:
+        """Build DocumentMetadata with computed values.
+
+        Args:
+            title: Document title.
+            author: Document author.
+            language: Document language code.
+            created_at: Creation timestamp.
+            modified_at: Modification timestamp.
+            char_count: Character count.
+            word_count: Word count.
+            page_count: Number of pages.
+            tags: Document tags.
+
+        Returns:
+            DocumentMetadata instance.
+        """
+        if language is None:
+            language = self.config.get("default_language", "en")
+
+        return DocumentMetadata(
+            title=title,
+            author=author,
+            language=language,
+            char_count=char_count,
+            word_count=word_count,
+            page_count=page_count,
+            tags=tags or [],
+        )
+
+    def build_source(
+        self,
+        path: Path,
+        checksum: str,
+        encoding: str | None = None,
+    ) -> DocumentSource:
+        """Build DocumentSource for a document.
+
+        Args:
+            path: Path to the document.
+            checksum: SHA256 checksum.
+            encoding: Character encoding detected.
+
+        Returns:
+            DocumentSource instance.
+        """
+        from backend.data.models.document import DocumentSourceType
+
+        return DocumentSource(
+            type=DocumentSourceType.FILE,
+            path=str(path),
+            checksum=checksum,
+            size_bytes=path.stat().st_size,
+            encoding=encoding or self.detect_encoding(path),
+            last_modified=datetime.fromtimestamp(path.stat().st_mtime),
+        )

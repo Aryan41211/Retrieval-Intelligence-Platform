@@ -1,12 +1,13 @@
 """Unit tests for TXT loader."""
 
-import tempfile
 from pathlib import Path
 
 import pytest
 
-from backend.core.exceptions import EmptyDocumentError, DocumentLoadError
+from backend.core.exceptions import DocumentLoadError, EmptyDocumentError
 from backend.data.loaders.txt_loader import TXTLoader
+
+SHA256_HEX_LENGTH = 64
 
 
 class TestTXTLoader:
@@ -64,11 +65,6 @@ class TestTXTLoader:
         with pytest.raises(DocumentLoadError):
             loader.load(tmp_path / "nonexistent.txt")
 
-    def test_supported_extensions(self):
-        """Test get_supported_extensions returns correct list."""
-        loader = TXTLoader()
-        assert loader.get_supported_extensions() == [".txt"]
-
     def test_checksum_is_deterministic(self, tmp_path: Path):
         """Test that checksums are deterministic."""
         txt_file = tmp_path / "checksum.txt"
@@ -79,4 +75,9 @@ class TestTXTLoader:
         checksum2 = loader.compute_checksum(txt_file)
 
         assert checksum1 == checksum2
-        assert len(checksum1) == 64  # SHA256 hex length
+        assert len(checksum1) == SHA256_HEX_LENGTH
+
+    def test_supported_extensions(self):
+        """Test get_supported_extensions returns correct list."""
+        loader = TXTLoader()
+        assert loader.get_supported_extensions() == [".txt"]
