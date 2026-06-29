@@ -1,30 +1,30 @@
 """Embedding package for vector generation."""
 
-from embeddings.base_embedding_provider import (
+from backend.data.embeddings.base_embedding_provider import (
     BaseEmbeddingProvider,
     EmbeddingDimensionError,
     EmbeddingError,
     EmbeddingValidationError,
     ModelNotFoundError,
 )
-from embeddings.embedding_batch_processor import (
+from backend.data.embeddings.embedding_batch_processor import (
     BatchProcessingConfig,
     EmbeddingBatchProcessor,
 )
-from embeddings.embedding_cache import EmbeddingCache
-from embeddings.embedding_factory import (
+from backend.data.embeddings.embedding_cache import EmbeddingCache
+from backend.data.embeddings.embedding_factory import (
     EmbeddingFactory,
     EmbeddingProviderType,
 )
-from embeddings.embedding_metadata import (
+from backend.data.embeddings.embedding_metadata import (
     EmbeddingMetadataBuilder,
     ModelRegistry,
 )
-from embeddings.embedding_pipeline import (
+from backend.data.embeddings.embedding_pipeline import (
     EmbeddingPipeline,
     EmbeddingPipelineConfig,
 )
-from embeddings.embedding_validator import EmbeddingValidator
+from backend.data.embeddings.embedding_validator import EmbeddingValidator
 
 __all__ = [
     "BaseEmbeddingProvider",
@@ -44,3 +44,18 @@ __all__ = [
     "EmbeddingDimensionError",
     "ModelNotFoundError",
 ]
+
+
+def __getattr__(name: str):
+    if name == "SentenceTransformerProvider":
+        try:
+            from backend.data.embeddings.sentence_transformer_provider import (
+                SentenceTransformerProvider,
+            )
+
+            return SentenceTransformerProvider
+        except ImportError as e:
+            raise ImportError(
+                f"SentenceTransformerProvider requires sentence-transformers: {e}"
+            ) from e
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

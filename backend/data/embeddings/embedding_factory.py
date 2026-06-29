@@ -3,7 +3,6 @@
 from typing import Any
 
 from backend.data.embeddings.base_embedding_provider import BaseEmbeddingProvider
-from backend.data.embeddings.sentence_transformer_provider import SentenceTransformerProvider
 
 
 class EmbeddingProviderType(str):
@@ -19,9 +18,28 @@ class EmbeddingProviderType(str):
 class EmbeddingFactory:
     """Factory for creating embedding providers."""
 
-    _providers: dict[str, type[BaseEmbeddingProvider]] = {
-        EmbeddingProviderType.SENTENCE_TRANSFORMERS: SentenceTransformerProvider,
-    }
+    _providers: dict[str, type[BaseEmbeddingProvider]] = {}
+
+    @classmethod
+    def _get_provider_class(cls, provider_type: str) -> type[BaseEmbeddingProvider]:
+        if provider_type not in cls._providers:
+            if provider_type == EmbeddingProviderType.SENTENCE_TRANSFORMERS:
+                try:
+                    from backend.data.embeddings.sentence_transformer_provider import (
+                        SentenceTransformerProvider,
+                    )
+
+                    cls._providers[provider_type] = SentenceTransformerProvider
+                except ImportError as e:
+                    raise ImportError(
+                        f"SentenceTransformerProvider requires sentence-transformers: {e}"
+                    ) from e
+            else:
+                available = ", ".join(cls._providers.keys())
+                raise ValueError(
+                    f"Unknown provider type: {provider_type}. Available: {available}"
+                )
+        return cls._providers[provider_type]
 
     @classmethod
     def create(
@@ -30,15 +48,8 @@ class EmbeddingFactory:
         model_name: str | None = None,
         config: dict[str, Any] | None = None,
     ) -> BaseEmbeddingProvider:
-        if provider_type not in cls._providers:
-            available = ", ".join(cls._providers.keys())
-            raise ValueError(
-                f"Unknown provider type: {provider_type}. Available: {available}"
-            )
-
-        provider_class = cls._providers[provider_type]
+        provider_class = cls._get_provider_class(provider_type)
         merged_config = {**(config or {})}
-
         return provider_class(model_name=model_name, config=merged_config)
 
     @classmethod
@@ -46,7 +57,7 @@ class EmbeddingFactory:
         cls,
         model_name: str = "all-MiniLM-L6-v2",
         config: dict[str, Any] | None = None,
-    ) -> SentenceTransformerProvider:
+    ) -> BaseEmbeddingProvider:
         return cls.create(
             provider_type=EmbeddingProviderType.SENTENCE_TRANSFORMERS,
             model_name=model_name,

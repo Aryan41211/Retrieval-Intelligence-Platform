@@ -1,11 +1,11 @@
 """Tests for embedding pipeline."""
 
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
 import pytest
 
 from backend.data.models.chunk import Chunk, ChunkMetadata, ChunkingStrategy
-from backend.data.models.embedding import Embedding
+from backend.data.models.embedding import Embedding, EmbeddingResult, EmbeddingBatchResult
 from backend.data.embeddings.embedding_pipeline import (
     EmbeddingPipeline,
     EmbeddingPipelineConfig,
@@ -50,11 +50,12 @@ class TestEmbeddingPipeline:
                 token_count=2,
             ),
         )
+        result = EmbeddingResult(chunk=chunk, cache_hit=False)
         mock_provider = Mock()
         mock_provider.name = "test-provider"
         mock_provider.model_info = Mock(version="1.0")
-        mock_provider.embed_chunks.return_value = Mock(
-            results=[Mock(chunk=chunk, embedding=Mock(), cache_hit=False)],
+        mock_provider.embed_chunks.return_value = EmbeddingBatchResult(
+            results=[result],
             cache_hits=0,
             cache_misses=1,
             total_processing_time_ms=10.5,
