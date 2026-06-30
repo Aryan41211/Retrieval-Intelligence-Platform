@@ -24,6 +24,7 @@ class EmbeddingPipelineConfig:
         cache_enabled: bool = True,
         cache_ttl: int = 86400,
         cache_max_size: int = 10000,
+        cache_persist_path: str | None = None,
         show_progress: bool = True,
         validate_embeddings: bool = True,
     ):
@@ -32,6 +33,7 @@ class EmbeddingPipelineConfig:
         self.cache_enabled = cache_enabled
         self.cache_ttl = cache_ttl
         self.cache_max_size = cache_max_size
+        self.cache_persist_path = cache_persist_path
         self.show_progress = show_progress
         self.validate_embeddings = validate_embeddings
 
@@ -43,6 +45,7 @@ class EmbeddingPipelineConfig:
             cache_enabled=data.get("cache_enabled", True),
             cache_ttl=data.get("cache_ttl", 86400),
             cache_max_size=data.get("cache_max_size", 10000),
+            cache_persist_path=data.get("cache_persist_path"),
             show_progress=data.get("show_progress", True),
             validate_embeddings=data.get("validate_embeddings", True),
         )
@@ -62,6 +65,9 @@ class EmbeddingPipeline:
         self.cache = cache or EmbeddingCache(
             max_size=self.config.cache_max_size,
             ttl_seconds=self.config.cache_ttl if self.config.cache_enabled else None,
+            persist_path=(
+                self.config.cache_persist_path if self.config.cache_enabled else None
+            ),
         )
         self.validator = EmbeddingValidator()
         self._processor = EmbeddingBatchProcessor(
@@ -92,6 +98,8 @@ class EmbeddingPipeline:
             for _r in cached_results:
                 self._stats["cache_hits"] += 1
 
+        result: EmbeddingBatchResult | None = None
+
         if chunks_to_embed:
             result = self._processor.process(chunks_to_embed)
             for r in result.results:
@@ -102,7 +110,7 @@ class EmbeddingPipeline:
                 if r.error:
                     self._stats["errors"] += 1
 
-        all_results = cached_results + (result.results if chunks_to_embed else [])
+        all_results = cached_results + (result.results if result is not None else [])
         self._stats["total_chunks"] += len(chunks)
 
         if self.config.validate_embeddings and all_results:
@@ -110,7 +118,7 @@ class EmbeddingPipeline:
 
         return EmbeddingBatchResult(
             results=all_results,
-            total_processing_time_ms=result.total_processing_time_ms if chunks_to_embed else 0,
+            total_processing_time_ms=result.total_processing_time_ms if result is not None else 0,
             cache_hits=self._stats["cache_hits"],
             cache_misses=self._stats["cache_misses"],
         )
@@ -121,19 +129,28 @@ class EmbeddingPipeline:
         if not self.config.cache_enabled:
             return chunks, []
 
-        chunks_to_embed = []
+        chunks_to_embed: list[Chunk] = []
         cached_results = []
 
+        # Configuration snapshot influences cache key.
+        # Include provider_config passed at call time plus pipeline config that affects embedding.
+        cache_config_snapshot: dict[str, Any] = {
+            "pipeline_batch_size": self.config.batch_size,
+            "pipeline_max_workers": self.config.max_workers,
+            "show_progress": self.config.show_progress,
+            **(config or {}),
+        }
+
         for chunk in chunks:
-            checksum = self._compute_chunk_checksum(chunk.text)
+            chunk_checksum = self._compute_chunk_checksum(chunk.text)
             cached = self.cache.get(
-                chunk_checksum=checksum,
+                chunk_checksum=chunk_checksum,
                 model_name=self.provider.name,
                 model_version=self.provider.model_info.version,
-                config=config,
+                config=cache_config_snapshot,
             )
 
-            if cached:
+            if cached is not None:
                 from backend.data.models.embedding import EmbeddingResult
 
                 cached_results.append(
@@ -145,7 +162,7 @@ class EmbeddingPipeline:
         return chunks_to_embed, cached_results
 
     def _compute_chunk_checksum(self, text: str) -> str:
-        return hashlib.sha256(text.encode()).hexdigest()
+        return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
     def _validate_results(self, results: list) -> None:
         for r in results:

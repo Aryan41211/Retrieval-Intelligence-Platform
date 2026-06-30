@@ -105,21 +105,30 @@ flowchart TD
 
 ## Caching Strategy
 
-### Cache Key Composition
+### Cache Key Composition (current implementation)
+The cache key is designed to be provider-agnostic and future-proof.
+
 ```
-key = sha256(provider + model + normalize(text))
+key = sha256(
+  chunk_checksum
+  + model_name + model_version
+  + stable_json(configuration_snapshot)
+)
 ```
 
-### Cache Layers
-| Layer | Location | TTL | Eviction |
-|-------|----------|-----|----------|
-| L1 | In-memory | 1h | LRU, 10K entries |
-| L2 | Redis | 24h | TTL-based |
+- `chunk_checksum`: sha256 of the chunk content (`sha256(chunk.text)`), computed during pipeline execution.
+- `model_name` / `model_version`: taken from `provider.model_info`.
+- `configuration_snapshot`: a stable JSON snapshot that includes pipeline runtime knobs (e.g., `batch_size`, `max_workers`, `show_progress`) plus any additional per-call `config`.
+
+### Cache Persistence
+When `EmbeddingCache(persist_path=...)` is configured, the cache is persisted to disk as a best-effort JSON file:
+- Loads on startup (corrupt cache is ignored)
+- Writes on `set()` and `clear()` (bounded by `max_size`)
+
+This satisfies the “persist embeddings” requirement without introducing a vector database.
 
 ### Cache Metrics
-- `embedding_cache_hits_total`
-- `embedding_cache_misses_total`
-- `embedding_cache_hit_rate`
+- `hits`, `misses`, `hit_rate` (from `EmbeddingCache.get_stats()`)
 
 ## Error Cases
 

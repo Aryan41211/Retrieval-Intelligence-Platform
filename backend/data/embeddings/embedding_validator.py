@@ -46,18 +46,26 @@ class EmbeddingValidator:
     def validate_all(self, embeddings: list[Embedding]) -> list[str]:
         """Validate multiple embeddings.
 
-        Args:
-            embeddings: List of embeddings to validate.
-
         Returns:
             List of error messages (empty if all valid).
         """
-        errors = []
+        errors: list[str] = []
+
         for i, embedding in enumerate(embeddings):
             try:
                 self.validate(embedding)
             except (EmbeddingValidationError, EmbeddingDimensionError) as e:
                 errors.append(f"Embedding {i} ({embedding.embedding_id}): {e}")
+
+        # Duplicate detection (same checksum implies identical vector content).
+        duplicates = self.check_duplicates(embeddings)
+        if duplicates:
+            formatted = ", ".join([f"{i}-{j}" for i, j in duplicates[:20]])
+            errors.append(
+                f"Duplicate embeddings detected (same checksum): pairs={formatted}"
+                + (" ..." if len(duplicates) > 20 else "")
+            )
+
         return errors
 
     def _validate_numeric(self, vector: list[float]) -> None:
@@ -67,9 +75,17 @@ class EmbeddingValidator:
     def _validate_values(self, vector: list[float]) -> None:
         for i, v in enumerate(vector):
             if math.isnan(v):
-                raise EmbeddingValidationError(f"Embedding contains NaN at index {i}")
+                if self.allow_nan:
+                    continue
+                raise EmbeddingValidationError(
+                    f"Embedding contains NaN at index {i}"
+                )
             if math.isinf(v):
-                raise EmbeddingValidationError(f"Embedding contains Inf at index {i}")
+                if self.allow_inf:
+                    continue
+                raise EmbeddingValidationError(
+                    f"Embedding contains Inf at index {i}"
+                )
 
     def _validate_dimension(self, declared_dim: int, actual_dim: int) -> None:
         if declared_dim != actual_dim:
@@ -111,9 +127,17 @@ class EmbeddingValidator:
         return dot_product / (magnitude1 * magnitude2)
 
     def check_duplicates(self, embeddings: list[Embedding]) -> list[tuple[int, int]]:
-        duplicates = []
+        """Find duplicate embeddings by checksum.
+
+        Note: checksum may be unset; in that case we do not treat embeddings as duplicates.
+        """
+        duplicates: list[tuple[int, int]] = []
         for i in range(len(embeddings)):
             for j in range(i + 1, len(embeddings)):
-                if embeddings[i].checksum == embeddings[j].checksum:
+                ci = embeddings[i].checksum
+                cj = embeddings[j].checksum
+                if not ci or not cj:
+                    continue
+                if ci == cj:
                     duplicates.append((i, j))
         return duplicates

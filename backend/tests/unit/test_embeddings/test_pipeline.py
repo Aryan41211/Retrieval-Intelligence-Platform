@@ -46,7 +46,7 @@ class TestEmbeddingPipeline:
             document_id=doc_id,
             metadata=ChunkMetadata(
                 chunking_strategy=ChunkingStrategy.RECURSIVE,
-                char_count=12,
+                character_count=12,
                 token_count=2,
             ),
         )
@@ -71,26 +71,43 @@ class TestEmbeddingPipeline:
             document_id=doc_id,
             metadata=ChunkMetadata(
                 chunking_strategy=ChunkingStrategy.RECURSIVE,
-                char_count=14,
+                character_count=14,
                 token_count=2,
             ),
         )
         cached_embedding = Embedding(
             chunk_id=chunk.chunk_id,
             document_id=chunk.document_id,
-            model_name="test",
+            model_name="test-provider",
             model_version="1.0",
             embedding_dimension=384,
             embedding_vector=[0.1] * 384,
         )
+
         mock_provider = Mock()
         mock_provider.name = "test-provider"
         mock_provider.model_info = Mock(version="1.0")
+
         pipeline = EmbeddingPipeline(
             mock_provider,
             config=EmbeddingPipelineConfig(cache_enabled=True),
         )
-        pipeline.cache.set(cached_embedding, chunk_checksum="hash123", config={})
+
+        import hashlib
+
+        chunk_checksum = hashlib.sha256(chunk.text.encode("utf-8")).hexdigest()
+
+        # Cache key incorporates model_name/model_version and config snapshot.
+        cache_config_snapshot = {
+            "pipeline_batch_size": pipeline.config.batch_size,
+            "pipeline_max_workers": pipeline.config.max_workers,
+            "show_progress": pipeline.config.show_progress,
+        }
+
+        pipeline.cache.set(
+            cached_embedding, chunk_checksum=chunk_checksum, config=cache_config_snapshot
+        )
+
         result = pipeline.embed_chunks([chunk])
         assert result.cache_hits == 1
 
