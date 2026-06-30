@@ -1,74 +1,36 @@
-"""Embedding validation and benchmarking framework for the Retrieval Intelligence Platform.
+"""Embedding validation core framework for the Retrieval Intelligence Platform.
 
 This package provides:
 - Embedding validation for quality control
-- Statistics generation for embedding analysis
-- Benchmarking for performance metrics
-- Profiling for resource utilization
-- Similarity analysis for semantic quality
+- Structured validation results
 - Duplicate detection for data integrity
-- Visualization for embedding quality insights
-- Report generation for validation results
-- Orchestration runner for end-to-end validation
+- Orchestration runner for validation pipeline
 """
 
-from backend.embedding_validation.benchmark_report import BenchmarkReport
-from backend.embedding_validation.duplicate_detector import (
-    DuplicateDetector,
-    DuplicateReport,
+from backend.embedding_validation.embedding_validator import EmbeddingValidator
+from backend.embedding_validation.exceptions import (
+    DuplicateEmbeddingError,
+    InvalidEmbeddingMetadataError,
 )
-from backend.embedding_validation.embedding_benchmark import (
-    BatchMetrics,
-    BenchmarkResult,
-    EmbeddingBenchmark,
-    LatencyMetrics,
-    ResourceMetrics,
-    ThroughputMetrics,
-)
-from backend.embedding_validation.embedding_profiler import EmbeddingProfiler, ProfilerMetrics
-from backend.embedding_validation.embedding_statistics import (
-    DensityStatistics,
-    EmbeddingQualityReport,
-    EmbeddingStatistics,
-    EmbeddingStats,
-    NormStatistics,
-)
-from backend.embedding_validation.embedding_validator import (
-    ExtendedEmbeddingValidator,
+from backend.embedding_validation.validation_result import (
+    ValidationCheckResult,
     ValidationResult,
+    ValidationSeverity,
+    ValidationStatus,
 )
-from backend.embedding_validation.embedding_visualizer import EmbeddingVisualizer
-from backend.embedding_validation.similarity_analyzer import (
-    SimilarityAnalyzer,
-    SimilarityMetrics,
-)
-from backend.embedding_validation.validation_runner import (
-    ValidationRunner,
-    ValidationSummary,
-)
+from backend.embedding_validation.validation_runner import ValidationRunner
+
+# Backward compatibility alias
+ExtendedEmbeddingValidator = EmbeddingValidator
 
 __all__ = [
+    "EmbeddingValidator",
     "ExtendedEmbeddingValidator",
-    "ValidationResult",
-    "EmbeddingStatistics",
-    "EmbeddingQualityReport",
-    "NormStatistics",
-    "DensityStatistics",
-    "EmbeddingStats",
-    "EmbeddingBenchmark",
-    "BenchmarkResult",
-    "LatencyMetrics",
-    "ThroughputMetrics",
-    "BatchMetrics",
-    "ResourceMetrics",
-    "EmbeddingProfiler",
-    "ProfilerMetrics",
-    "SimilarityAnalyzer",
-    "SimilarityMetrics",
-    "DuplicateDetector",
-    "DuplicateReport",
-    "EmbeddingVisualizer",
-    "BenchmarkReport",
     "ValidationRunner",
-    "ValidationSummary",
+    "ValidationResult",
+    "ValidationCheckResult",
+    "ValidationStatus",
+    "ValidationSeverity",
+    "DuplicateEmbeddingError",
+    "InvalidEmbeddingMetadataError",
 ]

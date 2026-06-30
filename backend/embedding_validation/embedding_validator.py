@@ -1,57 +1,36 @@
 """Extended embedding validator for comprehensive quality control."""
 
-import hashlib
 import math
-from dataclasses import dataclass, field
+from datetime import datetime
+from uuid import UUID
 
-from backend.data.embeddings.base_embedding_provider import (
-    EmbeddingDimensionError,
-)
 from backend.data.models.embedding import Embedding
+from backend.embedding_validation.validation_result import (
+    ValidationCheckResult,
+    ValidationResult,
+    ValidationSeverity,
+    ValidationStatus,
+)
+
+# Constants for backward compatibility
+ZERO_VECTOR_EPSILON = 1e-10
+NORMALIZATION_EPSILON = 1e-6
 
 
-@dataclass
-class ValidationResult:
-    """Result of embedding validation with detailed metrics."""
+class EmbeddingValidator:
+    """Validates embedding vectors for correctness and quality.
 
-    is_valid: bool
-    errors: list[str] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
-    total_embeddings: int = 0
-    valid_embeddings: int = 0
-    invalid_embeddings: int = 0
-    dimension_consistent: bool = True
-    dimensions: set[int] = field(default_factory=set)
-    duplicate_count: int = 0
-    near_duplicate_count: int = 0
-    nan_count: int = 0
-    inf_count: int = 0
-    zero_vector_count: int = 0
-    normalized_count: int = 0
-
-    @property
-    def validation_rate(self) -> float:
-        """Return the validation pass rate."""
-        if self.total_embeddings == 0:
-            return 0.0
-        return self.valid_embeddings / self.total_embeddings
-
-    @property
-    def duplicate_rate(self) -> float:
-        """Return the duplicate rate."""
-        if self.total_embeddings == 0:
-            return 0.0
-        return self.duplicate_count / self.total_embeddings
-
-
-class ExtendedEmbeddingValidator:
-    """Extended validator with comprehensive embedding quality checks."""
+    This class provides provider-agnostic validation for embedding integrity,
+    checking for numeric validity, NaN/Inf values, zero vectors, dimension
+    consistency, duplicates, and metadata completeness.
+    """
 
     def __init__(
         self,
         expected_dimension: int | None = None,
         allow_nan: bool = False,
         allow_inf: bool = False,
+        strict_mode: bool = False,
         nan_tolerance: float = 0.0,
         detect_near_duplicates: bool = True,
         near_duplicate_threshold: float = 0.99,
@@ -59,50 +38,64 @@ class ExtendedEmbeddingValidator:
         self.expected_dimension = expected_dimension
         self.allow_nan = allow_nan
         self.allow_inf = allow_inf
+        self.strict_mode = strict_mode
         self.nan_tolerance = nan_tolerance
         self.detect_near_duplicates = detect_near_duplicates
         self.near_duplicate_threshold = near_duplicate_threshold
 
     def validate_single(self, embedding: Embedding) -> tuple[bool, list[str], list[str]]:
-        """Validate a single embedding vector.
+        """Validate a single embedding (backward compatible interface).
+
+        Args:
+            embedding: Embedding to validate.
 
         Returns:
             Tuple of (is_valid, errors, warnings).
         """
-        errors: list[str] = []
-        warnings: list[str] = []
+        result = self.validate(embedding)
+        return result.is_valid, result.errors, result.warnings
 
-        if not embedding.embedding_vector:
-            errors.append("Embedding vector cannot be empty")
-            return False, errors, warnings
+    def validate(self, embedding: Embedding) -> ValidationResult:
+        """Validate a single embedding with structured results.
 
-        vector = embedding.embedding_vector
+        Args:
+            embedding: Embedding to validate.
 
-        if not self._validate_numeric(vector):
-            errors.append("Embedding vector must contain only numeric values")
+        Returns:
+            ValidationResult with detailed check results.
+        """
+        checks: list[ValidationCheckResult] = []
 
-        nan_errors = self._validate_nan_values(vector)
-        if nan_errors:
-            if self.allow_nan:
-                warnings.extend(nan_errors)
-            else:
-                errors.extend(nan_errors)
+        self._check_empty_vector(embedding, checks)
+        self._check_numeric_values(embedding, checks)
+        self._check_nan_values(embedding, checks)
+        self._check_inf_values(embedding, checks)
+        self._check_zero_vector(embedding, checks)
+        self._check_dimension(embedding, checks)
+        self._check_metadata(embedding, checks)
+        self._check_document_id(embedding, checks)
+        self._check_chunk_id(embedding, checks)
+        self._check_checksum(embedding, checks)
+        self._check_timestamp(embedding, checks)
 
-        inf_errors = self._validate_inf_values(vector)
-        if inf_errors:
-            if self.allow_inf:
-                warnings.extend(inf_errors)
-            else:
-                errors.extend(inf_errors)
+        is_valid = all(c.status != ValidationStatus.FAILED for c in checks)
 
-        if self._is_zero_vector(vector):
-            warnings.append("Embedding is a zero vector")
+        errors = [c.message for c in checks if c.status == ValidationStatus.FAILED]
+        warnings = [
+            c.message
+            for c in checks
+            if c.status == ValidationStatus.WARNING and c.severity == ValidationSeverity.WARNING
+        ]
 
-        dimension_error = self._validate_dimension(embedding.embedding_dimension, len(vector))
-        if dimension_error:
-            warnings.append(dimension_error)
-
-        return len(errors) == 0, errors, warnings
+        return ValidationResult(
+            is_valid=is_valid,
+            total_embeddings=1,
+            valid_embeddings=1 if is_valid else 0,
+            invalid_embeddings=0 if is_valid else 1,
+            checks=checks,
+            errors=errors,
+            warnings=warnings,
+        )
 
     def validate_all(self, embeddings: list[Embedding]) -> ValidationResult:
         """Validate multiple embeddings comprehensively.
@@ -111,10 +104,11 @@ class ExtendedEmbeddingValidator:
             embeddings: List of embeddings to validate.
 
         Returns:
-            ValidationResult with detailed metrics.
+            ValidationResult with aggregated metrics and individual check results.
         """
-        errors: list[str] = []
-        warnings: list[str] = []
+        all_checks: list[ValidationCheckResult] = []
+        all_errors: list[str] = []
+        all_warnings: list[str] = []
         dimensions: set[int] = set()
         nan_count = 0
         inf_count = 0
@@ -122,23 +116,21 @@ class ExtendedEmbeddingValidator:
         normalized_count = 0
         valid_count = 0
 
-        for i, embedding in enumerate(embeddings):
-            is_valid, emb_errors, emb_warnings = self.validate_single(embedding)
+        for embedding in embeddings:
+            result = self.validate(embedding)
+            all_checks.extend(result.checks)
 
-            if emb_errors:
-                errors.extend([f"Embedding {i} ({embedding.embedding_id}): {e}" for e in emb_errors])
-
-            warnings.extend([f"Embedding {i} ({embedding.embedding_id}): {w}" for w in emb_warnings])
-
-            if is_valid:
+            if result.is_valid:
                 valid_count += 1
+
+            for c in result.checks:
+                if c.validation_name == "nan_values" and c.status == ValidationStatus.WARNING:
+                    nan_count += 1
+                if c.validation_name == "inf_values" and c.status == ValidationStatus.WARNING:
+                    inf_count += 1
 
             if embedding.embedding_dimension:
                 dimensions.add(embedding.embedding_dimension)
-
-            nan_count += sum(1 for _ in self._validate_nan_values(embedding.embedding_vector))
-
-            inf_count += sum(1 for _ in self._validate_inf_values(embedding.embedding_vector))
 
             if self._is_zero_vector(embedding.embedding_vector):
                 zero_vector_count += 1
@@ -151,87 +143,266 @@ class ExtendedEmbeddingValidator:
             self._find_near_duplicates(embeddings) if self.detect_near_duplicates else []
         )
 
+        for d in duplicate_pairs:
+            all_checks.append(
+                ValidationCheckResult(
+                    validation_name="duplicate_detection",
+                    status=ValidationStatus.FAILED,
+                    severity=ValidationSeverity.ERROR,
+                    message=f"Duplicate embeddings found at indices {d[0]} and {d[1]}",
+                    recommendation="Review source documents for duplicate content",
+                    details={"pair": d},
+                )
+            )
+            if self.strict_mode:
+                all_errors.append(f"Duplicate at indices {d[0]} and {d[1]}")
+
+        is_valid = len(all_errors) == 0 and all(
+            c.status != ValidationStatus.FAILED
+            and (not self.strict_mode or c.severity != ValidationSeverity.ERROR)
+            for c in all_checks
+        )
+
         return ValidationResult(
-            is_valid=len(errors) == 0,
-            errors=errors,
-            warnings=warnings,
+            is_valid=is_valid,
             total_embeddings=len(embeddings),
             valid_embeddings=valid_count,
             invalid_embeddings=len(embeddings) - valid_count,
-            dimension_consistent=len(dimensions) <= 1,
+            checks=all_checks,
+            errors=all_errors,
+            warnings=all_warnings,
             dimensions=dimensions,
             duplicate_count=len(duplicate_pairs) + len(near_duplicate_pairs),
-            near_duplicate_count=len(near_duplicate_pairs),
+            near_duplicate_count=len(near_duplicate_pairs) if self.detect_near_duplicates else 0,
             nan_count=nan_count,
             inf_count=inf_count,
             zero_vector_count=zero_vector_count,
             normalized_count=normalized_count,
         )
 
-    def _validate_numeric(self, vector: list[float]) -> bool:
-        """Check if vector contains only numeric values."""
-        return all(isinstance(v, int | float) for v in vector)
+    def _check_empty_vector(
+        self, embedding: Embedding, checks: list[ValidationCheckResult]
+    ) -> None:
+        """Check for empty embedding vector."""
+        if not embedding.embedding_vector:
+            checks.append(
+                ValidationCheckResult(
+                    validation_name="empty_vector",
+                    status=ValidationStatus.FAILED,
+                    severity=ValidationSeverity.ERROR,
+                    message="Embedding vector cannot be empty",
+                    recommendation="Ensure embedding provider returns valid vectors",
+                )
+            )
 
-    def _validate_nan_values(self, vector: list[float]) -> list[str]:
-        """Check for NaN values and return error messages."""
-        return [f"NaN at index {i}" for i, v in enumerate(vector) if math.isnan(v)]
+    def _check_numeric_values(
+        self, embedding: Embedding, checks: list[ValidationCheckResult]
+    ) -> None:
+        """Check for non-numeric values in embedding."""
+        if embedding.embedding_vector:
+            non_numeric = [
+                i
+                for i, v in enumerate(embedding.embedding_vector)
+                if not isinstance(v, int | float)
+            ]
+            if non_numeric:
+                checks.append(
+                    ValidationCheckResult(
+                        validation_name="numeric_values",
+                        status=ValidationStatus.FAILED,
+                        severity=ValidationSeverity.ERROR,
+                        message=f"Non-numeric values at indices: {non_numeric[:10]}",
+                        recommendation="Verify embedding provider returns numeric vectors",
+                    )
+                )
 
-    def _validate_inf_values(self, vector: list[float]) -> list[str]:
-        """Check for Inf values and return error messages."""
-        return [f"Inf at index {i}" for i, v in enumerate(vector) if math.isinf(v)]
+    def _check_nan_values(self, embedding: Embedding, checks: list[ValidationCheckResult]) -> None:
+        """Check for NaN values in embedding."""
+        if embedding.embedding_vector:
+            nan_indices = [i for i, v in enumerate(embedding.embedding_vector) if math.isnan(v)]
+            if nan_indices:
+                status = ValidationStatus.WARNING if self.allow_nan else ValidationStatus.FAILED
+                severity = (
+                    ValidationSeverity.WARNING if self.allow_nan else ValidationSeverity.ERROR
+                )
+                checks.append(
+                    ValidationCheckResult(
+                        validation_name="nan_values",
+                        status=status,
+                        severity=severity,
+                        message=f"NaN values at indices: {nan_indices[:10]}",
+                        recommendation="Consider filtering or re-generating embeddings with NaN values",
+                    )
+                )
+
+    def _check_inf_values(self, embedding: Embedding, checks: list[ValidationCheckResult]) -> None:
+        """Check for infinite values in embedding."""
+        if embedding.embedding_vector:
+            inf_indices = [i for i, v in enumerate(embedding.embedding_vector) if math.isinf(v)]
+            if inf_indices:
+                status = ValidationStatus.WARNING if self.allow_inf else ValidationStatus.FAILED
+                severity = (
+                    ValidationSeverity.WARNING if self.allow_inf else ValidationSeverity.ERROR
+                )
+                checks.append(
+                    ValidationCheckResult(
+                        validation_name="inf_values",
+                        status=status,
+                        severity=severity,
+                        message=f"Infinite values at indices: {inf_indices[:10]}",
+                        recommendation="Check for division by zero or overflow in embedding generation",
+                    )
+                )
+
+    def _check_zero_vector(self, embedding: Embedding, checks: list[ValidationCheckResult]) -> None:
+        """Check for zero vectors."""
+        if self._is_zero_vector(embedding.embedding_vector):
+            checks.append(
+                ValidationCheckResult(
+                    validation_name="zero_vector",
+                    status=ValidationStatus.WARNING,
+                    severity=ValidationSeverity.WARNING,
+                    message="Embedding is a zero vector (all values near zero)",
+                    recommendation="Review source text - may indicate empty or homogeneous content",
+                )
+            )
+
+    def _check_dimension(self, embedding: Embedding, checks: list[ValidationCheckResult]) -> None:
+        """Check dimension consistency and expected dimension."""
+        actual_dim = len(embedding.embedding_vector) if embedding.embedding_vector else 0
+
+        if embedding.embedding_dimension != actual_dim:
+            checks.append(
+                ValidationCheckResult(
+                    validation_name="dimension",
+                    status=ValidationStatus.FAILED,
+                    severity=ValidationSeverity.ERROR,
+                    message=f"Dimension mismatch: declared {embedding.embedding_dimension}, actual {actual_dim}",
+                    recommendation="Ensure embedding vector length matches declared dimension",
+                )
+            )
+        elif (
+            self.expected_dimension is not None
+            and embedding.embedding_dimension != self.expected_dimension
+        ):
+            checks.append(
+                ValidationCheckResult(
+                    validation_name="dimension",
+                    status=ValidationStatus.WARNING,
+                    severity=ValidationSeverity.WARNING,
+                    message=f"Unexpected dimension: expected {self.expected_dimension}, got {embedding.embedding_dimension}",
+                    recommendation=f"Verify model configuration matches expected dimension of {self.expected_dimension}",
+                )
+            )
+
+    def _check_metadata(self, embedding: Embedding, checks: list[ValidationCheckResult]) -> None:
+        """Check embedding metadata validity."""
+        if embedding.metadata is None:
+            checks.append(
+                ValidationCheckResult(
+                    validation_name="metadata",
+                    status=ValidationStatus.WARNING,
+                    severity=ValidationSeverity.INFO,
+                    message="Metadata is empty or None",
+                    recommendation="Consider adding metadata for traceability",
+                )
+            )
+        elif not isinstance(embedding.metadata, dict):
+            checks.append(
+                ValidationCheckResult(
+                    validation_name="metadata",
+                    status=ValidationStatus.FAILED,
+                    severity=ValidationSeverity.ERROR,
+                    message="Metadata must be a dictionary",
+                    recommendation="Provide valid metadata dictionary",
+                )
+            )
+
+    def _check_document_id(self, embedding: Embedding, checks: list[ValidationCheckResult]) -> None:
+        """Check for missing document ID."""
+        try:
+            UUID(str(embedding.document_id))
+        except (ValueError, TypeError, AttributeError):
+            checks.append(
+                ValidationCheckResult(
+                    validation_name="document_id",
+                    status=ValidationStatus.FAILED,
+                    severity=ValidationSeverity.ERROR,
+                    message="Missing or invalid document ID",
+                    recommendation="Ensure embedding is created from a valid chunk with document ID",
+                )
+            )
+
+    def _check_chunk_id(self, embedding: Embedding, checks: list[ValidationCheckResult]) -> None:
+        """Check for missing chunk ID."""
+        try:
+            UUID(str(embedding.chunk_id))
+        except (ValueError, TypeError, AttributeError):
+            checks.append(
+                ValidationCheckResult(
+                    validation_name="chunk_id",
+                    status=ValidationStatus.FAILED,
+                    severity=ValidationSeverity.ERROR,
+                    message="Missing or invalid chunk ID",
+                    recommendation="Ensure embedding is created from a valid chunk with chunk ID",
+                )
+            )
+
+    def _check_checksum(self, embedding: Embedding, checks: list[ValidationCheckResult]) -> None:
+        """Check for missing checksum."""
+        if not embedding.checksum:
+            checks.append(
+                ValidationCheckResult(
+                    validation_name="checksum",
+                    status=ValidationStatus.WARNING,
+                    severity=ValidationSeverity.INFO,
+                    message="Missing checksum for embedding",
+                    recommendation="Compute and store checksum for data integrity verification",
+                )
+            )
+
+    def _check_timestamp(self, embedding: Embedding, checks: list[ValidationCheckResult]) -> None:
+        """Check embedding timestamp validity."""
+        if embedding.generation_timestamp is None:
+            checks.append(
+                ValidationCheckResult(
+                    validation_name="timestamp",
+                    status=ValidationStatus.WARNING,
+                    severity=ValidationSeverity.INFO,
+                    message="Missing generation timestamp",
+                    recommendation="Add timestamp for traceability and caching",
+                )
+            )
+        elif not isinstance(embedding.generation_timestamp, datetime):
+            checks.append(
+                ValidationCheckResult(
+                    validation_name="timestamp",
+                    status=ValidationStatus.FAILED,
+                    severity=ValidationSeverity.ERROR,
+                    message="Invalid timestamp type",
+                    recommendation="Ensure timestamp is a valid datetime object",
+                )
+            )
+        elif embedding.generation_timestamp.tzinfo is None:
+            checks.append(
+                ValidationCheckResult(
+                    validation_name="timestamp",
+                    status=ValidationStatus.WARNING,
+                    severity=ValidationSeverity.WARNING,
+                    message="Timestamp lacks timezone info",
+                    recommendation="Use timezone-aware datetime for consistency",
+                )
+            )
 
     def _is_zero_vector(self, vector: list[float]) -> bool:
         """Check if vector is a zero vector."""
-        return all(abs(v) < 1e-10 for v in vector)
-
-    def _validate_dimension(self, declared_dim: int, actual_dim: int) -> str | None:
-        """Validate dimension consistency and return error message if mismatch."""
-        if declared_dim != actual_dim:
-            return f"Dimension mismatch: declared {declared_dim}, actual {actual_dim}"
-        if self.expected_dimension is not None and declared_dim != self.expected_dimension:
-            return f"Unexpected dimension: expected {self.expected_dimension}, got {declared_dim}"
-        return None
-
-    def is_normalized(self, vector: list[float]) -> bool:
-        """Check if vector is normalized (unit magnitude)."""
-        if not vector:
-            return False
-        magnitude = math.sqrt(sum(v * v for v in vector))
-        return abs(magnitude - 1.0) < 1e-6
-
-    def normalize(self, vector: list[float]) -> list[float]:
-        """Normalize vector to unit magnitude."""
-        if not vector:
-            return vector
-        magnitude = math.sqrt(sum(v * v for v in vector))
-        if magnitude == 0:
-            return vector
-        return [v / magnitude for v in vector]
-
-    def compute_cosine_similarity(
-        self, embedding1: Embedding, embedding2: Embedding
-    ) -> float:
-        """Compute cosine similarity between two embeddings."""
-        if len(embedding1.embedding_vector) != len(embedding2.embedding_vector):
-            raise EmbeddingDimensionError(
-                f"Cannot compute similarity: dimension mismatch "
-                f"{len(embedding1.embedding_vector)} vs {len(embedding2.embedding_vector)}"
-            )
-
-        vec1 = embedding1.embedding_vector
-        vec2 = embedding2.embedding_vector
-
-        dot_product = sum(a * b for a, b in zip(vec1, vec2, strict=True))
-        magnitude1 = math.sqrt(sum(v * v for v in vec1))
-        magnitude2 = math.sqrt(sum(v * v for v in vec2))
-
-        if magnitude1 == 0 or magnitude2 == 0:
-            return 0.0
-
-        return dot_product / (magnitude1 * magnitude2)
+        return all(abs(v) < ZERO_VECTOR_EPSILON for v in vector) if vector else True
 
     def check_duplicates(self, embeddings: list[Embedding]) -> list[tuple[int, int]]:
-        """Find duplicate embeddings by checksum."""
+        """Find duplicate embeddings by checksum.
+
+        Note: checksum may be unset; in that case we do not treat embeddings as duplicates.
+        """
         duplicates: list[tuple[int, int]] = []
         for i in range(len(embeddings)):
             for j in range(i + 1, len(embeddings)):
@@ -260,11 +431,13 @@ class ExtendedEmbeddingValidator:
         near_duplicates: list[tuple[int, int, float]] = []
         for i in range(len(embeddings)):
             for j in range(i + 1, len(embeddings)):
+                if len(embeddings[i].embedding_vector) != len(embeddings[j].embedding_vector):
+                    continue
                 try:
                     similarity = self.compute_cosine_similarity(embeddings[i], embeddings[j])
                     if similarity >= threshold:
                         near_duplicates.append((i, j, similarity))
-                except EmbeddingDimensionError:
+                except ValueError:
                     continue
 
         return near_duplicates
@@ -283,7 +456,42 @@ class ExtendedEmbeddingValidator:
         """
         return self._find_near_duplicates(embeddings, threshold)
 
-    def compute_vector_hash(self, vector: list[float]) -> str:
-        """Compute a stable hash for a vector."""
-        content = "".join(f"{v:.6f}" for v in vector)
-        return hashlib.sha256(content.encode()).hexdigest()
+    def compute_cosine_similarity(self, embedding1: Embedding, embedding2: Embedding) -> float:
+        """Compute cosine similarity between two embeddings."""
+        if len(embedding1.embedding_vector) != len(embedding2.embedding_vector):
+            raise ValueError(
+                f"Cannot compute similarity: dimension mismatch "
+                f"{len(embedding1.embedding_vector)} vs {len(embedding2.embedding_vector)}"
+            )
+
+        vec1 = embedding1.embedding_vector
+        vec2 = embedding2.embedding_vector
+
+        dot_product = sum(a * b for a, b in zip(vec1, vec2, strict=True))
+        magnitude1 = math.sqrt(sum(v * v for v in vec1))
+        magnitude2 = math.sqrt(sum(v * v for v in vec2))
+
+        if magnitude1 == 0 or magnitude2 == 0:
+            return 0.0
+
+        return dot_product / (magnitude1 * magnitude2)
+
+    def is_normalized(self, vector: list[float]) -> bool:
+        """Check if vector is normalized (unit magnitude)."""
+        if not vector:
+            return False
+        magnitude = math.sqrt(sum(v * v for v in vector))
+        return abs(magnitude - 1.0) < NORMALIZATION_EPSILON
+
+    def normalize(self, vector: list[float]) -> list[float]:
+        """Normalize vector to unit magnitude."""
+        if not vector:
+            return vector
+        magnitude = math.sqrt(sum(v * v for v in vector))
+        if magnitude == 0:
+            return vector
+        return [v / magnitude for v in vector]
+
+
+# Backward compatibility alias
+ExtendedEmbeddingValidator = EmbeddingValidator
