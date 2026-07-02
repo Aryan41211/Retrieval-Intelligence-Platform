@@ -9,6 +9,8 @@ from backend.retrieval.retrieval_metadata import RetrievalMetadata
 from backend.retrieval.retrieval_ranker import RetrievalRanker, VectorSimilarityRanker
 from backend.retrieval.retrieval_request import RetrievalRequest
 from backend.retrieval.retrieval_result import RetrievalChunkResult
+from backend.retrieval.retrieval_engine import RetrievalEngine
+from backend.retrieval.retrieval_pipeline import RetrievalPipeline
 
 __all__ = [
     "RetrievalError",
@@ -21,4 +23,6 @@ __all__ = [
     "RetrievalMetadata",
     "RetrievalRanker",
     "VectorSimilarityRanker",
+    "RetrievalEngine",
+    "RetrievalPipeline",
 ]

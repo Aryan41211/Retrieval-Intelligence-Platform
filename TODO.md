@@ -1,19 +1,19 @@
 # TODO — Phase 5.2 Semantic Retrieval Engine
 
 ## Vector Store contract & persistence
-- [ ] Extend `backend/vectorstore/base_vector_store.py` with minimal retrieval contract:
-  - [ ] `search(...)`
-  - [ ] `batch_search(...)` (if feasible without breaking changes)
-- [ ] Implement retrieval contract in `backend/vectorstore/faiss_vector_store.py`:
-  - [ ] Persist chunk text + metadata per vector ID during `add_embeddings()`
-  - [ ] Implement `search(...)` with:
-    - [ ] top-k
-    - [ ] similarity threshold
-    - [ ] metadata/document/source/language/custom filtering (post-candidate)
-    - [ ] strongly typed results
-  - [ ] Implement `batch_search(...)` (if required by interface)
-- [ ] Update `backend/vectorstore/index_serializer.py` to persist/restore the new metadata repository alongside FAISS index.
-- [ ] Ensure synchronization for add/remove/update/save/load.
+- [x] Extend `backend/vectorstore/base_vector_store.py` with minimal retrieval contract:
+  - [x] `search(...)`
+  - [x] `batch_search(...)` (if feasible without breaking changes)
+- [x] Implement retrieval contract in `backend/vectorstore/faiss_vector_store.py`:
+  - [x] Persist chunk text + metadata per vector ID during `add_embeddings()`
+  - [x] Implement `search(...)` with:
+    - [x] top-k
+    - [x] similarity threshold
+    - [x] metadata/document/source/language/custom filtering (post-candidate)
+    - [x] strongly typed results
+  - [x] Implement `batch_search(...)` (falls back to base implementation)
+- [x] Update `backend/vectorstore/index_serializer.py` to persist/restore the new metadata repository alongside FAISS index.
+- [x] Ensure synchronization for add/remove/update/save/load.
 
 ## Retrieval modules (provider-agnostic semantic engine)
 - [ ] Create `backend/retrieval/` modules (as specified):
@@ -37,17 +37,17 @@
   - [ ] log latency + retrieval stats using existing logging approach (stdlib `logging` if no internal logger exists)
 
 ## Logging & Errors
-- [ ] Add required logging fields:
-  - [ ] query latency
-  - [ ] retrieved documents/chunks
-  - [ ] similarity scores
-  - [ ] number of retrieved chunks
-  - [ ] errors/warnings
-- [ ] Implement retrieval exceptions in `backend/retrieval/exceptions.py`:
-  - [ ] `RetrievalError`
-  - [ ] `RetrievalTimeoutError`
-  - [ ] `RetrievalConfigurationError`
-  - [ ] `EmptyRetrievalResultError`
+- [x] Add required logging fields:
+  - [x] query latency
+  - [x] retrieved documents/chunks
+  - [x] similarity scores
+  - [x] number of retrieved chunks
+  - [x] errors/warnings
+- [x] Implement retrieval exceptions in `backend/retrieval/exceptions.py`:
+  - [x] `RetrievalError`
+  - [x] `RetrievalTimeoutError`
+  - [x] `RetrievalConfigurationError`
+  - [x] `EmptyRetrievalResultError`
 
 ## Tests
 - [ ] Add unit tests under `backend/tests/unit/test_retrieval/`:
