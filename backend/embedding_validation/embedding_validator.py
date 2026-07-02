@@ -124,6 +124,8 @@ class EmbeddingValidator:
                 valid_count += 1
 
             for c in result.checks:
+                if c.status == ValidationStatus.WARNING:
+                    all_warnings.append(c.message)
                 if c.validation_name == "nan_values" and c.status == ValidationStatus.WARNING:
                     nan_count += 1
                 if c.validation_name == "inf_values" and c.status == ValidationStatus.WARNING:

@@ -267,10 +267,11 @@ class BenchmarkReport:
 
         total_cache = result.cache_hits + result.cache_misses
         if total_cache > 0:
+            hit_rate = result.cache_hit_rate if result.cache_hit_rate > 0 else (result.cache_hits / total_cache)
             lines.extend([
                 f"- **Hits:** {result.cache_hits}",
                 f"- **Misses:** {result.cache_misses}",
-                f"- **Hit Rate:** {result.cache_hit_rate * 100:.1f}%",
+                f"- **Hit Rate:** {hit_rate * 100:.1f}%",
             ])
         else:
             lines.append("- **Hit Rate:** N/A (no cache data)")

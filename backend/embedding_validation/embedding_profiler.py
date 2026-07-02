@@ -288,7 +288,7 @@ class EmbeddingProfiler:
         except ImportError:
             pass
 
-    def _detect_gpu(self) -> bool:
+    def detect_gpu(self) -> bool:
         """Check if GPU is available for profiling.
 
         Attempts to detect CUDA-capable GPU via torch.
@@ -301,6 +301,10 @@ class EmbeddingProfiler:
             return torch.cuda.is_available()
         except ImportError:
             return False
+
+    def _detect_gpu(self) -> bool:
+        """Internal GPU detection (alias for detect_gpu)."""
+        return self.detect_gpu()
 
     def get_gpu_metrics(self) -> dict[str, Any]:
         """Get GPU utilization metrics if available.

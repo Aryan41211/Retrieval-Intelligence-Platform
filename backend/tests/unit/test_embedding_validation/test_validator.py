@@ -295,7 +295,7 @@ class TestExtendedEmbeddingValidator:
                 embedding_vector=[0.5, 0.5],
             ),
         ]
-        for e in embeddings[:2]:
+        for e in embeddings:
             e.checksum = e.compute_checksum()
         result = validator.validate_all(embeddings)
         assert result.near_duplicate_count >= 1
