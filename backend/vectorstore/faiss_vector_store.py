@@ -1,11 +1,15 @@
 """FAISS vector store implementation."""
 
 import time
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 import numpy as np
 
+from backend.retrieval.retrieval_filters import RetrievalFilters
+from backend.retrieval.retrieval_request import RetrievalRequest
+from backend.retrieval.retrieval_result import RetrievalChunkResult
 from backend.vectorstore.base_vector_store import BaseVectorStore
 from backend.vectorstore.exceptions import (
     IndexCreationError,
@@ -40,6 +44,11 @@ class FAISSVectorStore(BaseVectorStore):
         self._id_map: dict[str, int] = {}
         self._reverse_id_map: dict[int, str] = {}
         self._serializer = IndexSerializer(storage_dir)
+
+        # Retrieval-specific metadata repository (persisted alongside FAISS index).
+        # Key: embedding_id (string)
+        # Value: record dict used by semantic retrieval + filtering.
+        self._vector_records: dict[str, dict[str, Any]] = {}
 
     def create_index(
         self,
@@ -124,10 +133,14 @@ class FAISSVectorStore(BaseVectorStore):
             self._index = index
             self._metadata = metadata
 
-            # Restore ID mappings
-            if index_data and "id_map" in index_data:
-                self._id_map = index_data["id_map"]
-                self._reverse_id_map = {v: k for k, v in self._id_map.items()}
+            # Restore ID mappings + retrieval records
+            if index_data:
+                if "id_map" in index_data:
+                    self._id_map = index_data["id_map"]
+                    self._reverse_id_map = {v: k for k, v in self._id_map.items()}
+
+                if "vector_records" in index_data:
+                    self._vector_records = index_data["vector_records"]
 
             return metadata
 
@@ -151,6 +164,7 @@ class FAISSVectorStore(BaseVectorStore):
             index_data = {
                 "id_map": self._id_map,
                 "reverse_id_map": self._reverse_id_map,
+                "vector_records": self._vector_records,
             }
 
             # Save using serializer
@@ -167,49 +181,82 @@ class FAISSVectorStore(BaseVectorStore):
     ) -> int:
         """Add embeddings to the FAISS index.
 
-        Args:
-            embeddings: Numpy array of embedding vectors (N x D).
-            ids: Optional list of embedding IDs.
-            metadata: Optional list of metadata dicts (not used in FAISS).
+        Note: FAISS is used only for vector indexing. Chunk text + metadata are stored
+        in an internal retrieval metadata repository that is persisted alongside
+        the FAISS index.
 
-        Returns:
-            Number of embeddings added.
+        Expected metadata item shape (provider-agnostic):
+          - chunk_id: UUID (or str)
+          - document_id: UUID (or str)
+          - text/content: str (chunk text)
+          - source_file/filename: str
+          - embedding_model / embedding_model_name: str (optional)
+          - embedding_model_version / embedding_model_version: str (optional)
+          - language: str (optional)
+          - custom: dict (optional)
 
-        Raises:
-            VectorStoreError: If adding embeddings fails.
+        If `metadata` is omitted, records will be stored with only ids (filtering may not work).
         """
         try:
-            if self._index is None:
+            if self._index is None or self._metadata is None:
                 raise VectorStoreError("No index loaded. Call create_index() or load_index() first.")
 
-            # Ensure embeddings are float32
             embeddings = np.array(embeddings, dtype=np.float32)
 
-            # Normalize for cosine similarity
+            # Normalize for cosine similarity so inner product == cosine similarity
             if self._metadata.distance_metric == DistanceMetric.COSINE:
                 faiss_norm = np.linalg.norm(embeddings, axis=1, keepdims=True)
                 faiss_norm[faiss_norm == 0] = 1.0
                 embeddings = embeddings / faiss_norm
 
-            # Generate IDs if not provided
             if ids is None:
                 start_idx = self._index.ntotal
                 ids = [str(i) for i in range(start_idx, start_idx + len(embeddings))]
 
-            # Map string IDs to integer indices
+            if metadata is None:
+                metadata = [{} for _ in range(len(ids))]
+
+            if len(metadata) != len(ids):
+                raise VectorStoreError("metadata length must match ids length")
+
             start_idx = self._index.ntotal
             for i, embedding_id in enumerate(ids):
                 int_id = start_idx + i
                 self._id_map[embedding_id] = int_id
                 self._reverse_id_map[int_id] = embedding_id
 
-            # Add to FAISS index
+                m = metadata[i] or {}
+                # Best-effort extraction with common keys
+                chunk_text = (
+                    m.get("chunk_text")
+                    or m.get("text")
+                    or m.get("content")
+                    or m.get("chunk")
+                    or ""
+                )
+
+                source_filename = (
+                    m.get("source_file")
+                    or m.get("filename")
+                    or m.get("source_filename")
+                    or ""
+                )
+
+                self._vector_records[str(embedding_id)] = {
+                    "chunk_id": m.get("chunk_id"),
+                    "document_id": m.get("document_id"),
+                    "chunk_text": chunk_text,
+                    "source_filename": source_filename,
+                    "metadata": m.get("metadata", m.get("chunk_metadata", m.get("custom_metadata", m.get("custom", {})))),
+                    "language": m.get("language") or m.get("lang"),
+                    "custom": m.get("custom", {}),
+                    "embedding_model": m.get("embedding_model") or m.get("model_name"),
+                    "embedding_model_version": m.get("embedding_model_version") or m.get("model_version"),
+                }
+
             self._index.add(embeddings)
 
-            # Update metadata
-            if self._metadata:
-                self._metadata.num_embeddings = self._index.ntotal
-
+            self._metadata.num_embeddings = self._index.ntotal
             return len(embeddings)
 
         except Exception as e:
@@ -236,13 +283,15 @@ class FAISSVectorStore(BaseVectorStore):
 
             removed_count = 0
             for embedding_id in ids:
+                embedding_id = str(embedding_id)
                 if embedding_id in self._id_map:
                     int_id = self._id_map[embedding_id]
-                    # FAISS doesn't support removal, so we zero out the vector
-                    # In production, rebuild index periodically
+                    # FAISS doesn't support direct removal; we remove mapping + records
                     del self._id_map[embedding_id]
                     if int_id in self._reverse_id_map:
                         del self._reverse_id_map[int_id]
+                    if embedding_id in self._vector_records:
+                        del self._vector_records[embedding_id]
                     removed_count += 1
 
             if self._metadata:
@@ -356,3 +405,131 @@ class FAISSVectorStore(BaseVectorStore):
             True if index exists, False otherwise.
         """
         return self._serializer.index_exists(index_id)
+
+    def _record_matches_filters(self, record: dict[str, Any], request: RetrievalRequest) -> bool:
+        filters: RetrievalFilters | None = request.filters
+
+        # Explicit dimensions (request.*) should take precedence if provided
+        document_ids = request.document_ids or (filters.document_ids if filters else None)
+        source_filenames = request.source_filenames or (filters.source_filenames if filters else None)
+        languages = request.languages or (filters.languages if filters else None)
+        custom_filters = (filters.custom if filters else {}) or {}
+
+        if document_ids:
+            doc_id = record.get("document_id")
+            if doc_id is None or str(doc_id) not in {str(d) for d in document_ids}:
+                return False
+
+        if source_filenames:
+            sf = record.get("source_filename") or record.get("source_file")
+            if sf not in set(source_filenames):
+                return False
+
+        if languages:
+            lang = record.get("language")
+            if lang not in set(languages):
+                return False
+
+        # Exact match custom filters:
+        # - keys in custom can be either nested "custom.*" or direct metadata keys.
+        record_custom = record.get("custom") or {}
+        record_metadata = record.get("metadata") or {}
+
+        for k, v in custom_filters.items():
+            if k.startswith("custom."):
+                kk = k.split("custom.", 1)[1]
+                if record_custom.get(kk) != v:
+                    return False
+            else:
+                # Try both metadata and custom
+                if record_metadata.get(k) == v:
+                    continue
+                if record_custom.get(k) == v:
+                    continue
+                return False
+
+        return True
+
+    def search(self, request: RetrievalRequest) -> list[RetrievalChunkResult]:
+        if self._index is None or self._metadata is None:
+            raise VectorStoreError("No index loaded. Call create_index() or load_index() first.")
+
+        query_vec = np.array([request.query_vector], dtype=np.float32)
+
+        # Normalize if cosine similarity index
+        if self._metadata.distance_metric == DistanceMetric.COSINE:
+            norm = np.linalg.norm(query_vec, axis=1, keepdims=True)
+            norm[norm == 0] = 1.0
+            query_vec = query_vec / norm
+
+        top_k = int(request.top_k)
+        if top_k <= 0:
+            return []
+
+        # FAISS search: returns distances and indices
+        scores, int_ids = self._index.search(query_vec, top_k)
+        scores = scores[0]
+        int_ids = int_ids[0]
+
+        results: list[RetrievalChunkResult] = []
+        threshold = request.similarity_threshold
+
+        for rank0, (score, int_id) in enumerate(zip(scores, int_ids), start=1):
+            if int_id < 0:
+                continue
+
+            embedding_id = self._reverse_id_map.get(int(int_id))
+            if embedding_id is None:
+                continue
+
+            # Interpret similarity:
+            # - cosine index uses normalized vectors + inner product => cosine similarity in [-1, 1]
+            # - inner product distance: assume higher is more similar
+            # - L2 distance not normalized: we convert using negative distance to match "higher is better"
+            if self._metadata.distance_metric == DistanceMetric.EUCLIDEAN:
+                similarity = float(-score)
+            else:
+                similarity = float(score)
+
+            if threshold is not None and similarity < float(threshold):
+                continue
+
+            record = self._vector_records.get(str(embedding_id))
+            if not record:
+                # Still return a minimal record if we can't filter/construct text
+                continue
+
+            if not self._record_matches_filters(record, request):
+                continue
+
+            chunk_id_raw = record.get("chunk_id")
+            document_id_raw = record.get("document_id")
+            if not chunk_id_raw or not document_id_raw:
+                continue
+
+            try:
+                from uuid import UUID
+
+                chunk_uuid = UUID(str(chunk_id_raw))
+                document_uuid = UUID(str(document_id_raw))
+            except Exception:
+                continue
+
+            # RetrievalChunkResult enforces similarity_score >= 0.0
+            similarity_score = max(0.0, float(similarity))
+
+            results.append(
+                RetrievalChunkResult(
+                    chunk_id=chunk_uuid,
+                    document_id=document_uuid,
+                    chunk_text=record.get("chunk_text", "") or "",
+                    similarity_score=similarity_score,
+                    rank=rank0,
+                    source_filename=record.get("source_filename") or None,
+                    metadata=record.get("metadata") or record.get("custom") or {},
+                    embedding_model=record.get("embedding_model") or None,
+                    retrieval_timestamp=request.retrieval_timestamp,
+                )
+            )
+
+        return results

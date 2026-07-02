@@ -9,6 +9,9 @@ import numpy as np
 from backend.vectorstore.index_metadata import IndexMetadata, IndexType
 from backend.vectorstore.exceptions import VectorStoreError
 
+from backend.retrieval.retrieval_request import RetrievalRequest
+from backend.retrieval.retrieval_result import RetrievalChunkResult
+
 
 class BaseVectorStore(ABC):
     """Abstract base class for vector store implementations.
@@ -190,3 +193,32 @@ class BaseVectorStore(ABC):
             True if index exists, False otherwise.
         """
         pass
+
+    @abstractmethod
+    def search(self, request: RetrievalRequest) -> list[RetrievalChunkResult]:
+        """Search the current index for semantically similar chunks.
+
+        Provider-agnostic retrieval contract.
+        Implementations must never expose provider-specific vector/FAISS details.
+
+        Args:
+            request: RetrievalRequest including query_vector, top_k, similarity_threshold, filters.
+
+        Returns:
+            Ranked list of RetrievalChunkResult items (highest similarity first).
+        """
+        pass
+
+    def batch_search(self, requests: list[RetrievalRequest]) -> list[list[RetrievalChunkResult]]:
+        """Optional batch retrieval API.
+
+        Default implementation falls back to single `search()`.
+        Provider implementations may override for performance.
+
+        Args:
+            requests: List of RetrievalRequest objects.
+
+        Returns:
+            List of ranked result lists, one per request.
+        """
+        return [self.search(r) for r in requests]

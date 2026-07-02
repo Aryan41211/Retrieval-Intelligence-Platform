@@ -1,38 +1,60 @@
-# TODO - Phase 3 Embedding Pipeline
+# TODO — Phase 5.2 Semantic Retrieval Engine
 
-## Step 1: Audit (done)
-- [x] Read CLAUDE.md completely
-- [x] Read all docs/architecture/* through chunking lifecycle
-- [x] Audit existing embedding modules and unit tests under backend/data/embeddings and backend/tests/unit/test_embeddings
+## Vector Store contract & persistence
+- [ ] Extend `backend/vectorstore/base_vector_store.py` with minimal retrieval contract:
+  - [ ] `search(...)`
+  - [ ] `batch_search(...)` (if feasible without breaking changes)
+- [ ] Implement retrieval contract in `backend/vectorstore/faiss_vector_store.py`:
+  - [ ] Persist chunk text + metadata per vector ID during `add_embeddings()`
+  - [ ] Implement `search(...)` with:
+    - [ ] top-k
+    - [ ] similarity threshold
+    - [ ] metadata/document/source/language/custom filtering (post-candidate)
+    - [ ] strongly typed results
+  - [ ] Implement `batch_search(...)` (if required by interface)
+- [ ] Update `backend/vectorstore/index_serializer.py` to persist/restore the new metadata repository alongside FAISS index.
+- [ ] Ensure synchronization for add/remove/update/save/load.
 
-## Step 2: Identify gaps vs Phase 3 requirements (done)
-- [x] Cache key must include chunk checksum, model, model version, configuration snapshot (current pipeline uses sha256(text))
-- [x] Cache persistence is required (persist_path currently unused)
-- [x] Validation gaps (duplicate embeddings, corrupted vectors, dimension mismatch handling)
-- [x] Provider abstraction defaults / configurability gaps (batch/device/max workers/timeout/max retries integration)
-- [x] Ensure metadata richness matches Phase 3 spec (model/version/chunk/document ids, dimension, latency, hash, config snapshot)
+## Retrieval modules (provider-agnostic semantic engine)
+- [ ] Create `backend/retrieval/` modules (as specified):
+  - [ ] `__init__.py`
+  - [ ] `retrieval_engine.py`
+  - [ ] `retrieval_pipeline.py`
+  - [ ] `retrieval_request.py`
+  - [ ] `retrieval_result.py`
+  - [ ] `retrieval_metadata.py`
+  - [ ] `retrieval_filters.py`
+  - [ ] `retrieval_ranker.py`
+  - [ ] `exceptions.py`
+- [ ] Implement `retrieval_engine.py`:
+  - [ ] `retrieve()`
+  - [ ] `retrieve_batch()`
+  - [ ] `retrieve_by_document()`
+  - [ ] `retrieve_by_chunk()`
+  - [ ] `retrieve_with_filters()`
+  - [ ] initial ranking using vector similarity only (extensible architecture)
+- [ ] Implement `retrieval_pipeline.py`:
+  - [ ] log latency + retrieval stats using existing logging approach (stdlib `logging` if no internal logger exists)
 
-## Step 3: Implement Phase 3 embedding modules (next)
-- [x] Add required modules under backend/embeddings/ as wrappers/aliases to the existing backend/data/embeddings implementation
-- [x] Create/adjust backend/models/embedding.py to match the Phase 3 Embedding domain model contract
-- [x] Fix EmbeddingPipeline to use chunk checksum (sha256(text)), incorporate correct cache key inputs, and produce/attach required metadata
-- [x] Upgrade EmbeddingCache to support persistence (persist_path: save/load) and correct key handling
-- [x] Upgrade EmbeddingValidator to implement required checks (empty, NaN/Inf, dimension mismatch, duplicates) with meaningful exceptions
-- [ ] Ensure batch processor respects configurable batching, retry policy, timeouts, and (where feasible) device selection / worker controls
-- [x] Add/adjust unit tests for: provider swapping, batch generation, cache hit/miss, dimension validation, invalid embeddings, large corpus, GPU fallback (mock), configuration loading, and persistence
-- [x] Persist embeddings to disk after generation (no vector DB) (via EmbeddingCache persistence)
+## Logging & Errors
+- [ ] Add required logging fields:
+  - [ ] query latency
+  - [ ] retrieved documents/chunks
+  - [ ] similarity scores
+  - [ ] number of retrieved chunks
+  - [ ] errors/warnings
+- [ ] Implement retrieval exceptions in `backend/retrieval/exceptions.py`:
+  - [ ] `RetrievalError`
+  - [ ] `RetrievalTimeoutError`
+  - [ ] `RetrievalConfigurationError`
+  - [ ] `EmptyRetrievalResultError`
 
-## Step 4: Documentation + self-audit (after code passes)
-- [x] Update embedding architecture docs (at minimum docs/architecture/10_embedding_lifecycle.md) describing provider abstraction, caching, metadata, performance metrics
-- [x] Produce Embedding Pipeline Review Report and review all touched files
-- [x] Run pytest and ensure embeddings-related tests pass
+## Tests
+- [ ] Add unit tests under `backend/tests/unit/test_retrieval/`:
+  - [ ] top-k ordering
+  - [ ] similarity threshold filtering
+  - [ ] document/source/language/custom filtering
+  - [ ] persistence save/load restores metadata
 
-## Phase 4: Embedding Validation & Benchmarking Framework (next)
-- [ ] Create `backend/embedding_validation/` package + module skeleton
-- [ ] Implement validation workflow (dimensions, normalization, NaN/Inf, zero vectors, duplicates/near-duplicates, consistency)
-- [ ] Implement benchmarking/profiling (latency percentiles, throughput, cache hit rate, CPU/GPU best-effort)
-- [ ] Implement similarity analysis (top-K, distribution, outliers/nearest-neighbor distribution)
-- [ ] Implement reporting (Markdown + JSON exports)
-- [ ] Implement optional visualization (lightweight, lazy imports)
-- [ ] Add unit tests for stats/validation/benchmark/report/profiler
-- [ ] Self-audit + produce `EMBEDDING_VALIDATION_REVIEW_REPORT.md`
+## Validation
+- [ ] Run `pytest` (or project test command) to confirm Phase 5.2 passes.
