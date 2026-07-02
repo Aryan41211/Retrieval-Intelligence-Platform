@@ -33,6 +33,23 @@ class EmbeddingValidationSettings(BaseSettings):
     )
 
 
+class VectorStoreSettings(BaseSettings):
+    """Settings for vector store."""
+
+    provider: str = Field(default="faiss", description="Vector store provider (faiss, chromadb, etc.)")
+    storage_dir: str = Field(default="./data/vectorstore", description="Directory for storing vector indexes")
+    index_type: str = Field(default="flat", description="Default index type (flat, hnsw, ivf, pq)")
+    distance_metric: str = Field(default="cosine", description="Default distance metric (cosine, euclidean, inner_product)")
+    auto_save: bool = Field(default=True, description="Automatically save index after modifications")
+    auto_load: bool = Field(default=True, description="Automatically load index on initialization")
+
+    model_config = SettingsConfigDict(
+        env_prefix="VECTOR_STORE_",
+        env_file=".env",
+        extra="ignore",
+    )
+
+
 class IngestionSettings(BaseSettings):
     """Settings for document ingestion."""
 
@@ -87,6 +104,7 @@ class Settings(BaseSettings):
     embedding_validation: EmbeddingValidationSettings = Field(
         default_factory=EmbeddingValidationSettings
     )
+    vector_store: VectorStoreSettings = Field(default_factory=VectorStoreSettings)
 
     model_config = SettingsConfigDict(
         env_file=".env",
