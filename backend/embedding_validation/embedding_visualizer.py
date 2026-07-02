@@ -14,9 +14,7 @@ class EmbeddingVisualizer:
     def __init__(self, output_dir: str | None = None):
         self.output_dir = output_dir
 
-    def compute_norm_distribution(
-        self, embeddings: list[Embedding]
-    ) -> dict[str, Any]:
+    def compute_norm_distribution(self, embeddings: list[Embedding]) -> dict[str, Any]:
         """Compute embedding norm distribution data.
 
         Returns:
@@ -140,9 +138,7 @@ class EmbeddingVisualizer:
             "avg_cluster_size": float(np.mean(cluster_sizes)) if cluster_sizes else 0,
         }
 
-    def generate_quality_summary(
-        self, embeddings: list[Embedding]
-    ) -> dict[str, Any]:
+    def generate_quality_summary(self, embeddings: list[Embedding]) -> dict[str, Any]:
         """Generate overall embedding quality visualization data.
 
         Returns:
@@ -151,9 +147,7 @@ class EmbeddingVisualizer:
         norm_data = self.compute_norm_distribution(embeddings)
         sim_data = self.compute_similarity_histogram(embeddings)
 
-        zero_vectors = sum(
-            1 for e in embeddings if all(abs(v) < 1e-10 for v in e.embedding_vector)
-        )
+        zero_vectors = sum(1 for e in embeddings if all(abs(v) < 1e-10 for v in e.embedding_vector))
         normalized_count = sum(
             1 for e in embeddings if abs(self._compute_norm(e.embedding_vector) - 1.0) < 1e-6
         )
@@ -173,9 +167,7 @@ class EmbeddingVisualizer:
         """Compute L2 norm of a vector."""
         return math.sqrt(sum(v * v for v in vector))
 
-    def _cosine_similarity(
-        self, vec1: list[float], vec2: list[float]
-    ) -> float:
+    def _cosine_similarity(self, vec1: list[float], vec2: list[float]) -> float:
         """Compute cosine similarity between two vectors."""
         dot_product = sum(a * b for a, b in zip(vec1, vec2, strict=True))
         magnitude1 = math.sqrt(sum(v * v for v in vec1))

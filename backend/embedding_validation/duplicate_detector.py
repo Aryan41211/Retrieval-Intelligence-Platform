@@ -1,15 +1,31 @@
-"""Duplicate detection for embedding data integrity."""
+"""Duplicate detection for embedding data integrity.
+
+Detects exact and near-duplicate embeddings to identify data quality
+issues before indexing. Supports large datasets with efficient checksum
+comparison and configurable similarity thresholds.
+
+Implements:
+- Exact duplicate detection via checksum comparison
+- Near-duplicate detection via cosine similarity
+- Union-Find cluster grouping for duplicate clusters
+"""
 
 import hashlib
 import math
 from dataclasses import dataclass, field
+
+import numpy as np
 
 from backend.data.models.embedding import Embedding
 
 
 @dataclass
 class DuplicateReport:
-    """Report of duplicate detection results."""
+    """Report of duplicate detection results.
+
+    Contains all detected exact and near-duplicate pairs along with
+    cluster groupings and aggregate statistics.
+    """
 
     exact_duplicates: list[tuple[int, int]] = field(default_factory=list)
     near_duplicates: list[tuple[int, int, float]] = field(default_factory=list)
@@ -18,9 +34,39 @@ class DuplicateReport:
     total_duplicates: int = 0
     duplicate_rate: float = 0.0
 
+    @property
+    def exact_duplicate_count(self) -> int:
+        """Number of exact duplicate pairs."""
+        return len(self.exact_duplicates)
+
+    @property
+    def near_duplicate_count(self) -> int:
+        """Number of near-duplicate pairs."""
+        return len(self.near_duplicates)
+
+    @property
+    def cluster_count(self) -> int:
+        """Number of duplicate clusters."""
+        return len(self.duplicate_clusters)
+
 
 class DuplicateDetector:
-    """Detect duplicate and near-duplicate embeddings."""
+    """Detect duplicate and near-duplicate embeddings.
+
+    Uses checksum-based exact matching and cosine similarity for
+    near-duplicate detection. Configurable similarity threshold
+    for near-duplicate sensitivity.
+
+    Optimized for large datasets:
+    - O(n) exact detection via dictionary lookup
+    - O(n²) near-duplicate detection with early exit
+    - Union-Find clustering for efficient grouping
+
+    Usage:
+        detector = DuplicateDetector(threshold=0.99)
+        report = detector.generate_report(embeddings)
+        print(f"Duplicate rate: {report.duplicate_rate:.2%}")
+    """
 
     def __init__(self, threshold: float = 0.99):
         self.threshold = threshold
@@ -29,6 +75,9 @@ class DuplicateDetector:
         self, embeddings: list[Embedding]
     ) -> list[tuple[int, int]]:
         """Detect exact duplicate embeddings by checksum.
+
+        Uses pre-computed checksums when available, falling back to
+        on-the-fly computation.
 
         Args:
             embeddings: List of embeddings to check.
@@ -56,6 +105,9 @@ class DuplicateDetector:
     ) -> list[tuple[int, int, float]]:
         """Detect near-duplicate embeddings by cosine similarity.
 
+        Compares all unique embedding pairs to find those exceeding
+        the similarity threshold.
+
         Args:
             embeddings: List of embeddings to check.
             threshold: Similarity threshold (defaults to self.threshold).
@@ -68,11 +120,14 @@ class DuplicateDetector:
 
         for i in range(len(embeddings)):
             for j in range(i + 1, len(embeddings)):
-                if len(embeddings[i].embedding_vector) != len(embeddings[j].embedding_vector):
+                if len(embeddings[i].embedding_vector) != len(
+                    embeddings[j].embedding_vector
+                ):
                     continue
 
                 similarity = self._cosine_similarity(
-                    embeddings[i].embedding_vector, embeddings[j].embedding_vector
+                    embeddings[i].embedding_vector,
+                    embeddings[j].embedding_vector,
                 )
 
                 if similarity >= threshold:
@@ -85,7 +140,10 @@ class DuplicateDetector:
         embeddings: list[Embedding],
         threshold: float | None = None,
     ) -> list[list[int]]:
-        """Group embeddings into duplicate clusters.
+        """Group embeddings into duplicate clusters using Union-Find.
+
+        Finds connected components in the near-duplicate graph,
+        where edges connect embeddings with similarity >= threshold.
 
         Args:
             embeddings: List of embeddings to cluster.
@@ -96,6 +154,9 @@ class DuplicateDetector:
         """
         threshold = threshold or self.threshold
         near_duplicates = self.detect_near_duplicates(embeddings, threshold)
+
+        if not near_duplicates:
+            return []
 
         parent: dict[int, int] = {}
 
@@ -131,14 +192,20 @@ class DuplicateDetector:
     ) -> DuplicateReport:
         """Generate comprehensive duplicate detection report.
 
+        Performs exact and near-duplicate detection, clusters results,
+        and computes aggregate statistics including duplicate rate.
+
         Args:
             embeddings: List of embeddings to analyze.
             threshold: Similarity threshold for near duplicates.
 
         Returns:
-            DuplicateReport with all findings.
+            DuplicateReport with all findings and statistics.
         """
         threshold = threshold or self.threshold
+
+        if not embeddings:
+            return DuplicateReport()
 
         exact = self.detect_exact_duplicates(embeddings)
         near = self.detect_near_duplicates(embeddings, threshold)
@@ -170,6 +237,16 @@ class DuplicateDetector:
         return dot_product / (magnitude1 * magnitude2)
 
     def compute_hash(self, vector: list[float]) -> str:
-        """Compute stable hash for a vector."""
+        """Compute stable hash for a vector.
+
+        Produces a deterministic SHA-256 hash suitable for exact
+        duplicate detection.
+
+        Args:
+            vector: Embedding vector to hash.
+
+        Returns:
+            SHA-256 hex digest string.
+        """
         content = "".join(f"{v:.6f}" for v in vector)
         return hashlib.sha256(content.encode()).hexdigest()
