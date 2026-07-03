@@ -50,6 +50,26 @@ class VectorStoreSettings(BaseSettings):
     )
 
 
+class RetrievalSettings(BaseSettings):
+    """Settings for retrieval engine."""
+
+    top_k: int = Field(default=10, ge=1, le=1000, description="Default number of results to retrieve")
+    similarity_threshold: float | None = Field(default=None, ge=0.0, le=1.0, description="Minimum similarity score threshold")
+    batch_size: int = Field(default=32, ge=1, le=1000, description="Batch size for batch retrieval operations")
+    auto_load: bool = Field(default=True, description="Automatically load index on initialization")
+    auto_save: bool = Field(default=True, description="Automatically save index after modifications")
+
+    # Default filters (optional)
+    default_languages: list[str] | None = Field(default=None, description="Default language filters")
+    default_source_filenames: list[str] | None = Field(default=None, description="Default source filename filters")
+
+    model_config = SettingsConfigDict(
+        env_prefix="RETRIEVAL_",
+        env_file=".env",
+        extra="ignore",
+    )
+
+
 class IngestionSettings(BaseSettings):
     """Settings for document ingestion."""
 
@@ -105,6 +125,7 @@ class Settings(BaseSettings):
         default_factory=EmbeddingValidationSettings
     )
     vector_store: VectorStoreSettings = Field(default_factory=VectorStoreSettings)
+    retrieval: RetrievalSettings = Field(default_factory=RetrievalSettings)
 
     model_config = SettingsConfigDict(
         env_file=".env",
