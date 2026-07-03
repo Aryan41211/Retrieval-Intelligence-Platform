@@ -1,4 +1,3 @@
-"""FAISS vector store implementation."""
 
 import time
 from datetime import UTC, datetime
@@ -295,7 +294,9 @@ class FAISSVectorStore(BaseVectorStore):
                     removed_count += 1
 
             if self._metadata:
-                self._metadata.num_embeddings = self._index.ntotal - removed_count
+                # Keep metadata synchronized with the logical set of active vectors we can return.
+                # FAISS itself doesn't support true deletions; we remove mappings + records.
+                self._metadata.num_embeddings = len(self._vector_records)
 
             return removed_count
 
@@ -405,6 +406,16 @@ class FAISSVectorStore(BaseVectorStore):
             True if index exists, False otherwise.
         """
         return self._serializer.index_exists(index_id)
+
+    def get_vector_records(self) -> dict[str, dict[str, Any]]:
+        """Capability method for sparse retrieval.
+
+        Returns:
+            Provider-internal vector records keyed by embedding_id string.
+            Intended for building lightweight sparse indexes (e.g., BM25)
+            without changing BaseVectorStore contract.
+        """
+        return self._vector_records
 
     def _record_matches_filters(self, record: dict[str, Any], request: RetrievalRequest) -> bool:
         filters: RetrievalFilters | None = request.filters

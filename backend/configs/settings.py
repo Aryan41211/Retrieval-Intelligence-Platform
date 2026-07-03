@@ -50,6 +50,129 @@ class VectorStoreSettings(BaseSettings):
     )
 
 
+class BM25Settings(BaseSettings):
+    """Settings for BM25 sparse retrieval."""
+
+    enabled: bool = Field(default=True, description="Enable BM25 sparse retrieval")
+    k1: float = Field(default=1.5, ge=0.0, le=10.0, description="BM25 k1 parameter")
+    b: float = Field(default=0.75, ge=0.0, le=1.0, description="BM25 b parameter")
+    lowercase: bool = Field(default=True, description="Lowercase query and documents for BM25")
+    enabled_query_language_filter: bool = Field(
+        default=False,
+        description="If true, apply request/language filters to BM25 corpus during scoring",
+    )
+    # Build strategy: use in-memory index built from FAISSVectorStore records.
+    # This is intentionally lightweight for sprint 3.
+    rebuild_on_start: bool = Field(
+        default=False, description="Rebuild BM25 index on start (in-memory)."
+    )
+
+    model_config = SettingsConfigDict(
+        env_prefix="BM25_",
+        env_file=".env",
+        extra="ignore",
+    )
+
+
+class RRFSettings(BaseSettings):
+    """Settings for Reciprocal Rank Fusion."""
+
+    enabled: bool = Field(default=True, description="Enable RRF fusion for hybrid retrieval")
+    k: int = Field(default=60, ge=1, le=200, description="RRF k parameter")
+    remove_duplicates: bool = Field(default=True, description="Remove duplicate chunks in fused results")
+    stable_ranking: bool = Field(
+        default=True, description="Preserve stable ordering for ties"
+    )
+
+    model_config = SettingsConfigDict(
+        env_prefix="RRF_",
+        env_file=".env",
+        extra="ignore",
+    )
+
+
+class CrossEncoderRerankSettings(BaseSettings):
+    """Settings for optional cross-encoder reranking."""
+
+    enabled: bool = Field(default=False, description="Enable cross-encoder reranking stage")
+    provider: str = Field(default="sentence_transformers", description="Reranker provider")
+    model_name: str = Field(default="cross-encoder/ms-marco-MiniLM-L-6-v2", description="CrossEncoder model name")
+    top_n: int = Field(default=20, ge=1, le=2000, description="Number of top candidates to rerank")
+    batch_size: int = Field(default=16, ge=1, le=256, description="CrossEncoder batch size")
+    max_length: int = Field(default=512, ge=16, le=4096, description="Max text length for cross-encoder inputs")
+
+    model_config = SettingsConfigDict(
+        env_prefix="CROSS_ENCODER_",
+        env_file=".env",
+        extra="ignore",
+    )
+
+
+class QueryExpansionSettings(BaseSettings):
+    """Settings for lightweight query expansion."""
+
+    enabled: bool = Field(default=True, description="Enable query expansion stage")
+    synonyms_enabled: bool = Field(default=True, description="Enable synonym expansion")
+    stopword_cleanup: bool = Field(default=True, description="Remove stopwords from expanded query")
+    punctuation_cleanup: bool = Field(default=True, description="Cleanup punctuation")
+    lowercase: bool = Field(default=True, description="Lowercase query for normalization")
+
+    # Very lightweight builtin synonyms; future: pluggable + external sources / LLM.
+    synonyms: dict[str, list[str]] = Field(
+        default_factory=lambda: {
+            "ai": ["artificial intelligence"],
+            "llm": ["large language model"],
+            "retrieval": ["search", "information retrieval"],
+        },
+        description="Synonym mapping for lightweight expansion",
+    )
+
+    model_config = SettingsConfigDict(
+        env_prefix="QUERY_EXPANSION_",
+        env_file=".env",
+        extra="ignore",
+    )
+
+
+class DynamicTopKSettings(BaseSettings):
+    """Settings for adaptive Top-K selection."""
+
+    enabled: bool = Field(default=True, description="Enable dynamic top-k selection")
+    min_k: int = Field(default=5, ge=1, le=1000, description="Minimum number of final chunks")
+    max_k: int = Field(default=30, ge=1, le=1000, description="Maximum number of final chunks")
+    # Confidence mapping: use score spread to decide k.
+    min_confidence: float = Field(default=0.2, ge=0.0, le=1.0, description="Minimum confidence to increase k")
+    max_confidence: float = Field(default=0.9, ge=0.0, le=1.0, description="Maximum confidence to cap k")
+
+    model_config = SettingsConfigDict(
+        env_prefix="DYNAMIC_TOP_K_",
+        env_file=".env",
+        extra="ignore",
+    )
+
+
+class IntelligentRetrievalSettings(BaseSettings):
+    """Settings for Intelligent Retrieval pipeline."""
+
+    enabled: bool = Field(default=False, description="Enable IntelligentRetrievalPipeline")
+    dense_enabled: bool = Field(default=True, description="Enable dense retrieval stage")
+    sparse_enabled: bool = Field(default=True, description="Enable sparse BM25 retrieval stage")
+    retrieval_weight_dense: float = Field(default=1.0, ge=0.0, le=10.0, description="Weight for dense in fusion (optional)")
+    retrieval_weight_sparse: float = Field(default=1.0, ge=0.0, le=10.0, description="Weight for sparse in fusion (optional)")
+
+    rerank: CrossEncoderRerankSettings = Field(default_factory=CrossEncoderRerankSettings)
+    bm25: BM25Settings = Field(default_factory=BM25Settings)
+    rrf: RRFSettings = Field(default_factory=RRFSettings)
+    query_expansion: QueryExpansionSettings = Field(default_factory=QueryExpansionSettings)
+    dynamic_top_k: DynamicTopKSettings = Field(default_factory=DynamicTopKSettings)
+
+    model_config = SettingsConfigDict(
+        env_prefix="INTELLIGENT_RETRIEVAL_",
+        env_file=".env",
+        extra="ignore",
+    )
+
+
 class RetrievalSettings(BaseSettings):
     """Settings for retrieval engine."""
 
@@ -62,6 +185,8 @@ class RetrievalSettings(BaseSettings):
     # Default filters (optional)
     default_languages: list[str] | None = Field(default=None, description="Default language filters")
     default_source_filenames: list[str] | None = Field(default=None, description="Default source filename filters")
+
+    intelligent: IntelligentRetrievalSettings = Field(default_factory=IntelligentRetrievalSettings)
 
     model_config = SettingsConfigDict(
         env_prefix="RETRIEVAL_",

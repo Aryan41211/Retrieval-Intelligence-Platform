@@ -1,60 +1,38 @@
-# TODO — Phase 5.2 Semantic Retrieval Engine
+# TODO - Sprint 3 Intelligent Retrieval
 
-## Vector Store contract & persistence
-- [x] Extend `backend/vectorstore/base_vector_store.py` with minimal retrieval contract:
-  - [x] `search(...)`
-  - [x] `batch_search(...)` (if feasible without breaking changes)
-- [x] Implement retrieval contract in `backend/vectorstore/faiss_vector_store.py`:
-  - [x] Persist chunk text + metadata per vector ID during `add_embeddings()`
-  - [x] Implement `search(...)` with:
-    - [x] top-k
-    - [x] similarity threshold
-    - [x] metadata/document/source/language/custom filtering (post-candidate)
-    - [x] strongly typed results
-  - [x] Implement `batch_search(...)` (falls back to base implementation)
-- [x] Update `backend/vectorstore/index_serializer.py` to persist/restore the new metadata repository alongside FAISS index.
-- [x] Ensure synchronization for add/remove/update/save/load.
+## Phase 1: Discovery / Setup
+- [ ] Locate where `RetrievalPipeline` is instantiated and how retrieval requests are constructed (API wiring).
+- [ ] Identify existing retrieval endpoint/services/tests that exercise retrieval.
+- [ ] Confirm where query text can be supplied (for query expansion + cross-encoder reranking).
 
-## Retrieval modules (provider-agnostic semantic engine)
-- [ ] Create `backend/retrieval/` modules (as specified):
-  - [ ] `__init__.py`
-  - [ ] `retrieval_engine.py`
-  - [ ] `retrieval_pipeline.py`
-  - [ ] `retrieval_request.py`
-  - [ ] `retrieval_result.py`
-  - [ ] `retrieval_metadata.py`
-  - [ ] `retrieval_filters.py`
-  - [ ] `retrieval_ranker.py`
-  - [ ] `exceptions.py`
-- [ ] Implement `retrieval_engine.py`:
-  - [ ] `retrieve()`
-  - [ ] `retrieve_batch()`
-  - [ ] `retrieve_by_document()`
-  - [ ] `retrieve_by_chunk()`
-  - [ ] `retrieve_with_filters()`
-  - [ ] initial ranking using vector similarity only (extensible architecture)
-- [ ] Implement `retrieval_pipeline.py`:
-  - [ ] log latency + retrieval stats using existing logging approach (stdlib `logging` if no internal logger exists)
+## Phase 2: Core Components (Modular)
+- [ ] Add IntelligentRetrievalPipeline orchestrator (does not replace RetrievalPipeline).
+- [ ] Add BM25 abstraction + pure-Python BM25 implementation over stored `chunk_text`.
+- [ ] Add RRF fusion component with configurable parameters + duplicate removal + stable ranking.
+- [ ] Add dynamic top-k selection (adaptive via score distribution/confidence + context budget).
+- [ ] Add query expander (synonym expansion + query normalization + stop-word/punctuation cleanup; no LLM).
+- [ ] Add CrossEncoder reranker provider abstraction; skip stage automatically if disabled/unavailable.
 
-## Logging & Errors
-- [x] Add required logging fields:
-  - [x] query latency
-  - [x] retrieved documents/chunks
-  - [x] similarity scores
-  - [x] number of retrieved chunks
-  - [x] errors/warnings
-- [x] Implement retrieval exceptions in `backend/retrieval/exceptions.py`:
-  - [x] `RetrievalError`
-  - [x] `RetrievalTimeoutError`
-  - [x] `RetrievalConfigurationError`
-  - [x] `EmptyRetrievalResultError`
+## Phase 3: Vector Store Capability
+- [ ] Extend `FAISSVectorStore` with a capability method to expose chunk text/records needed for BM25.
+- [ ] Ensure hybrid pipeline can run without mixing implementations (dense from vector store; sparse from BM25 module).
 
-## Tests
-- [ ] Add unit tests under `backend/tests/unit/test_retrieval/`:
-  - [ ] top-k ordering
-  - [ ] similarity threshold filtering
-  - [ ] document/source/language/custom filtering
-  - [ ] persistence save/load restores metadata
+## Phase 4: Configuration + Wiring
+- [ ] Add new configuration settings for BM25, RRF, CrossEncoder reranking, query expansion, dynamic top-k, and analytics.
+- [ ] Add config flag to choose between semantic (`RetrievalPipeline`) and intelligent (`IntelligentRetrievalPipeline`) retrieval.
+- [ ] Implement error handling + fallbacks (BM25 failure -> dense-only; missing reranker -> skip).
 
-## Validation
-- [ ] Run `pytest` (or project test command) to confirm Phase 5.2 passes.
+## Phase 5: Analytics + Logging
+- [ ] Implement retrieval analytics collection: stage latencies, candidate counts, final context size.
+- [ ] Add structured logging for strategy, fusion stats, latency breakdown, and ranking changes.
+
+## Phase 6: Testing
+- [ ] Run full backend test suite (`pytest`).
+- [ ] Fix only confirmed regressions introduced by Sprint 3.
+- [ ] Update documentation only if affected by Intelligent Retrieval subsystem.
+
+## Phase 7: Git Workflow
+- [ ] `git status`
+- [ ] `git add .`
+- [ ] `git commit -m "feat(intelligent-retrieval): implement modular hybrid retrieval pipeline with configurable orchestration, BM25, reciprocal rank fusion, adaptive ranking, and optional cross-encoder reranking"`
+- [ ] `git push origin main`
