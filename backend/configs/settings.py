@@ -173,6 +173,22 @@ class IntelligentRetrievalSettings(BaseSettings):
     )
 
 
+class GenerationSettings(BaseSettings):
+    """Settings for generation pipeline."""
+
+    provider: str = Field(default="fake", description="LLM provider (fake, openai_compatible, ollama, nim)")
+    model_name: str = Field(default="fake-model", description="Model name for the selected provider")
+    temperature: float = Field(default=0.2, ge=0.0, le=2.0, description="Sampling temperature")
+    max_tokens: int = Field(default=512, ge=1, le=8192, description="Maximum tokens to generate")
+    timeout_s: float = Field(default=60.0, gt=0.0, description="Generation timeout in seconds")
+
+    model_config = SettingsConfigDict(
+        env_prefix="GENERATION_",
+        env_file=".env",
+        extra="ignore",
+    )
+
+
 class RetrievalSettings(BaseSettings):
     """Settings for retrieval engine."""
 
@@ -251,6 +267,7 @@ class Settings(BaseSettings):
     )
     vector_store: VectorStoreSettings = Field(default_factory=VectorStoreSettings)
     retrieval: RetrievalSettings = Field(default_factory=RetrievalSettings)
+    generation: GenerationSettings = Field(default_factory=GenerationSettings)
 
     model_config = SettingsConfigDict(
         env_file=".env",

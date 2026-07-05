@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from backend.configs.settings import get_settings
+from backend.generation.providers.base_provider import LLMProvider
 from backend.generation.providers.stubs.fake_provider import FakeProvider
 from backend.generation.providers.stubs.nim_provider import NIMProvider
 from backend.generation.providers.stubs.ollama_provider import OllamaProvider
@@ -11,28 +12,27 @@ class ProviderFactory:
     """Factory for creating LLM providers based on configuration."""
 
     @staticmethod
-    def create():
+    def create() -> LLMProvider:
         settings = get_settings()
         gen = settings.generation
-        provider = (gen.provider.provider_type or "fake").lower()
+        provider = (gen.provider or "fake").lower()
 
         if provider == "fake":
             return FakeProvider()
 
         if provider in {"openai", "openai_compatible", "openai-compatible"}:
             return OpenAICompatibleProvider(
-                model=gen.provider.model_name,
+                model=gen.model_name,
             )
 
         if provider == "ollama":
             return OllamaProvider(
-                model=gen.provider.model_name,
+                model=gen.model_name,
             )
 
         if provider == "nim":
             return NIMProvider(
-                model=gen.provider.model_name,
+                model=gen.model_name,
             )
 
-        # Default fallback
         return FakeProvider()

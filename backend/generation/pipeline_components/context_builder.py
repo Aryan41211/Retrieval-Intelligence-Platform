@@ -5,7 +5,6 @@ from typing import Any
 
 from backend.generation.exceptions import EmptyContextError
 from backend.generation.models import ContextItem
-from backend.retrieval.retrieval_result import RetrievalChunkResult
 
 
 def _estimate_tokens(text: str) -> int:
@@ -39,9 +38,9 @@ class ContextBuilder:
         # Expect RetrievalChunkResult-like objects.
         items: list[ContextItem] = []
         for idx, c in enumerate(retrieved_chunks, start=1):
-            chunk_id = str(getattr(c, "chunk_id"))
-            document_id = str(getattr(c, "document_id"))
-            chunk_text = getattr(c, "chunk_text") or ""
+            chunk_id = str(c.chunk_id)
+            document_id = str(c.document_id)
+            chunk_text = c.chunk_text or ""
             rank = int(getattr(c, "rank", idx))
             similarity_score = float(getattr(c, "similarity_score", 0.0))
             source_filename = getattr(c, "source_filename", None)

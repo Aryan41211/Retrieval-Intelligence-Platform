@@ -1,12 +1,15 @@
 """Custom exceptions for vector store operations."""
 
+from backend.core.exceptions import RipError
 
-class VectorStoreError(Exception):
+
+class VectorStoreError(RipError):
     """Base exception for vector store errors."""
 
+    code = "VECTOR_STORE_ERROR"
+
     def __init__(self, message: str = "Vector store operation failed"):
-        self.message = message
-        super().__init__(self.message)
+        super().__init__(message)
 
 
 class IndexCreationError(VectorStoreError):
