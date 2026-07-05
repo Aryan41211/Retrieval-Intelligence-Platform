@@ -1,14 +1,15 @@
 """Chat API router for FastAPI."""
 
-from fastapi import FastAPI
+from fastapi import APIRouter
 
-# Initialize FastAPI app
-app = FastAPI()
+router = APIRouter()
 
-@app.get("/v1/chat")
+
+@router.get("/chat")
 async def get_chat():
     return {"message": "Chat API placeholder"}
 
-@app.post("/v1/chat")
+
+@router.post("/chat")
 async def chat_with_context():
     return {"message": "Chat placeholder"}

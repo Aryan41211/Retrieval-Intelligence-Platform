@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routers.documents import router as documents_router
 from .routers.chat import router as chat_router
-from .routers.retrieval import router as retreval_router
+from .routers.retrieval import router as retrieval_router
 from .routers.evaluation import router as evaluation_router
 from .routers.experiments import router as experiments_router
 from .routers.settings import router as settings_router
@@ -33,7 +33,7 @@ app.add_middleware(
 # Include all routers
 app.include_router(documents_router, prefix="/v1")
 app.include_router(chat_router, prefix="/v1")
-app.include_router(retreval_router, prefix="/v1")
+app.include_router(retrieval_router, prefix="/v1")
 app.include_router(evaluation_router, prefix="/v1")
 app.include_router(experiments_router, prefix="/v1")
 app.include_router(settings_router, prefix="/v1")

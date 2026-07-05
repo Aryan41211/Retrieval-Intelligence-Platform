@@ -1,18 +1,20 @@
 """Retrieval API router for FastAPI."""
 
-from fastapi import FastAPI
+from fastapi import APIRouter
 
-# Initialize FastAPI app
-app = FastAPI()
+router = APIRouter()
 
-@app.get("/v1/retrieval")
+
+@router.get("/retrieval")
 async def get_retrieval():
     return {"message": "Retrieval API placeholder"}
 
-@app.post("/v1/retrieval/search")
+
+@router.post("/retrieval/search")
 async def search_retrieval():
     return {"message": "Retrieval search placeholder"}
 
-@app.post("/v1/retrieval/inspect")
+
+@router.post("/retrieval/inspect")
 async def inspect_retrieval():
     return {"message": "Retrieval inspection placeholder"}

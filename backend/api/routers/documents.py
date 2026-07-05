@@ -1,14 +1,15 @@
 """Document API router for FastAPI."""
 
-from fastapi import FastAPI
+from fastapi import APIRouter
 
-# Initialize FastAPI app
-app = FastAPI()
+router = APIRouter()
 
-@app.get("/v1/documents")
+
+@router.get("/documents")
 async def get_documents():
     return {"message": "Document API placeholder"}
 
-@app.post("/v1/documents/upload")
+
+@router.post("/documents/upload")
 async def upload_document():
     return {"message": "Document upload placeholder"}

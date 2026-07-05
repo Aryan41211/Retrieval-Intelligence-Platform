@@ -1,18 +1,20 @@
 """Evaluation API router for FastAPI."""
 
-from fastapi import FastAPI
+from fastapi import APIRouter
 
-# Initialize FastAPI app
-app = FastAPI()
+router = APIRouter()
 
-@app.get("/v1/evaluation")
+
+@router.get("/evaluation")
 async def get_evaluation():
     return {"message": "Evaluation API placeholder"}
 
-@app.post("/v1/evaluation/run")
+
+@router.post("/evaluation/run")
 async def run_evaluation():
     return {"message": "Evaluation run placeholder"}
 
-@app.get("/v1/evaluation/history")
+
+@router.get("/evaluation/history")
 async def get_evaluation_history():
     return {"message": "Evaluation history placeholder"}
