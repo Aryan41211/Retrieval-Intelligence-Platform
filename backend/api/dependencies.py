@@ -7,7 +7,7 @@ missing/incomplete service cannot prevent the application from booting. Routers
 that depend on services not yet wired in a given build receive a clear 501.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import Header, HTTPException
 
@@ -23,9 +23,7 @@ class APIServices:
 
     def get_retrieval_pipeline(self) -> Any:
         """Retrieve the retrieval pipeline (not wired in this build)."""
-        raise HTTPException(
-            status_code=501, detail="Retrieval pipeline is not wired in this build"
-        )
+        raise HTTPException(status_code=501, detail="Retrieval pipeline is not wired in this build")
 
     def get_evaluation_engine(self) -> Any:
         """Retrieve the evaluation engine (not wired in this build)."""
@@ -34,7 +32,7 @@ class APIServices:
         )
 
 
-def get_api_key(x_api_key: Optional[str] = Header(None, alias="X-API-Key")) -> str:
+def get_api_key(x_api_key: str | None = Header(None, alias="X-API-Key")) -> str:
     """API key authentication dependency.
 
     Reject requests that do not present an ``X-API-Key`` header. Endpoints opt

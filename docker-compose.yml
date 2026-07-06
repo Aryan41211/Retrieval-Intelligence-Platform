@@ -1,0 +1,79 @@
+# Retrieval Intelligence Platform - local and staging orchestration.
+#
+# Services:
+#   api      - FastAPI application (multi-stage image built from ./Dockerfile)
+#   redis    - cache / (future) shared rate-limit store
+#   postgres - optional metadata/experiment store
+#   prometheus - scrape the API /metrics endpoint
+#
+# Usage:
+#   docker compose up --build
+#   docker compose -f docker-compose.yml -f docker-compose.override.yml up
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: retrieval-intelligence-platform:latest
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      API_ENVIRONMENT: ${API_ENVIRONMENT:-development}
+      API_HOST: "0.0.0.0"
+      API_PORT: "8000"
+      API_LOG_FORMAT: ${API_LOG_FORMAT:-json}
+      API_DOCS_ENABLED: ${API_DOCS_ENABLED:-true}
+      API_CORS_ORIGINS: ${API_CORS_ORIGINS:-["http://localhost:3000"]}
+      API_RATE_LIMIT_PER_MINUTE: ${API_RATE_LIMIT_PER_MINUTE:-120}
+      API_PROMETHEUS_ENABLED: "true"
+      DATABASE_URL: ${DATABASE_URL:-postgresql://rip:rip@postgres:5432/rip}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready').status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: rip
+      POSTGRES_PASSWORD: rip
+      POSTGRES_DB: rip
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rip"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped
+
+volumes:
+  pgdata:
