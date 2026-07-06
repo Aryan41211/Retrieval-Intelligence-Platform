@@ -27,6 +27,6 @@ backend/data/vectorstore/*
 mlruns
 mlartifacts
 chroma_db
-tests
+backend/tests
 docker-compose.override.yml
 .deepeval
