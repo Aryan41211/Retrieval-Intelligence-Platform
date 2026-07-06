@@ -38,6 +38,7 @@ from backend.enterprise.schemas import (
     WorkspaceMemberAdd,
     WorkspaceMemberPublic,
     WorkspacePublic,
+    ConversationDetailPublic,
 )
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -304,7 +305,7 @@ async def search_conversations(
     return await services.search_conversations(db, current_user, q)
 
 
-@conversations_router.get("/{conversation_id}", response_model=ConversationPublic)
+@conversations_router.get("/{conversation_id}", response_model=ConversationDetailPublic)
 async def get_conversation(
     conversation_id: str,
     current_user: User = Depends(get_current_active_user),
