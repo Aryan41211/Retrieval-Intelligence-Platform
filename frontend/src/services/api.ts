@@ -42,4 +42,4 @@ export type {
   ExperimentResponse,
   SettingsResponse,
   Theme,
-} from './types';
+} from '@/types';
