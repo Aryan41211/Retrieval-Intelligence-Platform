@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.enterprise import security, services
 from backend.enterprise.database import get_db
 from backend.enterprise.exporters import export_conversation
-from backend.enterprise.models import Conversation, User, Workspace
+from backend.enterprise.models import Conversation, Message, User, Workspace
 from backend.enterprise.rbac import (
     get_current_active_user,
     require_permissions,
