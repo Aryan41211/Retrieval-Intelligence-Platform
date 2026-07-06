@@ -21,13 +21,31 @@ from .routers.experiments import router as experiments_router
 from .routers.health import router as health_router
 from .routers.retrieval import router as retrieval_router
 from .routers.settings import router as settings_router
+from backend.enterprise.database import init_db
+from backend.enterprise.routers import (
+    admin_router,
+    auth_router,
+    conversations_router,
+    users_router,
+    workspaces_router,
+)
+from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = get_logger(__name__)
 
 
+class VersionHeaderMiddleware(BaseHTTPMiddleware):
+    """Attach the API version to every response for explicit versioning."""
+
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-API-Version"] = "v1"
+        return response
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
-    """Validate configuration and warm caches on startup."""
+    """Validate configuration, initialise the database and warm caches."""
     settings = app.state.api_settings
     settings.validate_for_environment()
     logger.info(
@@ -35,6 +53,7 @@ async def _lifespan(app: FastAPI):
         settings.app_name,
         settings.environment,
     )
+    await init_db()
     yield
     logger.info("Shutting down %s", settings.app_name)
     try:
@@ -78,6 +97,7 @@ def create_application() -> FastAPI:
     )
 
     setup_middleware(app)
+    app.add_middleware(VersionHeaderMiddleware)
 
     prefix = settings.api_prefix
     app.include_router(health_router, prefix=prefix)
@@ -87,6 +107,16 @@ def create_application() -> FastAPI:
     app.include_router(evaluation_router, prefix=prefix)
     app.include_router(experiments_router, prefix=prefix)
     app.include_router(settings_router, prefix=prefix)
+    app.include_router(auth_router, prefix=prefix)
+    app.include_router(users_router, prefix=prefix)
+    app.include_router(workspaces_router, prefix=prefix)
+    app.include_router(conversations_router, prefix=prefix)
+    app.include_router(admin_router, prefix=prefix)
+
+    @app.get("/api/version", tags=["meta"])
+    async def api_version():
+        """Report the current API version and prefix."""
+        return {"version": "1.0.0", "api_prefix": prefix, "api": "v1"}
 
     return app
 
