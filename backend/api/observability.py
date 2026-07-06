@@ -8,7 +8,6 @@ for request volume, latency and in-flight requests.
 
 import logging
 import sys
-import time
 import uuid
 from contextvars import ContextVar
 from typing import Optional
