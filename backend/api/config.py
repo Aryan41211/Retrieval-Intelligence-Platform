@@ -8,7 +8,7 @@ the ``API_`` prefix so they never need to be hardcoded.
 """
 
 from functools import lru_cache
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
