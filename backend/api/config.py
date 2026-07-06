@@ -133,14 +133,6 @@ class APISettings(BaseSettings):
             return False
         return value
 
-    @field_validator("cors_origins")
-    @classmethod
-    def _validate_cors(cls, value: list[str]) -> list[str]:
-        """Fail fast when wildcard origins are combined with credentials."""
-        if "*" in value and len(value) == 1:
-            return value
-        return value
-
     def validate_for_environment(self) -> None:
         """Perform cross-field validation that pydantic cannot express alone.
 
