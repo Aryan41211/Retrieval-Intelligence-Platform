@@ -17,7 +17,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.enterprise.database import get_db
 from backend.enterprise.models import User
-from backend.enterprise.security import decode_token
 
 _bearer = HTTPBearer(auto_error=False)
 
