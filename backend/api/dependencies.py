@@ -54,5 +54,10 @@ def get_rate_limit(request: Any) -> None:
     return None
 
 
+def get_generation_pipeline() -> GenerationPipeline:
+    """FastAPI dependency returning a configured generation pipeline."""
+    return services.get_generation_pipeline()
+
+
 # Default service instance.
 services = APIServices()
