@@ -215,7 +215,6 @@ async def get_workspace(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> Workspace:
-    await _ensure_workspace_admin(db, workspace_id, current_user) if False else None  # placeholder
     ws = await services.get_workspace(db, workspace_id)
     if ws is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
@@ -234,6 +233,8 @@ async def add_member(
     db: AsyncSession = Depends(get_db),
 ) -> WorkspaceMemberPublic:
     ws = await _ensure_workspace_admin(db, workspace_id, current_user)
+    member = await db.get(User, data.user_id)
+    member_username = member.username if member else data.user_id
     membership = await services.add_workspace_member(db, ws, data.user_id, data.role)
     await services.record_audit(
         db,
@@ -244,7 +245,7 @@ async def add_member(
         resource_id=workspace_id,
     )
     return WorkspaceMemberPublic(
-        user_id=membership.user_id, role=membership.role, username=data.user_id
+        user_id=membership.user_id, role=membership.role, username=member_username
     )
 
 
@@ -354,24 +355,22 @@ async def export_conversation_route(
     db: AsyncSession = Depends(get_db),
 ) -> Response:
     conv = await services.get_owned_conversation(db, current_user, conversation_id)
-    content, media_type, filename = services_export(conv, db, fmt)
+    from sqlalchemy import select
+
+    from backend.enterprise.models import Message
+
+    result = await db.execute(
+        select(Message)
+        .where(Message.conversation_id == conv.id)
+        .order_by(Message.created_at)
+    )
+    messages = list(result.scalars().all())
+    content, media_type, filename = export_conversation(conv, messages, fmt)
     return Response(
         content=content,
         media_type=media_type,
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
-
-
-async def services_export(conv: Conversation, db: AsyncSession, fmt: str):
-    """Fetch messages and export a conversation."""
-    from sqlalchemy import select
-
-    result = await db.execute(
-        select(Conversation).where(Conversation.id == conv.id)  # type: ignore[arg-type]
-    )
-    loaded = result.scalar_one()
-    messages = list(loaded.messages)
-    return export_conversation(loaded, messages, fmt)
 
 
 # ---------------------------------------------------------------------------
