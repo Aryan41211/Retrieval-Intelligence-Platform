@@ -11,8 +11,8 @@ from collections import defaultdict
 from collections.abc import Callable
 
 from fastapi import FastAPI, Request, Response
-from fastapi.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from .observability import (
     CORRELATION_ID,
