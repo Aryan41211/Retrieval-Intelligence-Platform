@@ -131,9 +131,12 @@ class ConversationPublic(BaseModel):
     title: str
     created_at: datetime
     updated_at: datetime
-    messages: list[MessagePublic] = []
 
     model_config = {"from_attributes": True}
+
+
+class ConversationDetailPublic(ConversationPublic):
+    messages: list[MessagePublic] = []
 
 
 # --- Audit ------------------------------------------------------------------
