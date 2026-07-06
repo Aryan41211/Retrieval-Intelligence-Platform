@@ -15,6 +15,7 @@ from typing import Literal
 from fastapi import APIRouter, Response
 from pydantic import BaseModel
 
+from ..config import get_settings
 from ..observability import render_metrics
 
 router = APIRouter()
@@ -46,7 +47,7 @@ def _uptime() -> float:
 @router.get("/health/live", response_model=HealthStatus, tags=["health"])
 async def liveness() -> HealthStatus:
     """Liveness probe: the process is running and able to serve."""
-    settings = router.app.state.api_settings
+    settings = get_settings()
     return HealthStatus(
         status="ok",
         service=settings.app_name,
@@ -57,7 +58,7 @@ async def liveness() -> HealthStatus:
 @router.get("/health/ready", response_model=HealthStatus, tags=["health"])
 async def readiness() -> HealthStatus:
     """Readiness probe: required runtime dependencies are available."""
-    settings = router.app.state.api_settings
+    settings = get_settings()
 
     # Vector store persistence directory must be reachable/writable.
     store_dir = os.environ.get("VECTOR_STORE_PATH", "backend/data/vectorstore")
@@ -79,7 +80,7 @@ async def readiness() -> HealthStatus:
 @router.get("/health", response_model=ServiceInfo, tags=["health"])
 async def health() -> ServiceInfo:
     """Aggregate service information."""
-    settings = router.app.state.api_settings
+    settings = get_settings()
     return ServiceInfo(
         service=settings.app_name,
         environment=settings.environment,
@@ -91,7 +92,7 @@ async def health() -> ServiceInfo:
 @router.get("/metrics", tags=["observability"])
 async def metrics() -> Response:
     """Prometheus metrics exposition endpoint."""
-    settings = router.app.state.api_settings
+    settings = get_settings()
     if not settings.prometheus_enabled:
         return Response(status_code=404, content="metrics disabled")
     payload, content_type = render_metrics()
