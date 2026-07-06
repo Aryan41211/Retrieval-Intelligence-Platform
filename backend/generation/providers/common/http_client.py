@@ -193,7 +193,7 @@ class GenerationSettings:
     timeout_s: float = 60.0
 
 
-from typing import Protocol
+from typing import Protocol  # noqa: E402
 
 
 class StructuredResponse(Protocol):
