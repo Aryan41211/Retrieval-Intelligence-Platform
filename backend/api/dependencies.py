@@ -90,7 +90,7 @@ def get_api_key(x_api_key: Optional[str] = Header(None, alias="X-API-Key")) -> s
     return x_api_key
 
 
-def get_rate_limit(request: Any, limit: Callable = Depends(get_rate_limit_dependency)) -> None:
+def get_rate_limit(request: Any, limit: Callable) -> None:
     """Rate limiting dependency."""
     # In real implementation, this would enforce rate limits
     pass
