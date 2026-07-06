@@ -37,6 +37,14 @@ async def _lifespan(app: FastAPI):
     )
     yield
     logger.info("Shutting down %s", settings.app_name)
+    try:
+        from backend.generation.providers.common.http_client import (
+            close_provider_clients,
+        )
+
+        await close_provider_clients()
+    except Exception:  # pragma: no cover - best-effort cleanup
+        logger.warning("Failed to close provider HTTP clients during shutdown")
 
 
 def create_application() -> FastAPI:
