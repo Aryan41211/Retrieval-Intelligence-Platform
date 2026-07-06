@@ -9,23 +9,24 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import bcrypt
 import jwt
-from passlib.context import CryptContext
 
 from backend.enterprise.config import get_enterprise_settings
 from backend.enterprise.rbac import permissions_for_role
 
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def hash_password(password: str) -> str:
     """Hash a plaintext password with bcrypt."""
-    return _pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(password: str, password_hash: str) -> bool:
     """Verify a plaintext password against a bcrypt hash."""
-    return _pwd_context.verify(password, password_hash)
+    try:
+        return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
+    except (ValueError, TypeError):
+        return False
 
 
 def _utcnow() -> datetime:
