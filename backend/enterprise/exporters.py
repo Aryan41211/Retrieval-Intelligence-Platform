@@ -63,6 +63,8 @@ def _render_pdf(lines: list[str]) -> bytes:
             current = []
     if current:
         pages.append(current)
+    if not pages:
+        pages.append([""])
 
     objects: list[bytes] = []
 
