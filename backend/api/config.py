@@ -91,7 +91,7 @@ class APISettings(BaseSettings):
     log_format: Literal["json", "text"] = Field(
         default="json", description="Structured JSON logging or human-readable text."
     )
-    log_file: Optional[str] = Field(
+    log_file: str | None = Field(
         default=None, description="Optional file path for logs; stdout/stderr when unset."
     )
 
