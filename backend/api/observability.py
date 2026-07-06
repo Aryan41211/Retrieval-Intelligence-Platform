@@ -135,7 +135,7 @@ REQUEST_LATENCY = Histogram(
     "HTTP request latency in seconds.",
     ["method", "endpoint"],
 )
-REQUESTS_IN_PROGRESS = Counter(
+REQUESTS_IN_PROGRESS = Gauge(
     "rip_http_requests_in_progress",
     "In-flight HTTP requests.",
     ["method", "endpoint"],
