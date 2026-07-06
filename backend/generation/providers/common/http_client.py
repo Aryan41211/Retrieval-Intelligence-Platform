@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Optional, Dict
+from typing import Any
 
 from httpx import AsyncClient, HTTPStatusError, Response, TimeoutException
 
 from backend.generation.exceptions import (
-    GenerationError,
     GenerationTimeoutError,
     LLMProviderUnavailableError,
 )
@@ -80,14 +78,14 @@ class HTTPProviderClient:
         base_url: str,
         model: str,
         timeout_s: float = 60.0,
-        retry_config: Optional[RetryConfig] = None,
+        retry_config: RetryConfig | None = None,
     ):
         self._base_url = _parse_url(base_url)
         self._model = model
         self._timeout_s = timeout_s
         self._retry_config = retry_config or RetryConfig()
 
-    def _build_headers(self, additional: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+    def _build_headers(self, additional: dict[str, str] | None = None) -> dict[str, str]:
         """Build standard HTTP headers for the provider."""
         headers = {"Content-Type": "application/json"}
         if additional:
@@ -98,8 +96,8 @@ class HTTPProviderClient:
         self,
         method: str,
         path: str,
-        body: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        body: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> Response:
         """Execute HTTP request with retry logic."""
         url = f"{self._base_url}/{path.lstrip('/')}"
@@ -117,27 +115,35 @@ class HTTPProviderClient:
                 return response
             except (TimeoutError, TimeoutException) as exc:
                 if attempt == self._retry_config.max_retries:
-                    raise GenerationTimeoutError(f"Request timed out after {self._timeout_s}s") from exc
+                    raise GenerationTimeoutError(
+                        f"Request timed out after {self._timeout_s}s"
+                    ) from exc
                 delay = min(
-                    self._retry_config.initial_delay * (self._retry_config.backoff_factor ** attempt),
+                    self._retry_config.initial_delay * (self._retry_config.backoff_factor**attempt),
                     self._retry_config.max_delay,
                 )
                 await asyncio.sleep(delay)
             except HTTPStatusError as exc:
-                if 500 <= exc.response.status_code <= 599 and attempt < self._retry_config.max_retries:
+                if (
+                    500 <= exc.response.status_code <= 599
+                    and attempt < self._retry_config.max_retries
+                ):
                     delay = min(
-                        self._retry_config.initial_delay * (self._retry_config.backoff_factor ** attempt),
+                        self._retry_config.initial_delay
+                        * (self._retry_config.backoff_factor**attempt),
                         self._retry_config.max_delay,
                     )
                     await asyncio.sleep(delay)
                     continue
-                raise LLMProviderUnavailableError(f"HTTP {exc.response.status_code}: {exc.response.text}") from exc
+                raise LLMProviderUnavailableError(
+                    f"HTTP {exc.response.status_code}: {exc.response.text}"
+                ) from exc
             except Exception as exc:
                 raise LLMProviderUnavailableError(f"Request failed: {exc}") from exc
 
         raise LLMProviderUnavailableError("Max retries reached")
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check on the provider.
 
         Returns:
@@ -187,17 +193,22 @@ class GenerationSettings:
     timeout_s: float = 60.0
 
 
-from backend.generation.providers.base_provider import LLMProvider
 from typing import Protocol
 
 
 class StructuredResponse(Protocol):
     """Protocol for structured generation responses."""
 
-    def __init__(self, data: Any, usage: Optional[Dict[str, Any]] = None, model: Optional[str] = None, finish_reason: Optional[str] = None): ...
+    def __init__(
+        self,
+        data: Any,
+        usage: dict[str, Any] | None = None,
+        model: str | None = None,
+        finish_reason: str | None = None,
+    ): ...
 
 
 class TokenUsageReporter(Protocol):
     """Protocol for extracting token usage from responses."""
 
-    def extract_usage(self, response: Any) -> Optional[Dict[str, Any]]: ...
+    def extract_usage(self, response: Any) -> dict[str, Any] | None: ...

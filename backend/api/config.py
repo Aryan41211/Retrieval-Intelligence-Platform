@@ -65,9 +65,7 @@ class APISettings(BaseSettings):
         default_factory=lambda: ["*"],
         description="Allowed CORS origins. Avoid '*' together with credentials in production.",
     )
-    cors_credentials: bool = Field(
-        default=False, description="Allow credentialed CORS requests."
-    )
+    cors_credentials: bool = Field(default=False, description="Allow credentialed CORS requests.")
     cors_methods: list[str] = Field(
         default_factory=lambda: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         description="Allowed CORS HTTP methods.",

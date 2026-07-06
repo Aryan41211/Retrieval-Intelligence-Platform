@@ -10,7 +10,6 @@ import logging
 import sys
 import uuid
 from contextvars import ContextVar
-from typing import Optional
 
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
@@ -29,7 +28,7 @@ except ImportError:  # pragma: no cover - allows standalone import in tests
 # ---------------------------------------------------------------------------
 # Correlation IDs
 # ---------------------------------------------------------------------------
-CORRELATION_ID: ContextVar[Optional[str]] = ContextVar("correlation_id", default=None)
+CORRELATION_ID: ContextVar[str | None] = ContextVar("correlation_id", default=None)
 
 
 def new_correlation_id() -> str:
@@ -37,12 +36,12 @@ def new_correlation_id() -> str:
     return uuid.uuid4().hex
 
 
-def get_correlation_id() -> Optional[str]:
+def get_correlation_id() -> str | None:
     """Return the active correlation ID (if any)."""
     return CORRELATION_ID.get()
 
 
-def set_correlation_id(value: Optional[str]) -> None:
+def set_correlation_id(value: str | None) -> None:
     """Set the active correlation ID for the current context."""
     CORRELATION_ID.set(value)
 
@@ -79,12 +78,10 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, default=str)
 
 
-_RESERVED = frozenset(
-    logging.LogRecord("", 0, "", 0, "", (), None).__dict__.keys()
-)
+_RESERVED = frozenset(logging.LogRecord("", 0, "", 0, "", (), None).__dict__.keys())
 
 
-def configure_logging(api_settings: Optional[APISettings] = None) -> None:
+def configure_logging(api_settings: APISettings | None = None) -> None:
     """Configure the root logger based on settings.
 
     Args:
