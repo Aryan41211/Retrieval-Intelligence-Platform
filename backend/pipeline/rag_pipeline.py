@@ -46,7 +46,7 @@ class RAGPipeline:
         self._generation_pipeline = generation_pipeline
         self._embedding_provider = embedding_provider
 
-    def query(
+    async def query(
         self,
         *,
         query_text: str,
@@ -78,7 +78,7 @@ class RAGPipeline:
             return result
 
         try:
-            generation_result = self._generation_pipeline.generate(
+            generation_result = await self._generation_pipeline.generate(
                 query=query_text,
                 retrieved_chunks=retrieval_results,
                 correlation_id=correlation_id,

@@ -58,7 +58,7 @@ async def stream_chat_response(
         raw_chunks = context_chunks
         
         # Generate response using the existing generation pipeline
-        result: GenerationResult = pipeline.generate(
+        result: GenerationResult = await pipeline.generate(
             query=query,
             retrieved_chunks=raw_chunks,
             correlation_id=conversation_id

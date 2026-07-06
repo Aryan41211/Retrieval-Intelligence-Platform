@@ -28,10 +28,10 @@ class LLMGateway:
     def model_name(self) -> str:
         return self._provider.model_name
 
-    def generate(self, *, prompt: str, temperature: float = 0.2, max_tokens: int = 512) -> str:
+    async def generate(self, *, prompt: str, temperature: float = 0.2, max_tokens: int = 512) -> str:
         t0 = time.perf_counter()
         try:
-            raw = self._provider.generate(
+            raw = await self._provider.generate(
                 prompt=prompt,
                 temperature=temperature,
                 max_tokens=max_tokens,

@@ -106,7 +106,6 @@ where = ["backend"]
 include = ["retrieval_intelligence*"]
 
 [tool.pytest.ini_options]
-asyncio_mode = "auto"
 testpaths = ["backend/tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
@@ -118,6 +117,9 @@ markers = [
     "slow: Slow tests",
     "requires_api: Tests requiring external API keys",
 ]
+
+[tool.pytest.asyncio]
+asyncio_mode = "auto"
 
 [tool.ruff]
 target-version = "py311"

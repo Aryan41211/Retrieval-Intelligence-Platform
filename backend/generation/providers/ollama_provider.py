@@ -119,7 +119,7 @@ class OllamaProvider(LLMProvider):
             if stream:
                 return await self._handle_streaming_response(response)
             else:
-                data = await response.json()
+                data = response.json()
                 return self._extract_text_from_response(data)
 
         except (TimeoutException, GenerationTimeoutError) as exc:
@@ -182,7 +182,7 @@ class OllamaProvider(LLMProvider):
         try:
             data = response.json()
             return data.get("usage")
-        except (json.JSONDecodeError, KeyError):
+        except (json.JSONDecodeError, ValueError, KeyError):
             return None
 
 

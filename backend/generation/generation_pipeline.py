@@ -77,8 +77,8 @@ class GenerationPipeline:
             hallucination_guard=hallucination_guard,
         )
 
-    def generate(self, query: str, retrieved_chunks: list[Any], *, correlation_id: str | None = None) -> GenerationResult:
-        """Synchronous generation entry point.
+    async def generate(self, query: str, retrieved_chunks: list[Any], *, correlation_id: str | None = None) -> GenerationResult:
+        """Asynchronous generation entry point.
 
         Args:
             query: User query.
@@ -109,7 +109,7 @@ class GenerationPipeline:
         # 3) LLM call
         try:
             llm_start = time.perf_counter()
-            raw_answer = self._llm_gateway.generate(prompt=prompt)
+            raw_answer = await self._llm_gateway.generate(prompt=prompt)
             llm_latency_ms = int((time.perf_counter() - llm_start) * 1000)
         except LLMProviderUnavailableError as e:
             latency_ms = int((time.perf_counter() - t0) * 1000)

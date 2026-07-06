@@ -17,7 +17,7 @@ class LLMProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def generate(
+    async def generate(
         self,
         *,
         prompt: str,
