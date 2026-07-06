@@ -58,33 +58,19 @@ async def liveness() -> HealthStatus:
 async def readiness() -> HealthStatus:
     """Readiness probe: required runtime dependencies are available."""
     settings = router.app.state.api_settings
-    checks: list[str] = []
 
-    # Configuration validity (fail-fast settings already validated at startup).
-    try:
-        settings.validate_for_environment()
-    except Exception as exc:  # pragma: no cover - defensive
-        return HealthStatus(
-            status="unavailable",
-            service=settings.app_name,
-            uptime_seconds=round(_uptime(), 2),
-        )
-
-    # Vector store persistence directory must be writable/reachable.
+    # Vector store persistence directory must be reachable/writable.
     store_dir = os.environ.get("VECTOR_STORE_PATH", "backend/data/vectorstore")
     parent = os.path.dirname(store_dir) or "."
-    checks.append(parent)
-
-    status = "ok"
-    for path in checks:
-        if path and not os.access(path, os.W_OK | os.R_OK) and not os.path.isdir(path):
-            try:
-                os.makedirs(path, exist_ok=True)
-            except OSError:
-                status = "unavailable"
+    is_ready = True
+    if parent and not (os.path.isdir(parent) and os.access(parent, os.W_OK | os.R_OK)):
+        try:
+            os.makedirs(parent, exist_ok=True)
+        except OSError:
+            is_ready = False
 
     return HealthStatus(
-        status="ok" if status == "ok" else "degraded",
+        status="ok" if is_ready else "unavailable",
         service=settings.app_name,
         uptime_seconds=round(_uptime(), 2),
     )
