@@ -51,7 +51,7 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
             )
             raise
         finally:
-            REQUESTS_IN_PROGRESS.dec()
+            REQUESTS_IN_PROGRESS.labels(method=request.method, endpoint=endpoint).dec()
 
         duration = time.perf_counter() - start
         status = response.status_code
