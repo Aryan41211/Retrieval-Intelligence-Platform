@@ -37,7 +37,7 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
 
         request.state.correlation_id = correlation_id
         endpoint = request.url.path
-        REQUESTS_IN_PROGRESS.inc()
+        REQUESTS_IN_PROGRESS.labels(method=request.method, endpoint=endpoint).inc()
         start = time.perf_counter()
         try:
             response = await call_next(request)
