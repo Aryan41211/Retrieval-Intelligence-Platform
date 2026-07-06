@@ -8,7 +8,7 @@ Registered by :func:`backend.api.app.create_application` in the correct order.
 
 import time
 from collections import defaultdict
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.base import BaseHTTPMiddleware
@@ -18,11 +18,9 @@ from .observability import (
     CORRELATION_ID,
     EXCEPTION_COUNT,
     REQUESTS_IN_PROGRESS,
-    get_correlation_id,
     get_logger,
     new_correlation_id,
     observe_request,
-    set_correlation_id,
 )
 
 logger = get_logger(__name__)
