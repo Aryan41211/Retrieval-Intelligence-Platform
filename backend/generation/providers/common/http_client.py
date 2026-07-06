@@ -17,6 +17,42 @@ from backend.generation.exceptions import (
 
 logger = logging.getLogger(__name__)
 
+# Shared HTTP client pool for connection reuse (connection pooling) across
+# provider instances. Keyed by (base_url, timeout) so each logical endpoint
+# keeps its own keep-alive connection pool instead of opening one per request.
+_client_pool: dict[tuple[str, float], AsyncClient] = {}
+_client_lock = asyncio.Lock()
+
+
+async def get_provider_client(base_url: str, timeout_s: float) -> AsyncClient:
+    """Return a cached :class:`AsyncClient` for the given endpoint.
+
+    Reusing the client enables HTTP connection pooling and avoids the cost of
+    establishing a new TCP/TLS connection on every request.
+
+    Args:
+        base_url: Normalised base URL of the provider.
+        timeout_s: Per-request timeout in seconds.
+
+    Returns:
+        A shared, ready-to-use async HTTP client.
+    """
+    key = (base_url, timeout_s)
+    async with _client_lock:
+        client = _client_pool.get(key)
+        if client is None or client.is_closed:
+            client = AsyncClient(base_url=base_url, timeout=timeout_s)
+            _client_pool[key] = client
+        return client
+
+
+async def close_provider_clients() -> None:
+    """Close all pooled provider clients. Call on application shutdown."""
+    async with _client_lock:
+        for client in _client_pool.values():
+            await client.aclose()
+        _client_pool.clear()
+
 
 @dataclass(frozen=True)
 class RetryConfig:
