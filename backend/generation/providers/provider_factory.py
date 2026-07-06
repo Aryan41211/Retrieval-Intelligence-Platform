@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from backend.configs.settings import get_settings
+from backend.generation.providers.anthropic_provider import AnthropicProvider
 from backend.generation.providers.base_provider import LLMProvider
+from backend.generation.providers.openai_provider import OpenAIProvider
 from backend.generation.providers.stubs.fake_provider import FakeProvider
 from backend.generation.providers.stubs.nim_provider import NIMProvider
 from backend.generation.providers.stubs.ollama_provider import OllamaProvider
@@ -32,6 +34,16 @@ class ProviderFactory:
 
         if provider == "nim":
             return NIMProvider(
+                model=gen.model_name,
+            )
+
+        if provider == "openai":
+            return OpenAIProvider(
+                model=gen.model_name,
+            )
+
+        if provider == "anthropic":
+            return AnthropicProvider(
                 model=gen.model_name,
             )
 
