@@ -104,17 +104,17 @@ class HTTPProviderClient:
         """Execute HTTP request with retry logic."""
         url = f"{self._base_url}/{path.lstrip('/')}"
 
+        client = await get_provider_client(self._base_url, self._timeout_s)
         for attempt in range(self._retry_config.max_retries + 1):
             try:
-                async with AsyncClient(timeout=self._timeout_s) as client:
-                    response = await client.request(
-                        method=method,
-                        url=url,
-                        json=body,
-                        headers=headers,
-                    )
-                    response.raise_for_status()
-                    return response
+                response = await client.request(
+                    method=method,
+                    url=url,
+                    json=body,
+                    headers=headers,
+                )
+                response.raise_for_status()
+                return response
             except (TimeoutError, TimeoutException) as exc:
                 if attempt == self._retry_config.max_retries:
                     raise GenerationTimeoutError(f"Request timed out after {self._timeout_s}s") from exc
