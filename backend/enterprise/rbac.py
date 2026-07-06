@@ -78,6 +78,8 @@ async def get_current_user(
     if credentials is None or not credentials.credentials:
         raise _unauthorized()
     try:
+        from backend.enterprise.security import decode_token
+
         payload = decode_token(credentials.credentials, "access")
     except jwt.PyJWTError:
         raise _unauthorized("Invalid or expired token")
