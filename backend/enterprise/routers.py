@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.enterprise import security, services
 from backend.enterprise.database import get_db
 from backend.enterprise.exporters import export_conversation
-from backend.enterprise.models import Conversation, User
+from backend.enterprise.models import Conversation, User, Workspace
 from backend.enterprise.rbac import (
     get_current_active_user,
     require_permissions,
@@ -169,14 +169,15 @@ async def deactivate_user(user_id: str, db: AsyncSession = Depends(get_db)) -> U
 # ---------------------------------------------------------------------------
 # Workspaces
 # ---------------------------------------------------------------------------
-async def _ensure_workspace_admin(db: AsyncSession, workspace_id: str, user: User) -> Conversation:
+async def _ensure_workspace_admin(db: AsyncSession, workspace_id: str, user: User) -> Workspace:
     ws = await services.get_workspace(db, workspace_id)
     if ws is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
-    if ws.owner_id != user.id and "manage_workspaces" not in security.decode_token.__doc__:
-        role = await services.user_workspace_role(db, user.id, workspace_id)
-        if role not in ("owner", "admin") and user.role != "admin":
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
+    if ws.owner_id == user.id or user.role == "admin":
+        return ws
+    role = await services.user_workspace_role(db, user.id, workspace_id)
+    if role not in ("owner", "admin"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
     return ws
 
 
