@@ -147,6 +147,8 @@ INGESTION_DEFAULT_LANGUAGE=en
 | 5 | Grounded Generation | ⏳ Planned |
 | 6 | Evaluation Framework | ⏳ Planned |
 | 7 | Experiment Tracking | ⏳ Planned |
+| 8 | Production Engineering | ✅ Complete |
+| 9 | Enterprise Features | ✅ Complete |
 
 ## License
 
