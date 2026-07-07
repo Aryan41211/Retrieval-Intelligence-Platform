@@ -12,36 +12,13 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from backend.generation.generation_pipeline import GenerationPipeline
-from backend.generation.models import ContextItem, GenerationResult
+from backend.generation.models import GenerationResult
 from backend.retrieval.retrieval_result import RetrievalChunkResult
 
 from ..dependencies import get_generation_pipeline
 from ..schemas import ChatMessage, ChatRequest, ChatResponse
 
 router = APIRouter()
-
-
-def create_context_item_from_chunk(chunk: RetrievalChunkResult) -> ContextItem:
-    """Convert RetrievalChunkResult to ContextItem for generation."""
-    return ContextItem(
-        chunk_id=str(chunk.chunk_id),
-        document_id=str(chunk.document_id),
-        chunk_text=chunk.chunk_text,
-        rank=chunk.rank,
-        similarity_score=chunk.similarity_score,
-        source_filename=chunk.source_filename,
-        page_number=chunk.page_number,
-        extra=chunk.metadata if chunk.metadata else {}
-    )
-
-
-def create_chat_message_from_result(result: GenerationResult) -> ChatMessage:
-    """Convert GenerationResult to ChatMessage."""
-    return ChatMessage(
-        role="assistant",
-        content=result.answer,
-        timestamp=result.generation_timestamp
-    )
 
 
 async def stream_chat_response(
