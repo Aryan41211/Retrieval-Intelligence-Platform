@@ -1,14 +1,11 @@
-"""Test fixtures and helpers for enterprise feature tests.
+"""Test fixtures for enterprise feature tests.
 
 Provides an isolated SQLite database and a FastAPI ``TestClient`` wired to the
 real application. The database file is unique per test, so tests never interfere
-with each other. Direct DB assertions and role promotion are performed with a
-synchronous ``sqlite3`` connection to the same file, avoiding async event-loop
-sharing issues.
+with each other.
 """
 
 import os
-import sqlite3
 import tempfile
 from collections.abc import Iterator
 from pathlib import Path
@@ -44,58 +41,3 @@ def client(db_path: str) -> Iterator[TestClient]:
 
     with TestClient(app) as test_client:
         yield test_client
-
-
-def _conn(db_path: str) -> sqlite3.Connection:
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def query_one(db_path: str, sql: str, params: tuple = ()) -> sqlite3.Row | None:
-    """Run a SELECT and return the first row (sync, for test assertions)."""
-    conn = _conn(db_path)
-    try:
-        row = conn.execute(sql, params).fetchone()
-        return row
-    finally:
-        conn.close()
-
-
-def query_all(db_path: str, sql: str, params: tuple = ()) -> list[sqlite3.Row]:
-    """Run a SELECT and return all rows (sync, for test assertions)."""
-    conn = _conn(db_path)
-    try:
-        return list(conn.execute(sql, params).fetchall())
-    finally:
-        conn.close()
-
-
-def promote_user(db_path: str, email: str, role: str) -> None:
-    """Promote a user to a given role via a direct sync DB write."""
-    conn = _conn(db_path)
-    try:
-        conn.execute("UPDATE enterprise_users SET role=? WHERE email=?", (role, email))
-        conn.commit()
-    finally:
-        conn.close()
-
-
-def register(
-    client: TestClient,
-    email: str = "alice@example.com",
-    username: str = "alice",
-    password: str = "password123",
-) -> dict:
-    """Register a user and return the parsed token response."""
-    resp = client.post(
-        "/api/v1/auth/register",
-        json={"email": email, "username": username, "password": password},
-    )
-    assert resp.status_code == 201, resp.text
-    return resp.json()
-
-
-def auth_headers(token: str) -> dict:
-    """Return Authorization headers for a bearer token."""
-    return {"Authorization": f"Bearer {token}"}
