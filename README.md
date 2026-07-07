@@ -136,6 +136,22 @@ INGESTION_DEFAULT_LANGUAGE=en
 | `backend/configs/settings.py` | Configuration management via pydantic-settings |
 | `backend/tests/unit/test_loaders/` | Unit tests for loaders |
 
+## Documentation
+
+| Guide | Purpose |
+|-------|---------|
+| [Architecture](docs/ARCHITECTURE.md) | System overview, data/request flows, auth, module map (with diagrams) |
+| [API](docs/API.md) | Full endpoint contract (health, auth, users, workspaces, conversations, admin, RAG) |
+| [Developer](docs/DEVELOPER.md) | Local setup, run, test, conventions |
+| [Contributing](docs/CONTRIBUTING.md) | Branching, commit format, PR checklist |
+| [Benchmarks](docs/BENCHMARKS.md) | Latency, memory, evaluation metrics + methodology |
+| [Deployment](DEPLOYMENT.md) | Docker, Railway/Render/AWS/Azure |
+| [Architecture deep-dive](docs/architecture/) | 19-part component reference |
+| [Release notes v1.0.0](docs/RELEASE_NOTES_v1.0.0.md) | What's in the release |
+
+Phase reports (including enterprise and release) live in
+[`docs/reports/`](docs/reports/).
+
 ## Roadmap
 
 | Phase | Focus Area | Status |
