@@ -1,6 +1,6 @@
 """Integration tests for the administration API (dashboard, audit, analytics)."""
 
-from .conftest import auth_headers, promote_user, query_all, register
+from .fixtures import auth_headers, promote_user, query_all, register
 
 
 def _token(client, email, username):
