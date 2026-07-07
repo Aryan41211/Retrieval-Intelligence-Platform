@@ -16,9 +16,18 @@ from backend.generation.models import GenerationResult
 from backend.retrieval.retrieval_result import RetrievalChunkResult
 
 from ..dependencies import get_generation_pipeline
-from ..schemas import ChatRequest, ChatResponse
+from ..schemas import ChatMessage, ChatRequest, ChatResponse
 
 router = APIRouter()
+
+
+def create_chat_message_from_result(result: GenerationResult) -> ChatMessage:
+    """Map a generation result to the chat message schema."""
+    return ChatMessage(
+        role="assistant",
+        content=result.answer,
+        timestamp=result.generation_timestamp,
+    )
 
 
 async def stream_chat_response(
@@ -94,7 +103,7 @@ async def chat_with_context(
     pipeline: GenerationPipeline = Depends(get_generation_pipeline)
 ):
     """Generate a chat response using the RAG pipeline.
-    
+
     This endpoint implements the complete RAG pipeline:
     1. Accepts a user query via ChatRequest
     2. Generates a response using the existing GenerationPipeline
