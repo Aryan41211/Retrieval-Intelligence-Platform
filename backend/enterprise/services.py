@@ -122,7 +122,7 @@ def _send_email(to: str, subject: str, body: str) -> None:
 async def create_password_reset_token(db: AsyncSession, user: User) -> str:
     """Create and persist a single-use password reset token; returns the raw token."""
     token = secrets.token_urlsafe(32)
-    expires = datetime.now(timezone.utc) + timedelta(seconds=settings.password_reset_ttl_seconds)
+    expires = datetime.utcnow() + timedelta(seconds=settings.password_reset_ttl_seconds)
     record = PasswordResetToken(
         user_id=user.id, token_hash=security.hash_token(token), expires_at=expires
     )
@@ -149,20 +149,20 @@ async def reset_password(db: AsyncSession, token: str, new_password: str) -> Non
         select(PasswordResetToken).where(PasswordResetToken.token_hash == security.hash_token(token))
     )
     record = result.scalar_one_or_none()
-    if record is None or record.used_at is not None or record.expires_at < datetime.now(timezone.utc):
+    if record is None or record.used_at is not None or record.expires_at < datetime.utcnow():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
     user = await db.get(User, record.user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
     user.hashed_password = security.hash_password(new_password)
-    record.used_at = datetime.now(timezone.utc)
+    record.used_at = datetime.utcnow()
     await db.flush()
 
 
 async def create_email_verification_token(db: AsyncSession, user: User) -> str:
     """Create and persist an email verification token; returns the raw token."""
     token = secrets.token_urlsafe(32)
-    expires = datetime.now(timezone.utc) + timedelta(seconds=settings.email_verification_ttl_seconds)
+    expires = datetime.utcnow() + timedelta(seconds=settings.email_verification_ttl_seconds)
     record = EmailVerificationToken(
         user_id=user.id, token_hash=security.hash_token(token), expires_at=expires
     )
@@ -181,12 +181,12 @@ async def verify_email(db: AsyncSession, token: str) -> None:
         )
     )
     record = result.scalar_one_or_none()
-    if record is None or record.used_at is not None or record.expires_at < datetime.now(timezone.utc):
+    if record is None or record.used_at is not None or record.expires_at < datetime.utcnow():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
     user = await db.get(User, record.user_id)
     if user is not None:
         user.is_verified = True
-    record.used_at = datetime.now(timezone.utc)
+    record.used_at = datetime.utcnow()
     await db.flush()
 
 

@@ -18,6 +18,7 @@ os.environ.setdefault(
 )
 os.environ.setdefault("ENTERPRISE_REGISTRATION_ENABLED", "true")
 os.environ.setdefault("ENTERPRISE_EMAIL_VERIFICATION_REQUIRED", "false")
+os.environ.setdefault("API_RATE_LIMIT_ENABLED", "false")
 
 import pytest
 from fastapi.testclient import TestClient
