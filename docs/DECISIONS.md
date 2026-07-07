@@ -12,11 +12,11 @@ This document captures all major architectural decisions made during the develop
 | **AD-001** | Modular Backend Architecture | 2024-01-15 | ✅ Implemented | High |
 | **AD-002** | Provider Abstraction Pattern | 2024-01-20 | ✅ Implemented | High |
 | **AD-003** | Retrieval Pipeline Design | 2024-02-05 | ✅ Implemented | High |
-| **AD-004** | Generation Engine Architecture | 2024-02-12 | ⚠️ Partial | Medium |
-| **AD-005** | Embedding Provider Strategy | 2024-02-20 | ⚠️ Partial | Medium |
-| **AD-006** | Vector Store Abstraction | 2024-03-01 | ⚠️ Partial | Medium |
+| **AD-004** | Generation Engine Architecture | 2024-02-12 | ✅ Implemented | Medium |
+| **AD-005** | Embedding Provider Strategy | 2024-02-20 | ✅ Implemented | Medium |
+| **AD-006** | Vector Store Abstraction | 2024-03-01 | ✅ Implemented | Medium |
 | **AD-007** | API-First Design Approach | 2024-03-10 | ✅ Implemented | High |
-| **AD-008** | Evaluation Framework Architecture | 2024-03-20 | ❌ Missing | Medium |
+| **AD-008** | Evaluation Framework Architecture | 2024-03-20 | ✅ Implemented | Medium |
 
 ---
 
@@ -163,7 +163,7 @@ Context Builder → Prompt Builder → LLM Gateway → Citation Generator → Ha
 - ✅ **Negative:** Increased pipeline complexity
 - ✅ **Technical:** Foundation for advanced features (structured output, streaming)
 
-**Current Status:** Core infrastructure implemented with stub providers. Generation pipeline follows same modular pattern as retrieval.
+**Current Status:** Fully implemented. Generation pipeline follows the same modular pattern as retrieval, with OpenAI/Anthropic/Fake/Ollama providers, citations, hallucination guard, and streaming (Sprint 5).
 
 **Implementation Notes:** Follows same protocol-based architecture as other pipelines with factory pattern for provider selection.
 
@@ -193,7 +193,7 @@ Context Builder → Prompt Builder → LLM Gateway → Citation Generator → Ha
 - ✅ **Negative:** Increased deployment complexity
 - ✅ **Technical:** Requires thoughtful caching and fallback strategies
 
-**Current Status:** SentenceTransformer provider implemented as primary, cloud providers as optional dependencies.
+**Current Status:** SentenceTransformer provider implemented as primary with caching and batching; validation/benchmarking complete (Sprints 2 / 4). Cloud providers are optional future add-ons.
 
 **Implementation Notes:** Embedding caching and batch processing strategies optimize for both local and cloud scenarios.
 
@@ -230,7 +230,7 @@ class VectorStore(Protocol):
 - ✅ **Negative:** Increased testing burden across providers
 - ✅ **Technical:** Enables scale-out and cost-optimization strategies
 
-**Current Status:** FAISS implementation primary, other providers as stubs. Multi-model support planned.
+**Current Status:** FAISS implementation primary and fully wired (dense + sparse + hybrid fusion). Managed stores (Chroma, Pinecone, etc.) are optional future add-ons.
 
 **Implementation Notes:** Consistent metadata schema across providers with seamless switching capabilities.
 
@@ -290,7 +290,7 @@ class VectorStore(Protocol):
 - ✅ **Negative:** Increased system complexity
 - ✅ **Technical:** Foundation for continuous improvement pipelines
 
-**Current Status:** Core evaluation framework implemented with RAGAS evaluator. Custom metrics and integration components pending.
+**Current Status:** Evaluation framework implemented with RAGAS + DeepEval metrics and a custom metric registry (Sprint 6).
 
 **Implementation Notes:** Evaluation follows same protocol-based architecture as other pipelines with factory pattern for metric selection.
 
@@ -303,28 +303,28 @@ class VectorStore(Protocol):
 | **Modular Architecture** | ✅ Complete | Low | **Critical** |
 | **Provider Abstractions** | ✅ Complete | Low | **Critical** |
 | **Retrieval Pipeline** | ⚠️ Partial | Medium | **Critical** |
-| **Generation Pipeline** | ❌ Missing | Medium | **High** |
-| **Embedding Strategy** | ⚠️ Partial | Medium | **High** |
-| **Vector Store Abstraction** | ⚠️ Partial | Medium | **High** |
+| **Generation Pipeline** | ✅ Complete | Low | **Critical** |
+| **Embedding Strategy** | ✅ Complete | Low | **Critical** |
+| **Vector Store Abstraction** | ✅ Complete | Low | **Critical** |
 | **API Design** | ✅ Complete | Low | **Critical** |
-| **Evaluation Framework** | ❌ Missing | Medium | **High** |
+| **Evaluation Framework** | ✅ Complete | Low | **Critical** |
 
 ### Key Implementation Insights
 
 1. **Architecture Success:** Protocol-based design enables true modularity and testability
-2. **Component Gaps:** Generation and evaluation frameworks most behind schedule
+2. **Component Coverage:** All pipelines (ingestion, chunking, embeddings, retrieval, generation, evaluation, experiments) implemented and tested
 3. **Consistency:** All pipelines follow same architectural patterns
 4. **Scalability:** Architecture supports growth from prototype to enterprise deployment
 5. **Maintainability:** Clear boundaries enable independent development and testing
 
 ### Next Steps Based on Decisions
 
-1. **Immediate Priority:** Complete generation pipeline (Sprint 5.1)
-2. **High Priority:** Implement evaluation framework (Sprint 6)
-3. **Strategic Priority:** Add cloud embedding providers (Sprint 5.2)
-4. **Technical Priority:** Complete vector store ecosystem (Sprint 7)
+1. **Completed:** Generation pipeline (Sprint 5) — OpenAI/Anthropic/Fake/Ollama providers
+2. **Completed:** Evaluation framework (Sprint 6) — RAGAS, DeepEval, custom registry
+3. **Optional:** Cloud embedding providers (OpenAI/Cohere/VoyageAI) as add-ons
+4. **Optional:** Managed vector stores (Chroma/Pinecone/Weaviate/Qdrant) as add-ons
 
 ---
 
-*Document updated: 2026-07-06*
-*Next review: After Sprint 5.1 completion*
+*Document updated: 2026-07-08*
+*Next review: Post-v1.0.0 maintenance*

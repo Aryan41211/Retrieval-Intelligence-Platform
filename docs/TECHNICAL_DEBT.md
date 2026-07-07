@@ -11,10 +11,10 @@ This document tracks all known technical debt, architectural compromises, and ar
 
 | Issue | Description | Current Impact | Recommended Solution | Owner | Status |
 |-------|-------------|----------------|---------------------|-------|--------|
-| **Generation Pipeline Incomplete** | Missing real LLM provider implementations | Cannot deliver core RAG functionality | Implement OpenAIGenerator, AnthropicGenerator | Platform Team | 🔄 In Progress (Sprint 5.1) |
-| **Embedding Provider Ecosystem** | Limited to Sentence Transformers only | Poor performance for enterprise use | Add OpenAI, Cohere, VoyageAI providers | ML Team | 📋 Planning |
-| **Vector Store Portfolio** | Incomplete managed vector store implementations | Limited deployment options | Complete Chroma, Pinecone, Weaviate, Qdrant | Infrastructure Team | 📋 Planning |
-| **Evaluation Framework** | Incomplete RAGAS and DeepEval integration | Cannot measure RAG quality effectively | Implement comprehensive metrics | Data Science Team | 📋 Planning |
+| **Generation Pipeline** | Real LLM provider implementations (OpenAI/Anthropic/etc.) | Delivered in v1.0.0 | Maintain provider coverage; add vLLM/TGI as needed | Platform Team | ✅ Resolved (Sprint 5) |
+| **Embedding Provider Ecosystem** | Limited to Sentence Transformers | Optional add-on, not blocking | Add OpenAI/Cohere/VoyageAI providers | ML Team | 📋 Optional future |
+| **Vector Store Portfolio** | FAISS only (managed stores missing) | Optional add-on, not blocking | Add Chroma/Pinecone/Weaviate/Qdrant | Infra Team | 📋 Optional future |
+| **Evaluation Framework** | RAGAS/DeepEval + custom registry | Delivered in v1.0.0 | Extend metric coverage | Data Science Team | ✅ Resolved (Sprint 6) |
 
 ### Medium Priority (Performance & Quality)
 
@@ -76,17 +76,15 @@ This document tracks all known technical debt, architectural compromises, and ar
 - **Gap:** Limited advanced retrieval algorithms
 - **Debt:** Retrieval quality limits overall RAG performance
 
-**Generation Pipeline** ❌ Missing
-- **Current:** Pipeline infrastructure, stubs, basic components
-- **Target:** Full LLM integration with citation support
-- **Gap:** No real LLM provider implementations
-- **Debt:** Cannot deliver core RAG functionality
+**Generation Pipeline** ✅ Complete
+- **Status:** OpenAI/Anthropic/Fake/Ollama providers, citations, hallucination guard, streaming (Sprint 5)
+- **Quality:** Comprehensive unit + integration tests
+- **Gaps:** vLLM/TGI providers (optional future add-on)
 
-**Evaluation Pipeline** 🟡 Partial
-- **Current:** RAGAS evaluator integration
+**Evaluation Pipeline** ✅ Complete
+- **Status:** RAGAS + DeepEval integration, custom metric registry (Sprint 6)
 - **Target:** Comprehensive metrics, custom metrics, deep evaluation
-- **Gap:** Limited metric coverage, missing DeepEval
-- **Debt:** Quality assessment incomplete
+- **Gap:** Extended metric coverage (incremental)
 
 ### Frontend ⚠️ Partial
 
@@ -232,14 +230,14 @@ This document tracks all known technical debt, architectural compromises, and ar
 
 | Component | Current Health | Debt Level | Reduction Priority | Estimated Effort |
 |-----------|---------------|------------|-------------------|-----------------|
-| **Generation Pipeline** | ❌ Critical | High | **Immediate** | 2-3 sprints |
-| **Embedding Providers** | 🟡 Medium | Medium | **High** | 1-2 sprints |
-| **Vector Stores** | 🟡 Medium | Medium | **High** | 2-3 sprints |
-| **Evaluation Framework** | 🟡 Medium | Medium | **High** | 2 sprints |
+| **Generation Pipeline** | ✅ Complete | Low | **Resolved** | Done (Sprint 5) |
+| **Embedding Providers** | 🟡 Medium | Low | **Optional** | Add-on (Sprint 5.2) |
+| **Vector Stores** | 🟡 Medium | Low | **Optional** | Add-on (Sprint 7) |
+| **Evaluation Framework** | ✅ Complete | Low | **Resolved** | Done (Sprint 6) |
 | **Chunking Strategies** | 🟡 Low | Low | **Medium** | 1 sprint |
 | **Reranking** | 🟡 Low | Low | **Medium** | 1 sprint |
 | **Caching** | 🟡 Low | Low | **Medium** | 1 sprint |
-| **Monitoring** | ❌ Missing | High | **Strategic** | 3-4 sprints |
+| **Monitoring** | ❌ Missing | Medium | **Strategic** | 3-4 sprints |
 | **Security** | 🟡 Low | Low | **Strategic** | 2 sprints |
 
 ---
@@ -344,23 +342,23 @@ This document tracks all known technical debt, architectural compromises, and ar
 
 ## Debt Assessment Summary
 
-**Overall Technical Debt:** Medium to High
+**Overall Technical Debt:** Low (core functionality delivered in v1.0.0)
 
 **Debt Sources:**
 - ✅ **Infrastructure Debt:** Directory structure (resolved)
-- ✅ **Component Debt:** Generation/Evaluation providers (managed in sprints 5.1-6)
-- ✅ **Feature Debt:** Advanced capabilities (planned sprints 7-8)
-- ❌ **Critical Missing:** Core functionality (under resolution)
+- ✅ **Component Debt:** Generation/Evaluation providers (delivered Sprints 5–6)
+- ✅ **Feature Debt:** Enterprise features (delivered Sprint 9)
+- 🔄 **Optional Add-ons:** Cloud embedding/vector-store providers, advanced rerankers (future)
 
 **Recovery Path:**
-- **Short Term:** Complete critical components (sprints 5.1-5.2)
-- **Medium Term:** Enhance evaluation and vector stores (sprints 6-7)
-- **Long Term:** Scale and advance features (sprints 8+)
+- **Short Term:** Capture live UI visuals; wire SMTP; refresh-token denylist
+- **Medium Term:** Optional managed vector stores / cloud embedding providers
+- **Long Term:** Scale and advanced features (multi-modal, enterprise)
 
-**Expected Outcome:** Reduce technical debt from High/Medium to Low within 3-4 sprints while maintaining development velocity.
+**Expected Outcome:** Maintain Low technical debt while incrementally extending the provider ecosystem.
 
 ---
 
-*Document updated: 2026-07-06*
-*Next review: After Sprint 5.1 completion*
-*Debt reduction progress: Ongoing*
+*Document updated: 2026-07-08*
+*Next review: Post-v1.0.0 maintenance*
+*Debt reduction progress: Core pipeline delivered; remaining debt is optional add-ons*

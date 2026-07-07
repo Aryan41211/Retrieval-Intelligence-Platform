@@ -30,7 +30,7 @@ The Retrieval Intelligence Platform follows a phased approach to building a comp
 
 ---
 
-### Phase 2: Chunking Strategies 🟡 Partial
+### Phase 2: Chunking Strategies ✅ Complete
 
 **Objective:** Split documents into semantically meaningful chunks for retrieval
 
@@ -49,7 +49,7 @@ The Retrieval Intelligence Platform follows a phased approach to building a comp
 
 ---
 
-### Phase 3: Embedding Integration 🟡 Partial
+### Phase 3: Embedding Integration ✅ Complete
 
 **Objective:** Convert chunks into vector representations for similarity search
 
@@ -67,7 +67,7 @@ The Retrieval Intelligence Platform follows a phased approach to building a comp
 
 ---
 
-### Phase 4: Vector Store & Retrieval 🟡 Partial
+### Phase 4: Vector Store & Retrieval ✅ Complete
 
 **Objective:** Store and efficiently retrieve document chunks using vector similarity
 
@@ -86,7 +86,7 @@ The Retrieval Intelligence Platform follows a phased approach to building a comp
 
 ---
 
-### Phase 5: Grounded Generation ❌ Missing
+### Phase 5: Grounded Generation ✅ Complete
 
 **Objective:** Produce grounded answers with verifiably supported citations
 
@@ -105,7 +105,7 @@ The Retrieval Intelligence Platform follows a phased approach to building a comp
 
 ---
 
-### Phase 6: Evaluation Framework ❌ Missing
+### Phase 6: Evaluation Framework ✅ Complete
 
 **Objective:** Automated quality evaluation using industry-standard metrics
 
@@ -123,7 +123,7 @@ The Retrieval Intelligence Platform follows a phased approach to building a comp
 
 ---
 
-### Phase 4.5: Experiment Tracking ❌ Missing
+### Phase 4.5: Experiment Tracking ✅ Complete
 
 **Objective:** Full experiment tracking and A/B testing capabilities
 
@@ -171,11 +171,11 @@ The Retrieval Intelligence Platform follows a phased approach to building a comp
 
 | Version | Focus Area | Status | Key Features |
 |---------|------------|--------|--------------|
-| **1.0** | Core RAG Pipeline | ✅ MVP Complete | Document ingestion, retrieval, generation |
-| **1.1** | Embedding Integration | 🔄 In Progress | Cloud embedding providers, caching |
-| **1.2** | Generation Pipeline | 🔄 Planned | Real LLM providers, streaming, structured output |
-| **1.3** | Evaluation Framework | 🔄 Planning | RAGAS, DeepEval, comprehensive metrics |
-| **1.4** | Experiment Tracking | 🔄 Planning | MLflow, A/B testing, comparison tools |
+| **1.0** | Core RAG Pipeline | ✅ Complete | Document ingestion, retrieval, generation, evaluation, experiment tracking |
+| **1.1** | Embedding Integration | ✅ Complete | Sentence-Transformers provider, validation, benchmarking, caching |
+| **1.2** | Generation Pipeline | ✅ Complete | OpenAI/Anthropic/Fake/Ollama providers, streaming, citations, hallucination guard |
+| **1.3** | Evaluation Framework | ✅ Complete | RAGAS, DeepEval, custom metric registry |
+| **1.4** | Experiment Tracking | ✅ Complete | MLflow, Weights & Biases, lifecycle management |
 | **2.0** | Scale & Performance | 🔄 Conceptual | Distributed processing, multi-modal, enterprise |
 
 ---
@@ -260,5 +260,6 @@ Each sprint follows the development workflow outlined in CLAUDE.md:
 
 ---
 
-*Document updated: 2026-07-06*
-*Next sprint focus: Complete Generation Pipeline (Sprint 5.1)*
+*Document updated: 2026-07-08*
+*Status: All phases (1–10) complete. Released as v1.0.0.*
+*See `docs/RELEASE_NOTES_v1.0.0.md` for the full release summary.*

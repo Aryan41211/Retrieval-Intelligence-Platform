@@ -154,17 +154,24 @@ Phase reports (including enterprise and release) live in
 
 ## Roadmap
 
+**Status:** All planned phases are complete. The platform is released as
+**v1.0.0** (production-ready + enterprise-grade). See
+[`docs/RELEASE_NOTES_v1.0.0.md`](docs/RELEASE_NOTES_v1.0.0.md).
+
 | Phase | Focus Area | Status |
 |-------|------------|--------|
 | 1 | Document Ingestion Engine | ✅ Complete |
-| 2 | Chunking Strategies | ⏳ Planned |
-| 3 | Embedding Integration | ⏳ Planned |
-| 4 | Vector Store & Retrieval | ⏳ Planned |
-| 5 | Grounded Generation | ⏳ Planned |
-| 6 | Evaluation Framework | ⏳ Planned |
-| 7 | Experiment Tracking | ⏳ Planned |
+| 2 | Chunking Strategies | ✅ Complete |
+| 3 | Embedding Integration | ✅ Complete |
+| 4 | Vector Store & Retrieval | ✅ Complete |
+| 4.1–4.3 | Embedding Validation & Benchmarking | ✅ Complete |
+| 4.5 | Experiment Tracking (foundation) | ✅ Complete |
+| 5 | Grounded Generation | ✅ Complete |
+| 6 | Evaluation Framework | ✅ Complete |
+| 7 | Experiment Tracking (MLflow / WandB) | ✅ Complete |
 | 8 | Production Engineering | ✅ Complete |
 | 9 | Enterprise Features | ✅ Complete |
+| 10 | Final Release & Portfolio | ✅ Complete |
 
 ## License
 
