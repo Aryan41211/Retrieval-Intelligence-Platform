@@ -217,7 +217,6 @@ class TestRAGPipelineEndToEnd:
 
     async def test_llm_gateway_produces_grounded_responses(self):
         """Verify LLMGateway produces responses through the provider."""
-        from backend.generation.pipeline_components.llm_gateway import LLMGateway
         gateway = LLMGateway(provider=FakeProvider())
         response = await gateway.generate(prompt="[doc_1]: test context\n\nQuestion: what?", temperature=0.1, max_tokens=64)
         assert isinstance(response, str)

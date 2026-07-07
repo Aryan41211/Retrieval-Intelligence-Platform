@@ -1,6 +1,6 @@
 """Unit tests for conversation exporters (JSON, Markdown, PDF)."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from backend.enterprise.exporters import export_conversation
 from backend.enterprise.models import Conversation, Message
@@ -12,8 +12,8 @@ def _make_conversation() -> tuple[Conversation, list[Message]]:
         user_id="u-1",
         workspace_id=None,
         title="My Chat",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
-        updated_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+        created_at=datetime(2024, 1, 1, tzinfo=UTC),
+        updated_at=datetime(2024, 1, 2, tzinfo=UTC),
     )
     messages = [
         Message(
@@ -24,7 +24,7 @@ def _make_conversation() -> tuple[Conversation, list[Message]]:
             citations={},
             correlation_id=None,
             token_count=3,
-            created_at=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
+            created_at=datetime(2024, 1, 1, 12, 0, tzinfo=UTC),
         ),
         Message(
             id="m-2",
@@ -34,7 +34,7 @@ def _make_conversation() -> tuple[Conversation, list[Message]]:
             citations={"doc": "x"},
             correlation_id="corr-1",
             token_count=5,
-            created_at=datetime(2024, 1, 1, 12, 1, tzinfo=timezone.utc),
+            created_at=datetime(2024, 1, 1, 12, 1, tzinfo=UTC),
         ),
     ]
     return conv, messages

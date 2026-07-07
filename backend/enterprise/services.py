@@ -26,7 +26,6 @@ from backend.enterprise.models import (
     WorkspaceMembership,
 )
 from backend.enterprise.oauth import exchange_code, is_oauth_configured
-from backend.enterprise.rbac import Role, permissions_for_role
 from backend.enterprise.schemas import (
     MessageCreate,
     TokenResponse,
@@ -292,7 +291,6 @@ async def add_workspace_member(
     db: AsyncSession, workspace: Workspace, user_id: str, role: str = "member"
 ) -> WorkspaceMembership:
     """Add a user to a workspace (idempotent on role)."""
-    from fastapi import HTTPException, status
 
     result = await db.execute(
         select(WorkspaceMembership).where(

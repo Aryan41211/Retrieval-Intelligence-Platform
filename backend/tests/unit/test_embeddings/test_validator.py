@@ -4,12 +4,12 @@ import math
 
 import pytest
 
-from backend.data.models.embedding import Embedding
 from backend.data.embeddings.embedding_validator import (
-    EmbeddingValidator,
-    EmbeddingValidationError,
     EmbeddingDimensionError,
+    EmbeddingValidationError,
+    EmbeddingValidator,
 )
+from backend.data.models.embedding import Embedding
 
 
 class TestEmbeddingValidator:

@@ -12,8 +12,8 @@ from backend.generation.exceptions import (
     LLMProviderUnavailableError,
 )
 from backend.generation.models import ContextItem, GenerationResult
-from backend.generation.pipeline_components.context_builder import ContextBuilder
 from backend.generation.pipeline_components.citation_generator import CitationGenerator
+from backend.generation.pipeline_components.context_builder import ContextBuilder
 from backend.generation.pipeline_components.hallucination_guard import HallucinationGuard
 from backend.generation.pipeline_components.llm_gateway import LLMGateway
 from backend.generation.pipeline_components.prompt_builder import PromptBuilder
@@ -57,7 +57,7 @@ class GenerationPipeline:
         self._hallucination_guard = hallucination_guard
 
     @classmethod
-    def from_config(cls) -> "GenerationPipeline":
+    def from_config(cls) -> GenerationPipeline:
         provider = ProviderFactory.create()
 
         # Lazy imports avoid circulars in test environments.

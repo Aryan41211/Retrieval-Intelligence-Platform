@@ -4,13 +4,12 @@ import math
 import re
 import time
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any
 
 from backend.retrieval.exceptions import RetrievalError
 from backend.retrieval.retrieval_filters import RetrievalFilters
 from backend.retrieval.retrieval_request import RetrievalRequest
 from backend.retrieval.retrieval_result import RetrievalChunkResult
-
 
 _WORD_RE = re.compile(r"\w+")
 
@@ -189,14 +188,14 @@ class BM25Retriever:
         if results:
             max_score = max(scores[i] for i in ranked_idx) if ranked_idx else 1.0
             denom = float(max_score) if max_score != 0 else 1.0
-            for r, i in zip(results, ranked_idx[: len(results)]):
+            for r, i in zip(results, ranked_idx[: len(results)], strict=False):
                 sim = max(0.0, float(scores[i]) / denom)
                 # apply threshold if set
                 if threshold is not None and sim < float(threshold):
                     continue
                 # mutate by re-creating
             out: list[RetrievalChunkResult] = []
-            for r, i in zip(results, ranked_idx[: len(results)]):
+            for r, i in zip(results, ranked_idx[: len(results)], strict=False):
                 sim = max(0.0, float(scores[i]) / denom)
                 if threshold is not None and sim < float(threshold):
                     continue

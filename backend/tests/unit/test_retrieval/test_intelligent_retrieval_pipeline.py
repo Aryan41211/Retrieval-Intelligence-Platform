@@ -1,26 +1,21 @@
-import logging
 from uuid import UUID
 
 import numpy as np
 import pytest
 
+from backend.configs.settings import (
+    CrossEncoderRerankSettings,
+    QueryExpansionSettings,
+)
 from backend.retrieval.fusion.rrf_fusion import RRFFuser
 from backend.retrieval.intelligent_retrieval_pipeline import IntelligentRetrievalPipeline
 from backend.retrieval.query_expansion.query_expander import QueryExpander
+from backend.retrieval.rerank.cross_encoder_reranker import CrossEncoderReranker
 from backend.retrieval.retrieval_filters import RetrievalFilters
 from backend.retrieval.retrieval_request import RetrievalRequest
 from backend.retrieval.retrieval_result import RetrievalChunkResult
-from backend.retrieval.rerank.cross_encoder_reranker import CrossEncoderReranker
 from backend.retrieval.sparse.bm25_retriever import BM25Retriever
 from backend.retrieval.topk.dynamic_topk import DynamicTopKSelector
-from backend.configs.settings import (
-    CrossEncoderRerankSettings,
-    DynamicTopKSettings,
-    IntelligentRetrievalSettings,
-    QueryExpansionSettings,
-    RRFSettings,
-    RetrievalSettings,
-)
 from backend.retrieval.utils.analytics import RetrievalAnalytics
 from backend.vectorstore.faiss_vector_store import FAISSVectorStore
 

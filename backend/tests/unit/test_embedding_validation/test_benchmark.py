@@ -11,8 +11,6 @@ from backend.embedding_validation.embedding_benchmark import (
     EmbeddingBenchmark,
     LatencyMetrics,
     ThroughputMetrics,
-    BatchMetrics,
-    ResourceMetrics,
 )
 
 

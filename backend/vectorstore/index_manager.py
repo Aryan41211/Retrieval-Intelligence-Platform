@@ -4,10 +4,7 @@ from typing import Any
 
 from backend.vectorstore.base_vector_store import BaseVectorStore
 from backend.vectorstore.exceptions import (
-    IndexCreationError,
-    IndexLoadError,
     IndexSaveError,
-    VectorStoreError,
 )
 from backend.vectorstore.index_metadata import IndexMetadata, IndexType
 

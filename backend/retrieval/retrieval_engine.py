@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Iterable
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -11,13 +10,11 @@ from backend.retrieval.exceptions import (
     EmptyRetrievalResultError,
     RetrievalConfigurationError,
     RetrievalError,
-    RetrievalTimeoutError,
 )
 from backend.retrieval.retrieval_filters import RetrievalFilters
 from backend.retrieval.retrieval_ranker import RetrievalRanker, VectorSimilarityRanker
 from backend.retrieval.retrieval_request import RetrievalRequest
 from backend.retrieval.retrieval_result import RetrievalChunkResult
-from backend.retrieval.retrieval_metadata import RetrievalMetadata
 from backend.vectorstore.base_vector_store import BaseVectorStore
 
 logger = logging.getLogger(__name__)
@@ -86,7 +83,7 @@ class RetrievalEngine:
             )
 
         out: list[list[RetrievalChunkResult]] = []
-        for req, raw_results in zip(requests, raw_batch):
+        for req, raw_results in zip(requests, raw_batch, strict=False):
             ranked = self._ranker.rank(req.query_vector, raw_results, req.top_k)
             out.append(ranked)
 

@@ -7,7 +7,7 @@ enterprise endpoints: ``get_current_user``, ``require_roles`` and
 """
 
 from enum import Enum
-from typing import Iterable
+from collections.abc import Awaitable, Callable
 
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -102,7 +102,7 @@ async def get_current_active_user(
     return current_user
 
 
-def require_roles(*roles: str):
+def require_roles(*roles: str) -> Callable[..., Awaitable[User]]:
     """Dependency factory enforcing one of the given roles."""
 
     async def _dep(current_user: User = Depends(get_current_active_user)) -> User:
@@ -116,7 +116,7 @@ def require_roles(*roles: str):
     return _dep
 
 
-def require_permissions(*permissions: str):
+def require_permissions(*permissions: str) -> Callable[..., Awaitable[User]]:
     """Dependency factory enforcing all of the given permissions."""
 
     required = set(permissions)

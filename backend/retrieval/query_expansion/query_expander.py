@@ -7,7 +7,6 @@ from typing import Any
 
 from backend.configs.settings import QueryExpansionSettings
 
-
 _WORD_RE = re.compile(r"\b\w+\b")
 
 

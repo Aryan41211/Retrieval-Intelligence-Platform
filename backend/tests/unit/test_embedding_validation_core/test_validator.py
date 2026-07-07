@@ -1,11 +1,14 @@
 """Tests for embedding validation core modules."""
 
 import math
-from datetime import datetime, timezone
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from backend.data.models.embedding import Embedding
 from backend.embedding_validation.embedding_validator import EmbeddingValidator
+from backend.embedding_validation.exceptions import (
+    DuplicateEmbeddingError,
+    InvalidEmbeddingMetadataError,
+)
 from backend.embedding_validation.validation_result import (
     ValidationCheckResult,
     ValidationResult,
@@ -13,10 +16,6 @@ from backend.embedding_validation.validation_result import (
     ValidationStatus,
 )
 from backend.embedding_validation.validation_runner import ValidationRunner, ValidationSummary
-from backend.embedding_validation.exceptions import (
-    DuplicateEmbeddingError,
-    InvalidEmbeddingMetadataError,
-)
 
 
 class TestValidationCheckResult:

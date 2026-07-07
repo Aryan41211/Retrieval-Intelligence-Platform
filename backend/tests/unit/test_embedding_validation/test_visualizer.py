@@ -1,6 +1,5 @@
 """Tests for embedding visualizer."""
 
-import math
 from uuid import uuid4
 
 import pytest

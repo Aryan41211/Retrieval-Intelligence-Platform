@@ -1,11 +1,11 @@
 """Tests for retrieval engine."""
 
-import numpy as np
-import pytest
-from datetime import UTC, datetime
 from uuid import UUID
 
-from backend.retrieval.exceptions import EmptyRetrievalResultError, RetrievalError
+import numpy as np
+import pytest
+
+from backend.retrieval.exceptions import EmptyRetrievalResultError
 from backend.retrieval.retrieval_engine import RetrievalEngine
 from backend.retrieval.retrieval_filters import RetrievalFilters
 from backend.retrieval.retrieval_request import RetrievalRequest

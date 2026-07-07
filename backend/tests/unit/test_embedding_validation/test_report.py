@@ -1,10 +1,6 @@
 """Tests for benchmark report."""
 
-from datetime import UTC, datetime
-from pathlib import Path
-from uuid import uuid4
 
-import pytest
 
 from backend.embedding_validation.benchmark_report import BenchmarkReport
 from backend.embedding_validation.embedding_benchmark import BenchmarkResult, LatencyMetrics

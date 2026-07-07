@@ -3,8 +3,6 @@
 import time
 from uuid import uuid4
 
-import pytest
-
 from backend.data.models.chunk import Chunk
 from backend.data.models.embedding import Embedding
 from backend.embedding_validation.validation_runner import (

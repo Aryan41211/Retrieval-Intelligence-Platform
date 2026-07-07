@@ -2,17 +2,19 @@
 Schema definitions for API requests and responses.
 """
 
-from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from uuid import UUID
+
+from pydantic import BaseModel
+
 
 # Document schemas
 class DocumentUploadRequest(BaseModel):
     """Request model for document upload."""
     filename: str
     content: str
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
 class DocumentUploadResponse(BaseModel):
     """Response model for document upload."""
@@ -28,27 +30,27 @@ class DocumentMetadata(BaseModel):
     size_bytes: int
     uploaded_at: datetime
     status: str
-    chunk_count: Optional[int] = None
+    chunk_count: int | None = None
 
 # Chat schemas
 class ChatMessage(BaseModel):
     """Model for chat message."""
     role: str
     content: str
-    timestamp: Optional[datetime] = None
+    timestamp: datetime | None = None
 
 class ChatRequest(BaseModel):
     """Request model for chat completion."""
     query: str
-    conversation_id: Optional[str] = None
-    context: Optional[Dict[str, Any]] = None
+    conversation_id: str | None = None
+    context: dict[str, Any] | None = None
 
 class ChatResponse(BaseModel):
     """Response model for chat completion."""
     message: ChatMessage
     conversation_id: str
-    retrieved_chunks: Optional[List[Dict[str, Any]]] = None
-    citations: Optional[List[Dict[str, Any]]] = None
+    retrieved_chunks: list[dict[str, Any]] | None = None
+    citations: list[dict[str, Any]] | None = None
 
 # Retrieval schemas
 class RetrievalResult(BaseModel):
@@ -58,43 +60,43 @@ class RetrievalResult(BaseModel):
     content: str
     similarity_score: float
     rank: int
-    source_filename: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    source_filename: str | None = None
+    metadata: dict[str, Any] | None = None
 
 class RetrievalRequest(BaseModel):
     """Request model for retrieval operation."""
     query: str
     top_k: int = 10
-    threshold: Optional[float] = None
-    filters: Optional[Dict[str, Any]] = None
-    strategy: Optional[str] = None
+    threshold: float | None = None
+    filters: dict[str, Any] | None = None
+    strategy: str | None = None
 
 class RetrievalResponse(BaseModel):
     """Response model for retrieval operation."""
-    results: List[RetrievalResult]
+    results: list[RetrievalResult]
     total_found: int
     processing_time_ms: float
-    strategy: Optional[str] = None
+    strategy: str | None = None
 
 # Evaluation schemas
 class EvaluationResult(BaseModel):
     """Model for evaluation result."""
     evaluation_type: str
     score: float
-    details: Optional[Dict[str, Any]] = None
+    details: dict[str, Any] | None = None
     timestamp: datetime
 
 class EvaluationRequest(BaseModel):
     """Request model for evaluation operation."""
-    dataset_id: Optional[str] = None
-    dataset: Optional[List[Dict[str, Any]]] = None
-    evaluation_types: Optional[List[str]] = None
-    metrics: Optional[Dict[str, Any]] = None
+    dataset_id: str | None = None
+    dataset: list[dict[str, Any]] | None = None
+    evaluation_types: list[str] | None = None
+    metrics: dict[str, Any] | None = None
 
 class EvaluationResponse(BaseModel):
     """Response model for evaluation operation."""
     evaluation_id: str
-    results: List[EvaluationResult]
+    results: list[EvaluationResult]
     overall_score: float
     total_items: int
     execution_time_ms: float
@@ -103,17 +105,17 @@ class EvaluationResponse(BaseModel):
 class ExperimentResult(BaseModel):
     """Model for experiment result."""
     experiment_id: str
-    configuration: Dict[str, Any]
-    results: List[Dict[str, Any]]
-    metrics: Dict[str, float]
+    configuration: dict[str, Any]
+    results: list[dict[str, Any]]
+    metrics: dict[str, float]
     timestamp: datetime
 
 class ExperimentRequest(BaseModel):
     """Request model for experiment operation."""
     name: str
-    description: Optional[str] = None
-    configuration: Dict[str, Any]
-    dataset_id: Optional[str] = None
+    description: str | None = None
+    configuration: dict[str, Any]
+    dataset_id: str | None = None
 
 class ExperimentResponse(BaseModel):
     """Response model for experiment operation."""
@@ -130,9 +132,9 @@ class SettingsChange(BaseModel):
 
 class SettingsResponse(BaseModel):
     """Response model for settings."""
-    llm_provider: Dict[str, Any]
-    embedding_model: Dict[str, Any]
-    retrieval_strategy: Dict[str, Any]
+    llm_provider: dict[str, Any]
+    embedding_model: dict[str, Any]
+    retrieval_strategy: dict[str, Any]
     top_k: int
     temperature: float
     prompt_version: str

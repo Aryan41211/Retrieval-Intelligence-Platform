@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from backend.enterprise import services
 from backend.enterprise.database import get_session_factory, init_db
-from backend.enterprise.models import AuditLog, Conversation, Message, User
+from backend.enterprise.models import AuditLog, Conversation, User
 from backend.enterprise.schemas import (
     MessageCreate,
     UserCreate,

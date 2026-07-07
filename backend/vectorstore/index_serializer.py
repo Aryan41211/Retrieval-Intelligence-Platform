@@ -6,8 +6,6 @@ import pickle
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-
 from backend.vectorstore.exceptions import IndexCorruptionError, IndexLoadError, IndexSaveError
 from backend.vectorstore.index_metadata import IndexMetadata
 

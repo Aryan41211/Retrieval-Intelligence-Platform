@@ -1,8 +1,6 @@
 """Tests for extended embedding validator."""
 
 import math
-
-import pytest
 from uuid import uuid4
 
 from backend.data.models.embedding import Embedding

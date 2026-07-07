@@ -3,7 +3,6 @@ Enterprise API routers: authentication, users, workspaces, conversations and
 administration. All routers are included under the API prefix by the app.
 """
 
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,16 +10,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.enterprise import security, services
 from backend.enterprise.database import get_db
 from backend.enterprise.exporters import export_conversation
-from backend.enterprise.models import Conversation, Message, User, Workspace
+from backend.enterprise.models import AuditLog, Conversation, Message, User, Workspace
 from backend.enterprise.rbac import (
     get_current_active_user,
     require_permissions,
-    require_roles,
 )
 from backend.enterprise.schemas import (
     AdminStats,
     AuditLogPublic,
     ConversationCreate,
+    ConversationDetailPublic,
     ConversationPublic,
     EmailVerificationRequest,
     MessageCreate,
@@ -38,7 +37,6 @@ from backend.enterprise.schemas import (
     WorkspaceMemberAdd,
     WorkspaceMemberPublic,
     WorkspacePublic,
-    ConversationDetailPublic,
 )
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -392,5 +390,5 @@ async def admin_audit(
     offset: int = Query(0, ge=0),
     current_user: User = Depends(require_permissions("view_analytics")),
     db: AsyncSession = Depends(get_db),
-) -> list[AuditLogPublic]:
+) -> list[AuditLog]:
     return await services.list_audit(db, limit=limit, offset=offset)

@@ -1,16 +1,14 @@
 """Tests for FAISS vector store implementation."""
 
+from uuid import UUID
+
 import numpy as np
 import pytest
-from uuid import UUID
 
 from backend.retrieval.retrieval_filters import RetrievalFilters
 from backend.retrieval.retrieval_request import RetrievalRequest
 from backend.retrieval.retrieval_result import RetrievalChunkResult
 from backend.vectorstore.exceptions import (
-    IndexCreationError,
-    IndexLoadError,
-    IndexSaveError,
     VectorStoreError,
 )
 from backend.vectorstore.faiss_vector_store import FAISSVectorStore

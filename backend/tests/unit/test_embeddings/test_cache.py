@@ -2,10 +2,8 @@
 
 import time
 
-import pytest
-
-from backend.data.models.embedding import Embedding
 from backend.data.embeddings.embedding_cache import EmbeddingCache
+from backend.data.models.embedding import Embedding
 
 
 class TestEmbeddingCache:

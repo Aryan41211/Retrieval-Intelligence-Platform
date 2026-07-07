@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from backend.configs.settings import get_settings
-from backend.generation.exceptions import GenerationError, LLMProviderUnavailableError
+from backend.generation.exceptions import GenerationError
 from backend.generation.providers.anthropic_provider import AnthropicProvider
 from backend.generation.providers.base_provider import LLMProvider
 from backend.generation.providers.nim_provider import NIMProvider

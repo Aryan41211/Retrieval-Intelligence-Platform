@@ -2,11 +2,11 @@
 
 import pytest
 
+from backend.data.embeddings.base_embedding_provider import BaseEmbeddingProvider
 from backend.data.embeddings.embedding_factory import (
     EmbeddingFactory,
     EmbeddingProviderType,
 )
-from backend.data.embeddings.base_embedding_provider import BaseEmbeddingProvider
 
 
 class MockProvider(BaseEmbeddingProvider):

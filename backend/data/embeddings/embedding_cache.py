@@ -59,7 +59,7 @@ class EmbeddingCache:
             return
 
         try:
-            with open(self._persist_path, "r", encoding="utf-8") as f:
+            with open(self._persist_path, encoding="utf-8") as f:
                 payload = json.load(f)
         except (OSError, json.JSONDecodeError):
             # Corrupt cache should not fail embeddings.

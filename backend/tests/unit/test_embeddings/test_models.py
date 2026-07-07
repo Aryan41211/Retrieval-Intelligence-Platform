@@ -1,15 +1,13 @@
 """Tests for embedding models."""
 
-import pytest
 from uuid import uuid4
 
 from backend.data.models.chunk import Chunk
 from backend.data.models.embedding import (
     Embedding,
-    EmbeddingMetadata,
+    EmbeddingBatchResult,
     EmbeddingModelInfo,
     EmbeddingResult,
-    EmbeddingBatchResult,
 )
 
 

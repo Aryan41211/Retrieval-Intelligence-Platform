@@ -3,8 +3,9 @@
 import sqlite3
 from datetime import datetime, timedelta
 
-from backend.enterprise import security
 from fastapi.testclient import TestClient
+
+from backend.enterprise import security
 
 
 def _conn(db_path: str) -> sqlite3.Connection:

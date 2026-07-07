@@ -1,13 +1,10 @@
 """Tests for embedding batch processor."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
-import pytest
-
-from backend.data.models.chunk import Chunk
 from backend.data.embeddings.embedding_batch_processor import (
-    EmbeddingBatchProcessor,
     BatchProcessingConfig,
+    EmbeddingBatchProcessor,
 )
 
 

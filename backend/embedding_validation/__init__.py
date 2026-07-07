@@ -17,6 +17,9 @@ Phase 4.2 - Embedding Benchmarking & Performance Analysis:
 - benchmark_report: Markdown and JSON report generation
 """
 
+from backend.embedding_validation.benchmark_report import (
+    BenchmarkReport,
+)
 from backend.embedding_validation.duplicate_detector import (
     DuplicateDetector,
     DuplicateReport,
@@ -58,9 +61,6 @@ from backend.embedding_validation.validation_result import (
 from backend.embedding_validation.validation_runner import (
     ValidationRunner,
     ValidationSummary,
-)
-from backend.embedding_validation.benchmark_report import (
-    BenchmarkReport,
 )
 
 # Backward compatibility alias

@@ -14,8 +14,6 @@ import hashlib
 import math
 from dataclasses import dataclass, field
 
-import numpy as np
-
 from backend.data.models.embedding import Embedding
 
 

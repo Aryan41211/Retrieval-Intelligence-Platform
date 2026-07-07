@@ -1,16 +1,14 @@
 """Tests for embedding statistics."""
 
-import math
 
-import pytest
 from uuid import uuid4
 
 from backend.data.models.embedding import Embedding
 from backend.embedding_validation.embedding_statistics import (
+    DensityStatistics,
     EmbeddingStatistics,
     EmbeddingStats,
     NormStatistics,
-    DensityStatistics,
 )
 
 

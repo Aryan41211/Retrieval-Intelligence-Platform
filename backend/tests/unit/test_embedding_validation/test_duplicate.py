@@ -3,8 +3,6 @@
 import hashlib
 from uuid import uuid4
 
-import pytest
-
 from backend.data.models.embedding import Embedding
 from backend.embedding_validation.duplicate_detector import (
     DuplicateDetector,

@@ -2,8 +2,8 @@
 
 from uuid import uuid4
 
-import pytest
 import numpy as np
+import pytest
 
 from backend.data.models.embedding import Embedding
 from backend.embedding_validation.similarity_analyzer import (

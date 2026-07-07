@@ -6,7 +6,6 @@ system libraries are required.
 """
 
 import json
-from datetime import datetime
 from typing import Any
 
 from backend.enterprise.models import Conversation, Message
@@ -104,7 +103,7 @@ def _render_pdf(lines: list[str]) -> bytes:
         % (pages_id, font_id, cid)
         if obj.startswith(b"<< /Type /Page /Parent 2 0 R")
         else obj
-        for obj, cid in zip(objects, content_ids)
+        for obj, cid in zip(objects, content_ids, strict=False)
     ]
 
     out = bytearray(b"%PDF-1.4\n")

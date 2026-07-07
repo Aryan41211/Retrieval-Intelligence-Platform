@@ -2,14 +2,12 @@
 
 from unittest.mock import Mock
 
-import pytest
-
-from backend.data.models.chunk import Chunk, ChunkMetadata, ChunkingStrategy
-from backend.data.models.embedding import Embedding, EmbeddingResult, EmbeddingBatchResult
 from backend.data.embeddings.embedding_pipeline import (
     EmbeddingPipeline,
     EmbeddingPipelineConfig,
 )
+from backend.data.models.chunk import Chunk, ChunkingStrategy, ChunkMetadata
+from backend.data.models.embedding import Embedding, EmbeddingBatchResult, EmbeddingResult
 
 
 class TestEmbeddingPipelineConfig:

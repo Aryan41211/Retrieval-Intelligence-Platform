@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import time
 import logging
+import time
 from typing import Any
 
 from backend.retrieval.exceptions import RetrievalConfigurationError
-from backend.retrieval.retrieval_result import RetrievalChunkResult
 from backend.retrieval.rerank.base_reranker import CrossEncoderLikeReranker
-
+from backend.retrieval.retrieval_result import RetrievalChunkResult
 
 logger = logging.getLogger(__name__)
 

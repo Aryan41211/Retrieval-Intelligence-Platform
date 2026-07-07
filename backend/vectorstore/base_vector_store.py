@@ -6,11 +6,9 @@ from typing import Any
 
 import numpy as np
 
-from backend.vectorstore.index_metadata import IndexMetadata, IndexType
-from backend.vectorstore.exceptions import VectorStoreError
-
 from backend.retrieval.retrieval_request import RetrievalRequest
 from backend.retrieval.retrieval_result import RetrievalChunkResult
+from backend.vectorstore.index_metadata import IndexMetadata, IndexType
 
 
 class BaseVectorStore(ABC):

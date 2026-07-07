@@ -6,7 +6,7 @@ helpers for password reset / email verification / OAuth state.
 import hashlib
 import secrets
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import bcrypt
@@ -30,7 +30,7 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def create_access_token(*, subject: str, role: str, expires_in: int | None = None) -> str:

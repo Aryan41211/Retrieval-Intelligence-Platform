@@ -3,25 +3,21 @@ from __future__ import annotations
 import json
 import logging
 import time
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
 from backend.retrieval.exceptions import (
     EmptyRetrievalResultError,
     RetrievalConfigurationError,
-    RetrievalError,
 )
+from backend.retrieval.fusion.rrf_fusion import RRFFuser
+from backend.retrieval.query_expansion.query_expander import QueryExpander
+from backend.retrieval.rerank.cross_encoder_reranker import CrossEncoderReranker
 from backend.retrieval.retrieval_engine import RetrievalEngine
-from backend.retrieval.retrieval_filters import RetrievalFilters
 from backend.retrieval.retrieval_metadata import RetrievalMetadata
 from backend.retrieval.retrieval_request import RetrievalRequest
 from backend.retrieval.retrieval_result import RetrievalChunkResult
-
-from backend.retrieval.rerank.cross_encoder_reranker import CrossEncoderReranker
-from backend.retrieval.query_expansion.query_expander import QueryExpander
 from backend.retrieval.sparse.bm25_retriever import BM25Retriever
-from backend.retrieval.fusion.rrf_fusion import RRFFuser
 from backend.retrieval.topk.dynamic_topk import DynamicTopKSelector
 from backend.retrieval.utils.analytics import RetrievalAnalytics
 

@@ -144,7 +144,7 @@ class EmbeddingBenchmark:
             try:
                 result = embed_fn([chunk])
                 embeddings.extend(result)
-            except Exception as e:
+            except Exception:
                 latencies.append(0.0)
             else:
                 elapsed = (time.perf_counter() - start) * 1000

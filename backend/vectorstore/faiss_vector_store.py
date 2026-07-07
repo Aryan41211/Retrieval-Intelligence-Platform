@@ -1,8 +1,6 @@
 
-import time
-from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import numpy as np
 
@@ -16,7 +14,7 @@ from backend.vectorstore.exceptions import (
     IndexSaveError,
     VectorStoreError,
 )
-from backend.vectorstore.index_metadata import IndexMetadata, IndexType, DistanceMetric
+from backend.vectorstore.index_metadata import DistanceMetric, IndexMetadata, IndexType
 from backend.vectorstore.index_serializer import IndexSerializer
 
 
@@ -485,7 +483,7 @@ class FAISSVectorStore(BaseVectorStore):
         results: list[RetrievalChunkResult] = []
         threshold = request.similarity_threshold
 
-        for rank0, (score, int_id) in enumerate(zip(scores, int_ids), start=1):
+        for rank0, (score, int_id) in enumerate(zip(scores, int_ids, strict=False), start=1):
             if int_id < 0:
                 continue
 

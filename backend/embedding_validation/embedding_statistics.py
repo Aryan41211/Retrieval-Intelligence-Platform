@@ -14,7 +14,6 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from backend.data.models.embedding import Embedding
-from backend.data.models.embedding import Embedding as EmbeddingModel
 
 
 @dataclass

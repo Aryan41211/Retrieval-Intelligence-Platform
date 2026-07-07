@@ -1,21 +1,20 @@
 """Tests for production-grade LLM providers."""
 
-import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
-from unittest.mock import AsyncMock, patch, MagicMock
-from typing import Any, Dict
+import pytest
 
 from backend.generation.exceptions import (
-    GenerationError,
     GenerationTimeoutError,
     LLMProviderUnavailableError,
 )
 from backend.generation.providers.base_provider import LLMProvider
+from backend.generation.providers.common.http_client import HTTPProviderClient
 from backend.generation.providers.openai_provider import (
     OpenAICompatibleProvider,
     OpenAICompatibleSettings,
 )
-from backend.generation.providers.common.http_client import HTTPProviderClient
 
 
 @pytest.fixture

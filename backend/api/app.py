@@ -10,6 +10,16 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from backend.enterprise.database import init_db
+from backend.enterprise.routers import (
+    admin_router,
+    auth_router,
+    conversations_router,
+    users_router,
+    workspaces_router,
+)
 
 from .config import get_settings
 from .middleware import setup_middleware
@@ -21,15 +31,6 @@ from .routers.experiments import router as experiments_router
 from .routers.health import router as health_router
 from .routers.retrieval import router as retrieval_router
 from .routers.settings import router as settings_router
-from backend.enterprise.database import init_db
-from backend.enterprise.routers import (
-    admin_router,
-    auth_router,
-    conversations_router,
-    users_router,
-    workspaces_router,
-)
-from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = get_logger(__name__)
 
