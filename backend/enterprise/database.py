@@ -76,7 +76,16 @@ async def session_scope() -> AsyncIterator[AsyncSession]:
 
 
 async def get_db() -> AsyncIterator[AsyncSession]:
-    """FastAPI dependency yielding an async session."""
+    """FastAPI dependency yielding an async session that commits on success.
+
+    Mirrors :func:`session_scope` so router writes are persisted and rolled back
+    on error, instead of being silently discarded when the session closes.
+    """
     factory = get_session_factory()
     async with factory() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
