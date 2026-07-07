@@ -7,7 +7,7 @@ test against an in-memory SQLite database.
 """
 
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, or_, select

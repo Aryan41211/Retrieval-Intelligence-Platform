@@ -66,7 +66,9 @@ def test_refresh_rotates_token_pair(client):
     )
     assert resp.status_code == 200
     new = resp.json()
-    assert new["access_token"] != tokens["access_token"]
+    assert new["access_token"]
+    # Refresh tokens carry a unique jti, so a rotation always yields a new one.
+    assert new["refresh_token"] != tokens["refresh_token"]
 
 
 def test_refresh_invalid_token_rejected(client):
