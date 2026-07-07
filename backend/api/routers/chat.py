@@ -16,7 +16,7 @@ from backend.generation.models import GenerationResult
 from backend.retrieval.retrieval_result import RetrievalChunkResult
 
 from ..dependencies import get_generation_pipeline
-from ..schemas import ChatMessage, ChatRequest, ChatResponse
+from ..schemas import ChatRequest, ChatResponse
 
 router = APIRouter()
 
