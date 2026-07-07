@@ -29,11 +29,7 @@ async def stream_chat_response(
 ) -> AsyncGenerator[str, None]:
     """Stream chat response through generation pipeline."""
     try:
-        # Convert chunks to ContextItems for generation pipeline
-        context_items = [create_context_item_from_chunk(chunk) for chunk in context_chunks]
-
         # Extract raw chunks for generation pipeline (expects RetrievalChunk-like objects)
-        # Use the chunk objects directly as they have the required attributes
         raw_chunks = context_chunks
 
         # Generate response using the existing generation pipeline
