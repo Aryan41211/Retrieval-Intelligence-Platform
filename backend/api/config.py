@@ -81,6 +81,9 @@ class APISettings(BaseSettings):
     rate_limit_burst: int = Field(
         default=20, ge=1, description="Burst capacity above the sustained rate per client IP."
     )
+    rate_limit_enabled: bool = Field(
+        default=True, description="Enable the in-memory per-IP rate limiter. Disable in tests."
+    )
 
     # --- Logging ---------------------------------------------------------------
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
