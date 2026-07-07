@@ -1,6 +1,6 @@
 """Integration tests for the persistent chat / conversations API."""
 
-from .conftest import auth_headers, register
+from .fixtures import auth_headers, register
 
 
 def _token(client, email, username):
