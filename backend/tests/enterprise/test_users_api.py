@@ -9,7 +9,7 @@ def test_get_me_returns_profile(client, db_path):
     assert resp.status_code == 200
     body = resp.json()
     assert body["email"] == "me@example.com"
-    assert body["username"] == "me"
+    assert body["username"] == "meuser"
     assert "id" in body
 
 

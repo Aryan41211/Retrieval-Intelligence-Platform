@@ -8,7 +8,7 @@ import pytest_asyncio
 from sqlalchemy import select
 
 from backend.enterprise import services
-from backend.enterprise.database import dispose_db, get_session_factory, init_db
+from backend.enterprise.database import get_session_factory, init_db
 from backend.enterprise.models import AuditLog, Conversation, Message, User
 from backend.enterprise.schemas import (
     MessageCreate,
@@ -21,7 +21,10 @@ from backend.enterprise.schemas import (
 def svc_db(tmp_path: Path) -> str:
     path = str(tmp_path / "svc.db")
     os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{path}"
-    dispose_db()
+    import backend.enterprise.database as enterprise_database
+
+    enterprise_database._engine = None
+    enterprise_database._session_factory = None
     return path
 
 
@@ -94,7 +97,10 @@ async def test_password_reset_flow(session) -> None:
 
 @pytest.mark.asyncio
 async def test_email_verification_flow(session) -> None:
-    user = await _make_user(session, email="ev@example.com", username="evuser")
+    user = await _make_user(session, email="evuser@example.com", username="evuser")
+    # Simulate an unverified account, then verify via token.
+    user.is_verified = False
+    await session.flush()
     assert user.is_verified is False
     raw = await services.create_email_verification_token(session, user)
     await services.verify_email(session, raw)
@@ -142,7 +148,12 @@ async def test_conversation_rename_and_delete(session) -> None:
     refreshed = await session.get(Conversation, conv.id)
     assert refreshed.title == "Renamed"
     await services.delete_conversation(session, conv)
-    assert await session.get(Conversation, conv.id) is None
+    # `get` would return the pending-deletion instance from the identity map,
+    # so verify via a query that the row is actually gone after flush.
+    remaining = await session.execute(
+        select(Conversation).where(Conversation.id == conv.id)
+    )
+    assert remaining.scalar_one_or_none() is None
 
 
 @pytest.mark.asyncio
