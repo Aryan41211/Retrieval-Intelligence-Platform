@@ -2,10 +2,8 @@
 
 import time
 
-from backend.enterprise import security
-from backend.enterprise.tests_helpers import create_token_row  # type: ignore
-
-from .conftest import auth_headers, promote_user, query_one, register
+from .helpers import create_token_row
+from .conftest import query_one, register
 
 
 def test_register_returns_tokens_and_persists_user(client, db_path):
