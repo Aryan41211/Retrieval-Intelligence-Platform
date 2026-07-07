@@ -1,6 +1,6 @@
 """Integration tests for the user management API."""
 
-from .conftest import auth_headers, promote_user, query_one, register
+from .fixtures import auth_headers, promote_user, query_one, register
 
 
 def test_get_me_returns_profile(client, db_path):

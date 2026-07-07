@@ -2,8 +2,7 @@
 
 import time
 
-from .helpers import create_token_row
-from .conftest import query_one, register
+from .fixtures import create_token_row, query_one, register
 
 
 def test_register_returns_tokens_and_persists_user(client, db_path):
