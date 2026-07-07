@@ -1,6 +1,6 @@
 """Integration tests for the workspace collaboration API."""
 
-from .conftest import auth_headers, promote_user, query_all, query_one, register
+from .fixtures import auth_headers, promote_user, query_all, query_one, register
 
 
 def _register(client, email, username):
