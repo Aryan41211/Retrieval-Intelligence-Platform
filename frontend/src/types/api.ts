@@ -143,3 +143,88 @@ export interface SettingsResponse {
 }
 
 export type Theme = 'light' | 'dark' | 'system';
+
+// ---------------------------------------------------------------------------
+// Enterprise / platform types
+// ---------------------------------------------------------------------------
+export type UserRole = 'admin' | 'member' | 'viewer';
+
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+  full_name: string;
+  role: UserRole;
+  is_active: boolean;
+  is_verified: boolean;
+  created_at: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
+export interface UserProfileUpdate {
+  full_name?: string | null;
+  preferences?: Record<string, unknown>;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  description: string;
+  owner_id: string;
+  is_shared_kb: boolean;
+  created_at: string;
+}
+
+export interface WorkspaceMember {
+  user_id: string;
+  role: string;
+  username: string;
+}
+
+export interface Conversation {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Message {
+  id: string;
+  role: string;
+  content: string;
+  citations: Record<string, unknown>;
+  correlation_id: string | null;
+  token_count: number;
+  created_at: string;
+}
+
+export interface ConversationDetail extends Conversation {
+  messages: Message[];
+}
+
+export interface AuditLog {
+  id: string;
+  user_id: string | null;
+  action: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export interface AdminStats {
+  total_users: number;
+  active_users: number;
+  total_workspaces: number;
+  total_conversations: number;
+  total_messages: number;
+  recent_audit_count: number;
+}
