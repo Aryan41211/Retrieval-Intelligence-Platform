@@ -6,8 +6,8 @@ enterprise endpoints: ``get_current_user``, ``require_roles`` and
 ``require_permissions``.
 """
 
-from enum import Enum
 from collections.abc import Awaitable, Callable
+from enum import Enum
 
 import jwt
 from fastapi import Depends, HTTPException, status
