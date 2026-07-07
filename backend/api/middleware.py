@@ -136,11 +136,12 @@ def setup_middleware(app: FastAPI) -> None:
     """Register all API middleware in the correct (outer-to-inner) order."""
     settings = app.state.api_settings
     # Outermost: rate limiting rejects abusive traffic early.
-    app.add_middleware(
-        RateLimitMiddleware,
-        per_minute=settings.rate_limit_per_minute,
-        burst=settings.rate_limit_burst,
-    )
+    if settings.rate_limit_enabled:
+        app.add_middleware(
+            RateLimitMiddleware,
+            per_minute=settings.rate_limit_per_minute,
+            burst=settings.rate_limit_burst,
+        )
     # Security headers wrap application responses.
     app.add_middleware(SecurityHeadersMiddleware)
     # Innermost: correlation ID and request logging around the route handler.
