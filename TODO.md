@@ -6,23 +6,21 @@
 - [x] Sprint 3: Intelligent Retrieval (hybrid dense + sparse + fusion + reranking)
 - [x] Sprint 4: Embedding Validation & Benchmarking
 - [x] Sprint 4.5: End-to-End Integration & System Stabilization
+- [x] Sprint 5: Grounded Generation (LLM gateway, citation generator, response validator, hallucination guard)
+- [x] Sprint 6: Evaluation Framework (Ragas / DeepEval metrics)
+- [x] Sprint 7: Experiment Tracking (MLflow / WandB)
+- [x] Sprint 8: Production Engineering (Docker, CI/CD, observability, health, rate limiting)
+- [x] Phase 9: Enterprise Features (auth, RBAC, workspaces, persistent chat, admin, export, audit)
+- [x] Phase 10: Final Release & Portfolio (docs, visuals, benchmarks, release v1.0.0)
 
-## Sprint 4.5 — Completed
-- [x] Fix critical generation pipeline breakages (missing llm_gateway, citation_generator, response_validator, hallucination_guard)
-- [x] Implement missing LLM provider stubs (OpenAICompatible, Ollama, NIM)
-- [x] Add `GenerationSettings` to application configuration
-- [x] Fix `ProviderFactory` to read settings correctly
-- [x] Unify exception hierarchy (`VectorStoreError` now inherits `RipError`)
-- [x] Create `RAGPipeline` end-to-end orchestrator
-- [x] Create integration test suite covering all 8 validation scenarios
-- [x] Verify existing tests still pass (no regressions)
-- [x] Run linting and fix all issues
+## Cleanup (Phase 10)
+- [x] Removed dead `backend/models/` compatibility shim (re-export of `backend/data/models`)
+- [x] Confirmed `backend/embeddings` already consolidated into `backend/data/embeddings`
+- [x] No TODO/FIXME/debug `print` noise in shipped code (only intentional benchmark output)
 
-## Remaining / Future
-- [ ] Add FastAPI API layer (`backend/api/`)
-- [ ] Complete ingestion pipeline orchestrator
-- [ ] Add evaluation and experiment tracking modules
-- [ ] Implement async variants for all pipeline stages
-- [ ] Centralize filter matching into shared utility
-- [ ] Add `upsert()` method to `BaseVectorStore`
-- [ ] Consolidate duplicate `backend/embeddings/` and `backend/data/embeddings/`
+## Known / Future (non-blocking)
+- [ ] Run `mypy` with explicit package bases to resolve top-level namespace
+      collisions (`backend.generation` vs `generation`); does not affect runtime.
+- [ ] Wire `_send_email` to a real SMTP transport for password-reset/verify delivery.
+- [ ] Add server-side refresh-token denylist if immediate revocation is required.
+- [ ] Build frontend UI screens on top of the `enterpriseApi` service layer.
