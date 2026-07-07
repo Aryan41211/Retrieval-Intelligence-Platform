@@ -38,12 +38,13 @@ async def session(svc_db: str):
             raise
 
 
-async def _make_user(session, email="u@example.com", username="u", password="password123"):
+async def _make_user(session, email="u@example.com", username="user", password="password123"):
     return await services.register_user(
         session, UserCreate(email=email, username=username, password=password)
     )
 
 
+@pytest.mark.asyncio
 async def test_register_and_authenticate(session) -> None:
     user = await _make_user(session)
     assert user.id
@@ -52,6 +53,7 @@ async def test_register_and_authenticate(session) -> None:
     assert await services.authenticate_user(session, user.email, "wrong") is None
 
 
+@pytest.mark.asyncio
 async def test_tokens_issue_and_refresh(session) -> None:
     user = await _make_user(session, email="tok@example.com", username="tok")
     tokens = services.issue_tokens(user)
@@ -60,6 +62,7 @@ async def test_tokens_issue_and_refresh(session) -> None:
     assert refreshed.refresh_token != tokens.refresh_token
 
 
+@pytest.mark.asyncio
 async def test_duplicate_registration_conflicts(session) -> None:
     from fastapi import HTTPException
 
@@ -72,8 +75,9 @@ async def test_duplicate_registration_conflicts(session) -> None:
         raise AssertionError("expected conflict")
 
 
+@pytest.mark.asyncio
 async def test_password_reset_flow(session) -> None:
-    user = await _make_user(session, email="pr@example.com", username="pr")
+    user = await _make_user(session, email="pr@example.com", username="pruser")
     raw = await services.create_password_reset_token(session, user)
     await services.reset_password(session, raw, "newpass456")
     assert await services.authenticate_user(session, user.email, "newpass456") is not None
@@ -88,8 +92,9 @@ async def test_password_reset_flow(session) -> None:
         raise AssertionError("expected single-use rejection")
 
 
+@pytest.mark.asyncio
 async def test_email_verification_flow(session) -> None:
-    user = await _make_user(session, email="ev@example.com", username="ev")
+    user = await _make_user(session, email="ev@example.com", username="evuser")
     assert user.is_verified is False
     raw = await services.create_email_verification_token(session, user)
     await services.verify_email(session, raw)
@@ -97,15 +102,16 @@ async def test_email_verification_flow(session) -> None:
     assert refreshed.is_verified is True
 
 
+@pytest.mark.asyncio
 async def test_workspace_membership_lifecycle(session) -> None:
-    owner = await _make_user(session, email="wo@example.com", username="wo")
+    owner = await _make_user(session, email="wo@example.com", username="wouser")
     ws = await services.create_workspace(
-        session, owner, WorkspaceCreate(name="WS", is_shared_kb=True)
+        session, owner, WorkspaceCreate(name="wsuser", is_shared_kb=True)
     )
     mine = await services.list_user_workspaces(session, owner)
     assert any(w.id == ws.id for w in mine)
 
-    member = await _make_user(session, email="wm@example.com", username="wm")
+    member = await _make_user(session, email="wm@example.com", username="wmuser")
     await services.add_workspace_member(session, ws, member.id, "member")
     role = await services.user_workspace_role(session, member.id, ws.id)
     assert role == "member"
@@ -113,8 +119,9 @@ async def test_workspace_membership_lifecycle(session) -> None:
     assert await services.user_workspace_role(session, member.id, ws.id) is None
 
 
+@pytest.mark.asyncio
 async def test_conversation_search_by_title_and_content(session) -> None:
-    user = await _make_user(session, email="cs@example.com", username="cs")
+    user = await _make_user(session, email="cs@example.com", username="csuser")
     conv = await services.create_conversation(session, user, "Blue Whale Topic", None)
     await services.add_message(
         session, conv, MessageCreate(role="user", content="tell me about jellyfish")
@@ -127,8 +134,9 @@ async def test_conversation_search_by_title_and_content(session) -> None:
     assert none == []
 
 
+@pytest.mark.asyncio
 async def test_conversation_rename_and_delete(session) -> None:
-    user = await _make_user(session, email="cd@example.com", username="cd")
+    user = await _make_user(session, email="cd@example.com", username="cduser")
     conv = await services.create_conversation(session, user, "Old", None)
     await services.rename_conversation(session, conv, "Renamed")
     refreshed = await session.get(Conversation, conv.id)
@@ -137,8 +145,9 @@ async def test_conversation_rename_and_delete(session) -> None:
     assert await session.get(Conversation, conv.id) is None
 
 
+@pytest.mark.asyncio
 async def test_audit_recording_and_listing(session) -> None:
-    user = await _make_user(session, email="au@example.com", username="au")
+    user = await _make_user(session, email="au@example.com", username="auser")
     await services.record_audit(session, action="custom.action", user=user, resource_type="user")
     records = await services.list_audit(session, limit=10)
     assert any(r.action == "custom.action" for r in records)
@@ -146,8 +155,9 @@ async def test_audit_recording_and_listing(session) -> None:
     assert len(list(count.scalars().all())) >= 1
 
 
+@pytest.mark.asyncio
 async def test_compute_stats_counts_entities(session) -> None:
-    user = await _make_user(session, email="st@example.com", username="st")
+    user = await _make_user(session, email="st@example.com", username="stuser")
     ws = await services.create_workspace(session, user, WorkspaceCreate(name="S"))
     conv = await services.create_conversation(session, user, "C", ws.id)
     await services.add_message(session, conv, MessageCreate(role="user", content="hi"))
@@ -158,6 +168,7 @@ async def test_compute_stats_counts_entities(session) -> None:
     assert stats["total_messages"] >= 1
 
 
+@pytest.mark.asyncio
 async def test_oauth_login_unconfigured_raises(session) -> None:
     from fastapi import HTTPException
 

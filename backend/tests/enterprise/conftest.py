@@ -13,14 +13,16 @@ from pathlib import Path
 # Configure enterprise test settings BEFORE any backend module is imported so
 # the lru-cached settings pick up deterministic values.
 os.environ.setdefault("ENTERPRISE_ENVIRONMENT", "development")
-os.environ.setdefault("ENTERPRISE_JWT_SECRET_KEY", "test-secret-key-not-for-prod")
+os.environ.setdefault(
+    "ENTERPRISE_JWT_SECRET_KEY", "test-secret-key-not-for-prod-use-1234567890"
+)
 os.environ.setdefault("ENTERPRISE_REGISTRATION_ENABLED", "true")
 os.environ.setdefault("ENTERPRISE_EMAIL_VERIFICATION_REQUIRED", "false")
 
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.enterprise.database import dispose_db
+import backend.enterprise.database as enterprise_database
 
 
 @pytest.fixture()
@@ -28,9 +30,11 @@ def db_path(tmp_path: Path) -> str:
     """Return a unique database file path for the test and reset the engine."""
     path = str(tmp_path / "rip_enterprise.db")
     os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{path}"
-    # Force the module-level engine/session factory to be rebuilt against the
-    # freshly configured DATABASE_URL.
-    dispose_db()
+    # Reset the module-level engine/session factory synchronously so the next
+    # get_engine() rebuilds against the freshly configured DATABASE_URL in the
+    # current event loop (TestClient runs each test in its own loop).
+    enterprise_database._engine = None
+    enterprise_database._session_factory = None
     return path
 
 

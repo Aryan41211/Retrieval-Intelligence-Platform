@@ -4,7 +4,7 @@ from .fixtures import auth_headers, promote_user, query_one, register
 
 
 def test_get_me_returns_profile(client, db_path):
-    tokens = register(client, email="me@example.com", username="me")
+    tokens = register(client, email="me@example.com", username="meuser")
     resp = client.get("/api/v1/users/me", headers=auth_headers(tokens["access_token"]))
     assert resp.status_code == 200
     body = resp.json()
