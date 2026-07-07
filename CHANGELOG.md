@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Phase 9: Enterprise features — authentication (JWT/OAuth/refresh/password-reset/email-verify), RBAC authorization, user management, multi-user workspaces with shared knowledge bases, persistent collaborative chat (history/search/rename/delete), admin dashboard with analytics and audit/activity logs, and conversation export (JSON/Markdown/PDF)
+- Frontend `enterpriseApi` service client and typed enterprise models (`frontend/src/services/enterprise.ts`, `frontend/src/types/api.ts`)
+- Comprehensive enterprise test suite (`backend/tests/enterprise/`, 65 tests)
+- Config-driven rate-limit toggle (`API_RATE_LIMIT_ENABLED`) for the API middleware
+
+### Changed
+- `enterprise.database.get_db` now commits on success and rolls back on error so writes persist (previously flushed but never committed)
+- Enterprise settings validated fail-fast; JWT secret is mandatory in production
+
+### Fixed
+- Critical data-loss bug: `get_db` discarded all writes on session close
+
+### Added
 - Sprint 4: Embedding validation framework with profiling, benchmarking, and duplicate detection
 - Sprint 3: Intelligent retrieval pipeline with BM25, RRF fusion, cross-encoder reranking, query expansion, and dynamic top-k selection
 - Sprint 2: Embedding pipeline with batch processing, caching, and validation
