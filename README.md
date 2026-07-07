@@ -6,6 +6,29 @@ A production-grade Retrieval-Augmented Generation platform focused on document r
 
 The Retrieval Intelligence Platform (RIP) is an enterprise-ready system designed to build, evaluate, and deploy retrieval-augmented generation pipelines at scale. It provides a modular architecture that separates concerns across data ingestion, preprocessing, embedding, retrieval, generation, evaluation, and experimentation — enabling teams to iterate rapidly while maintaining production quality.
 
+## Enterprise Features
+
+The platform ships a full enterprise layer (`backend/enterprise/`) wired into the
+API under `/api/v1`:
+
+- **Authentication** — JWT access/refresh tokens (HS256), optional Google OAuth,
+  password reset, and email verification. Passwords are bcrypt-hashed.
+- **Authorization** — Role-Based Access Control (`admin` / `member` / `viewer`)
+  with an explicit permission matrix and FastAPI dependency guards.
+- **User management** — profiles, preferences, and admin user administration.
+- **Workspaces** — multi-user workspaces with shared knowledge bases and team
+  membership/roles.
+- **Persistent chat** — conversation history, full-text search, rename, delete,
+  and export to JSON / Markdown / PDF.
+- **Administration** — dashboard analytics, usage statistics, system health, and
+  append-only audit/activity logs.
+- **API** — versioned responses (`X-API-Version`), structured audit logging, and
+  config-driven, fail-fast settings.
+
+Configuration is environment-driven (`ENTERPRISE_*` variables); the JWT secret is
+mandatory and rejected in production if left at the dev default. See
+`docs/reports/PHASE9_*.md` for the detailed reports.
+
 ## Document Ingestion
 
 The ingestion engine accepts multiple document formats and converts them into a standardized internal Document model for downstream processing.
