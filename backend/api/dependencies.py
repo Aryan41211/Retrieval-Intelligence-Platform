@@ -15,12 +15,14 @@ from functools import lru_cache
 from typing import Any
 
 import numpy as np
-from fastapi import Depends
 
 from backend.configs.settings import get_settings
 from backend.data.chunking.factory import ChunkerFactory
 from backend.data.embeddings.embedding_factory import EmbeddingFactory
 from backend.data.models.chunk import ChunkingStrategy
+
+# Real authentication dependency (JWT / bearer) provided by the enterprise layer.
+from backend.enterprise.rbac import get_current_user  # noqa: F401  (re-exported for routers)
 from backend.generation.generation_pipeline import GenerationPipeline
 from backend.retrieval.exceptions import EmptyRetrievalResultError, RetrievalError
 from backend.retrieval.retrieval_engine import RetrievalEngine
@@ -28,9 +30,6 @@ from backend.retrieval.retrieval_pipeline import RetrievalPipeline
 from backend.retrieval.retrieval_request import RetrievalRequest
 from backend.vectorstore.exceptions import VectorStoreError
 from backend.vectorstore.vector_store_factory import VectorStoreFactory
-
-# Real authentication dependency (JWT / bearer) provided by the enterprise layer.
-from backend.enterprise.rbac import get_current_user  # noqa: F401  (re-exported for routers)
 
 logger = logging.getLogger(__name__)
 

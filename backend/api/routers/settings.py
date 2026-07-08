@@ -6,6 +6,7 @@ environment-driven (per project conventions), so mutation endpoints are not impl
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from backend.api.config import get_settings as get_api_settings
 from backend.api.dependencies import get_current_user
 from backend.configs.settings import get_settings
 
@@ -16,15 +17,16 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 async def get_settings_view() -> dict[str, object]:
     """Return a non-sensitive summary of the active configuration."""
     settings = get_settings()
+    api_settings = get_api_settings()
     return {
-        "environment": settings.environment,
+        "environment": api_settings.environment,
         "generation_provider": settings.generation.provider,
         "generation_model": settings.generation.model_name,
         "embedding_provider": "sentence_transformers",
         "vector_store_provider": settings.vector_store.provider,
         "retrieval_top_k": settings.retrieval.top_k,
         "retrieval_strategy": "dense",
-        "docs_enabled": settings.docs_enabled,
+        "docs_enabled": api_settings.docs_enabled,
     }
 
 

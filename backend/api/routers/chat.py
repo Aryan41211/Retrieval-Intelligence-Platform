@@ -83,7 +83,7 @@ async def stream_chat_response(
             else None,
         )
 
-        yield f"data: {json.dumps(response.model_dump())}\n\n"
+        yield f"data: {json.dumps(response.model_dump(mode='json'))}\n\n"
 
     except Exception as exc:  # pragma: no cover - defensive streaming guard
         error_response = {

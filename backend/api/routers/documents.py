@@ -12,8 +12,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from backend.api.dependencies import (
     DEFAULT_INDEX_ID,
-    get_current_user,
     get_chunker,
+    get_current_user,
     get_embedding_provider,
     get_vector_store,
 )
