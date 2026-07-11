@@ -49,7 +49,9 @@ class IntelligentRetrievalPipeline:
         self._topk_selector = topk_selector
         self._analytics = analytics or RetrievalAnalytics()
 
-    def run(self, request: RetrievalRequest) -> tuple[list[RetrievalChunkResult], RetrievalMetadata]:
+    def run(
+        self, request: RetrievalRequest
+    ) -> tuple[list[RetrievalChunkResult], RetrievalMetadata]:
         correlation_id = request.correlation_id
         t0_total = time.perf_counter()
 
@@ -72,7 +74,9 @@ class IntelligentRetrievalPipeline:
             try:
                 t_exp = time.perf_counter()
                 expanded_query_text, query_expand_meta = self._query_expander.expand(query_text)
-                self._analytics.add("query_expansion_latency_ms", int((time.perf_counter() - t_exp) * 1000))
+                self._analytics.add(
+                    "query_expansion_latency_ms", int((time.perf_counter() - t_exp) * 1000)
+                )
             except Exception as e:
                 logger.warning(
                     json.dumps(
@@ -199,7 +203,11 @@ class IntelligentRetrievalPipeline:
             "query_expansion": query_expand_meta,
             "topk": topk_meta,
             # RRFFusion.stats may contain non-JSON-serializable dataclass instances; store as dict.
-            "fusion": vars(self._fusion.stats) if hasattr(self._fusion, "stats") and self._fusion.stats is not None else {},
+            "fusion": (
+                vars(self._fusion.stats)
+                if hasattr(self._fusion, "stats") and self._fusion.stats is not None
+                else {}
+            ),
             "strategy": {
                 "dense_enabled": True,
                 "sparse_enabled": len(sparse_results) > 0,
@@ -209,7 +217,9 @@ class IntelligentRetrievalPipeline:
 
         # Log summary + ranking changes (lightweight overlap signal)
         try:
-            dense_chunk_ids = [str(r.chunk_id) for r in dense_results[: min(len(dense_results), request.top_k)]]
+            dense_chunk_ids = [
+                str(r.chunk_id) for r in dense_results[: min(len(dense_results), request.top_k)]
+            ]
             final_chunk_ids = [str(r.chunk_id) for r in final_results]
             overlap = len(set(dense_chunk_ids).intersection(final_chunk_ids))
         except Exception:
@@ -224,7 +234,11 @@ class IntelligentRetrievalPipeline:
                     "total_candidates": len(fused_candidates),
                     "latency_ms": total_latency_ms,
                     "top_k": request.top_k,
-                    "fusion": vars(self._fusion.stats) if hasattr(self._fusion, "stats") and self._fusion.stats is not None else {},
+                    "fusion": (
+                        vars(self._fusion.stats)
+                        if hasattr(self._fusion, "stats") and self._fusion.stats is not None
+                        else {}
+                    ),
                     "overlap_dense_to_final": overlap,
                 }
             )
@@ -233,7 +247,9 @@ class IntelligentRetrievalPipeline:
         return final_results, metadata
 
     @staticmethod
-    def _build_methods_used(dense_results: list[RetrievalChunkResult], sparse_results: list[RetrievalChunkResult]) -> list[str]:
+    def _build_methods_used(
+        dense_results: list[RetrievalChunkResult], sparse_results: list[RetrievalChunkResult]
+    ) -> list[str]:
         methods: list[str] = []
         if dense_results:
             methods.append("vector_similarity")

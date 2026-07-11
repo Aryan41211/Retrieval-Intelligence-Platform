@@ -42,7 +42,9 @@ class NIMProvider(LLMProvider):
     retry logic, streaming, structured responses, and token usage reporting.
     """
 
-    def __init__(self, *, model: str, base_url: str = "https://integrate.api.nvidia.com/v1", **kwargs):
+    def __init__(
+        self, *, model: str, base_url: str = "https://integrate.api.nvidia.com/v1", **kwargs
+    ):
         self._model = model
         self._base_url = base_url.rstrip("/")
         self._http_client = HTTPProviderClient(
@@ -157,7 +159,9 @@ class NIMProvider(LLMProvider):
                     }
                 )
             )
-            raise LLMProviderUnavailableError(f"Provider '{self.provider_name}' failed: {exc}") from exc
+            raise LLMProviderUnavailableError(
+                f"Provider '{self.provider_name}' failed: {exc}"
+            ) from exc
 
     async def _handle_streaming_response(self, response: httpx.Response) -> str:
         """Handle streaming response from NVIDIA NIM API."""

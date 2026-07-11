@@ -24,7 +24,9 @@ class RetrievalPipeline:
     def __init__(self, engine: RetrievalEngine):
         self._engine = engine
 
-    def run(self, request: RetrievalRequest) -> tuple[list[RetrievalChunkResult], RetrievalMetadata]:
+    def run(
+        self, request: RetrievalRequest
+    ) -> tuple[list[RetrievalChunkResult], RetrievalMetadata]:
         correlation_id = request.correlation_id
         t0 = time.perf_counter()
 
@@ -72,7 +74,9 @@ class RetrievalPipeline:
 
         # Top scores are helpful for debugging/observability.
         if results:
-            metadata.top_scores = [r.similarity_score for r in results[: min(len(results), request.top_k)]]
+            metadata.top_scores = [
+                r.similarity_score for r in results[: min(len(results), request.top_k)]
+            ]
 
         logger.info(
             json.dumps(

@@ -99,7 +99,9 @@ async def refresh_tokens(db: AsyncSession, refresh_token: str) -> TokenResponse:
     except PyJWTError:
         from fastapi import HTTPException, status
 
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )
     user = await db.get(User, payload["sub"])
     if user is None or not user.is_active:
         from fastapi import HTTPException, status
@@ -145,11 +147,15 @@ async def reset_password(db: AsyncSession, token: str, new_password: str) -> Non
     from fastapi import HTTPException, status
 
     result = await db.execute(
-        select(PasswordResetToken).where(PasswordResetToken.token_hash == security.hash_token(token))
+        select(PasswordResetToken).where(
+            PasswordResetToken.token_hash == security.hash_token(token)
+        )
     )
     record = result.scalar_one_or_none()
     if record is None or record.used_at is not None or record.expires_at < datetime.utcnow():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token"
+        )
     user = await db.get(User, record.user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
@@ -181,7 +187,9 @@ async def verify_email(db: AsyncSession, token: str) -> None:
     )
     record = result.scalar_one_or_none()
     if record is None or record.used_at is not None or record.expires_at < datetime.utcnow():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token"
+        )
     user = await db.get(User, record.user_id)
     if user is not None:
         user.is_verified = True
@@ -194,7 +202,9 @@ async def oauth_login(db: AsyncSession, provider: str, code: str) -> TokenRespon
     if not is_oauth_configured(provider):
         from fastapi import HTTPException, status
 
-        raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="OAuth not configured")
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="OAuth not configured"
+        )
     profile = await exchange_code(provider, code)
     email = profile.get("email")
     if not email:
@@ -207,7 +217,9 @@ async def oauth_login(db: AsyncSession, provider: str, code: str) -> TokenRespon
         if not settings.registration_enabled:
             from fastapi import HTTPException, status
 
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Registration disabled")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Registration disabled"
+            )
         user = User(
             email=email,
             username=email.split("@")[0],
@@ -236,7 +248,9 @@ async def update_user_profile(db: AsyncSession, user: User, data: UserProfileUpd
 
 async def list_users(db: AsyncSession, *, limit: int = 50, offset: int = 0) -> list[User]:
     """List users (admin)."""
-    result = await db.execute(select(User).order_by(User.created_at.desc()).limit(limit).offset(offset))
+    result = await db.execute(
+        select(User).order_by(User.created_at.desc()).limit(limit).offset(offset)
+    )
     return list(result.scalars().all())
 
 
@@ -300,9 +314,7 @@ async def add_workspace_member(
     )
     membership = result.scalar_one_or_none()
     if membership is None:
-        membership = WorkspaceMembership(
-            workspace_id=workspace.id, user_id=user_id, role=role
-        )
+        membership = WorkspaceMembership(workspace_id=workspace.id, user_id=user_id, role=role)
         db.add(membership)
         await db.flush()
     else:
@@ -327,7 +339,9 @@ async def remove_workspace_member(db: AsyncSession, workspace_id: str, user_id: 
     await db.delete(membership)
 
 
-async def list_workspace_members(db: AsyncSession, workspace: Workspace) -> list[tuple[str, str, str]]:
+async def list_workspace_members(
+    db: AsyncSession, workspace: Workspace
+) -> list[tuple[str, str, str]]:
     """Return (user_id, role, username) for workspace members."""
     stmt = (
         select(WorkspaceMembership.role, User.id, User.username)
@@ -423,9 +437,7 @@ async def delete_conversation(db: AsyncSession, conversation: Conversation) -> N
     await db.delete(conversation)
 
 
-async def search_conversations(
-    db: AsyncSession, user: User, query: str
-) -> list[Conversation]:
+async def search_conversations(db: AsyncSession, user: User, query: str) -> list[Conversation]:
     """Search the user's conversations by title or message content."""
     q = f"%{query.lower()}%"
     stmt = (
@@ -489,7 +501,9 @@ async def list_audit(
 async def compute_stats(db: AsyncSession) -> dict[str, int]:
     """Compute platform usage statistics for the admin dashboard."""
     users = await db.execute(select(func.count()).select_from(User))
-    active = await db.execute(select(func.count()).select_from(User).where(User.is_active.is_(True)))
+    active = await db.execute(
+        select(func.count()).select_from(User).where(User.is_active.is_(True))
+    )
     workspaces = await db.execute(select(func.count()).select_from(Workspace))
     conversations = await db.execute(select(func.count()).select_from(Conversation))
     messages = await db.execute(select(func.count()).select_from(Message))

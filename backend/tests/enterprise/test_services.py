@@ -150,9 +150,7 @@ async def test_conversation_rename_and_delete(session) -> None:
     await services.delete_conversation(session, conv)
     # `get` would return the pending-deletion instance from the identity map,
     # so verify via a query that the row is actually gone after flush.
-    remaining = await session.execute(
-        select(Conversation).where(Conversation.id == conv.id)
-    )
+    remaining = await session.execute(select(Conversation).where(Conversation.id == conv.id))
     assert remaining.scalar_one_or_none() is None
 
 

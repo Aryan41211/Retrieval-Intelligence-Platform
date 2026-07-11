@@ -92,9 +92,7 @@ class DOCXLoader(BaseLoader):
                 # manual extraction from the zip archive.
                 content = _extract_text_from_docx_zip(path)
                 if not content.strip():
-                    raise EmptyDocumentError(
-                        f"DOCX contains no text content: {path}"
-                    ) from e
+                    raise EmptyDocumentError(f"DOCX contains no text content: {path}") from e
                 return self._build_document(path, content, checksum, file_extension)
             raise DocumentLoadError(f"Failed to read DOCX: {e}") from e
         except Exception as e:

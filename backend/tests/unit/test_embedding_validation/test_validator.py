@@ -220,7 +220,9 @@ class TestExtendedEmbeddingValidator:
         assert len(duplicates) == 1
 
     def test_check_near_duplicates(self):
-        validator = ExtendedEmbeddingValidator(near_duplicate_threshold=0.95, detect_near_duplicates=True)
+        validator = ExtendedEmbeddingValidator(
+            near_duplicate_threshold=0.95, detect_near_duplicates=True
+        )
         embeddings = [
             Embedding(
                 chunk_id=uuid4(),

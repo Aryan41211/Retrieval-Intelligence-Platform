@@ -58,7 +58,9 @@ class RetrievalEngine:
         latency_ms = int((time.perf_counter() - t0) * 1000)
 
         if not ranked:
-            raise EmptyRetrievalResultError(details={"top_k": request.top_k, "latency_ms": latency_ms})
+            raise EmptyRetrievalResultError(
+                details={"top_k": request.top_k, "latency_ms": latency_ms}
+            )
 
         # Stash latency in result-level timestamp already; metadata is returned by pipeline normally.
         return ranked

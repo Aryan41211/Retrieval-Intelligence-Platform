@@ -14,8 +14,7 @@ class SentenceChunker(BaseChunker):
     SEARCH_WINDOW_SIZE = 50
 
     SENTENCE_PATTERN = re.compile(
-        r"[.!?]+(?:\s+|\s*$)|(?:\b(?:[A-Z][a-z]+){2,}\s*\.)",
-        re.MULTILINE
+        r"[.!?]+(?:\s+|\s*$)|(?:\b(?:[A-Z][a-z]+){2,}\s*\.)", re.MULTILINE
     )
 
     @property

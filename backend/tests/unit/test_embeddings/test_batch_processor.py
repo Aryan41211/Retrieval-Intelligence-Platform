@@ -43,9 +43,7 @@ class TestEmbeddingBatchProcessor:
         config = BatchProcessingConfig(batch_size=2)
         mock_provider = Mock()
         mock_provider.name = "test-provider"
-        mock_provider.embed_chunks.return_value = Mock(
-            results=[], cache_hits=0, cache_misses=0
-        )
+        mock_provider.embed_chunks.return_value = Mock(results=[], cache_hits=0, cache_misses=0)
         processor = EmbeddingBatchProcessor(mock_provider, config)
         chunks = [Mock() for _ in range(5)]
         processor.process(chunks)
@@ -53,12 +51,8 @@ class TestEmbeddingBatchProcessor:
     def test_get_stats(self):
         mock_provider = Mock()
         mock_provider.name = "test-provider"
-        mock_provider.model_info = Mock(
-            name="test-model", version="1.0", dimension=384
-        )
-        mock_provider.embed_chunks.return_value = Mock(
-            results=[], cache_hits=0, cache_misses=0
-        )
+        mock_provider.model_info = Mock(name="test-model", version="1.0", dimension=384)
+        mock_provider.embed_chunks.return_value = Mock(results=[], cache_hits=0, cache_misses=0)
         processor = EmbeddingBatchProcessor(mock_provider)
         stats = processor.get_stats()
         assert "total_processed" in stats

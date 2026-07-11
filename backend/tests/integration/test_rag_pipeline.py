@@ -163,21 +163,23 @@ class TestGenerationPipelineEndToEnd:
         assert response["code"] == "VECTOR_STORE_ERROR"
 
 
-
 class TestRAGPipelineEndToEnd:
     """End-to-end tests for the unified RAG pipeline."""
 
     async def test_full_pipeline_wired_correctly(self):
         """Test that retrieval results flow into generation correctly."""
+
         def _retrieve(request):
-            return [RetrievalChunkResult(
-                chunk_id=uuid4(),
-                document_id=uuid4(),
-                chunk_text="RAG test context.",
-                similarity_score=0.9,
-                rank=1,
-                source_filename="rag.txt",
-            )], RetrievalMetadata(retrieved_chunks=1)
+            return [
+                RetrievalChunkResult(
+                    chunk_id=uuid4(),
+                    document_id=uuid4(),
+                    chunk_text="RAG test context.",
+                    similarity_score=0.9,
+                    rank=1,
+                    source_filename="rag.txt",
+                )
+            ], RetrievalMetadata(retrieved_chunks=1)
 
         engine = RetrievalEngine.__new__(RetrievalEngine)
         engine.retrieve = lambda request: _retrieve(request)[0]
@@ -218,6 +220,8 @@ class TestRAGPipelineEndToEnd:
     async def test_llm_gateway_produces_grounded_responses(self):
         """Verify LLMGateway produces responses through the provider."""
         gateway = LLMGateway(provider=FakeProvider())
-        response = await gateway.generate(prompt="[doc_1]: test context\n\nQuestion: what?", temperature=0.1, max_tokens=64)
+        response = await gateway.generate(
+            prompt="[doc_1]: test context\n\nQuestion: what?", temperature=0.1, max_tokens=64
+        )
         assert isinstance(response, str)
         assert len(response) > 0

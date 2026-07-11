@@ -12,7 +12,9 @@ from backend.data.embeddings.embedding_factory import (
 class MockProvider(BaseEmbeddingProvider):
     def __init__(self, model_name: str = "mock", config=None):
         super().__init__(config)
-        self._model_info = type("Info", (), {"name": model_name, "version": "1.0", "dimension": 100})()
+        self._model_info = type(
+            "Info", (), {"name": model_name, "version": "1.0", "dimension": 100}
+        )()
 
     @property
     def name(self) -> str:

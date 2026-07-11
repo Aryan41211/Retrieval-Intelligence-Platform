@@ -21,7 +21,9 @@ class RetrievalConfigurationError(RetrievalError):
 class EmptyRetrievalResultError(RetrievalError):
     code = "RETRIEVAL_EMPTY_RESULT_ERROR"
 
-    def __init__(self, message: str = "Retrieval returned no results", details: dict[str, Any] | None = None):
+    def __init__(
+        self, message: str = "Retrieval returned no results", details: dict[str, Any] | None = None
+    ):
         super().__init__(message, details=details)
 
 

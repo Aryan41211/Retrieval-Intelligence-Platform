@@ -111,7 +111,13 @@ def auth_client(tmp_path):
         return GenerationPipeline.from_config()
 
     def _user():
-        return User(id=str(uuid4()), email="test@example.com", username="tester", role="admin", is_active=True)
+        return User(
+            id=str(uuid4()),
+            email="test@example.com",
+            username="tester",
+            role="admin",
+            is_active=True,
+        )
 
     app.dependency_overrides[get_current_user] = _user
     app.dependency_overrides[get_embedding_provider] = _provider

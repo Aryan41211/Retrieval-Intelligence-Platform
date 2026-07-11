@@ -65,9 +65,7 @@ class EmbeddingPipeline:
         self.cache = cache or EmbeddingCache(
             max_size=self.config.cache_max_size,
             ttl_seconds=self.config.cache_ttl if self.config.cache_enabled else None,
-            persist_path=(
-                self.config.cache_persist_path if self.config.cache_enabled else None
-            ),
+            persist_path=(self.config.cache_persist_path if self.config.cache_enabled else None),
         )
         self.validator = EmbeddingValidator()
         self._processor = EmbeddingBatchProcessor(
@@ -173,11 +171,14 @@ class EmbeddingPipeline:
         return {
             **self._stats,
             "cache_stats": self.cache.get_stats(),
-            "provider_stats": self.provider.model_info.model_dump() if self.provider.model_info else {},
-            "success_rate": (self._stats["total_chunks"] - self._stats["errors"])
-            / self._stats["total_chunks"]
-            if self._stats["total_chunks"] > 0
-            else 0,
+            "provider_stats": (
+                self.provider.model_info.model_dump() if self.provider.model_info else {}
+            ),
+            "success_rate": (
+                (self._stats["total_chunks"] - self._stats["errors"]) / self._stats["total_chunks"]
+                if self._stats["total_chunks"] > 0
+                else 0
+            ),
         }
 
     def reset_stats(self) -> None:

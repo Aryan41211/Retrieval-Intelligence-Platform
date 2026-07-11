@@ -161,7 +161,9 @@ class EmbeddingCache:
         self._persist_to_disk()
 
     def get_stats(self) -> dict[str, float]:
-        hit_rate = self._hits / (self._hits + self._misses) if (self._hits + self._misses) > 0 else 0.0
+        hit_rate = (
+            self._hits / (self._hits + self._misses) if (self._hits + self._misses) > 0 else 0.0
+        )
         return {
             "size": len(self._cache),
             "max_size": self._max_size,

@@ -151,7 +151,10 @@ class EmbeddingBenchmark:
                 latencies.append(elapsed)
 
         return self._build_result(
-            embeddings, len(chunks), latencies, [],
+            embeddings,
+            len(chunks),
+            latencies,
+            [],
             provider_name=provider_name,
         )
 
@@ -200,15 +203,19 @@ class EmbeddingBenchmark:
             successful_batches=len(batch_times),
             failed_batches=len(errors),
             average_batch_size=float(
-                np.mean([min(batch_size, len(chunks) - i)
-                        for i in range(0, len(chunks), batch_size)])
+                np.mean(
+                    [min(batch_size, len(chunks) - i) for i in range(0, len(chunks), batch_size)]
+                )
                 if len(chunks) > 0
                 else 0.0
             ),
         )
 
         return self._build_result(
-            embeddings, len(chunks), latencies, batch_times,
+            embeddings,
+            len(chunks),
+            latencies,
+            batch_times,
             batch_metrics=batch_metrics,
             errors=errors or None,
             provider_name=provider_name,
@@ -410,6 +417,7 @@ class EmbeddingBenchmark:
         """
         try:
             import torch
+
             return torch.cuda.is_available()
         except ImportError:
             return False

@@ -101,7 +101,9 @@ class QueryExpander:
         if not text:
             return text, []
 
-        tokens = _WORD_RE.findall(text.lower()) if self._settings.lowercase else _WORD_RE.findall(text)
+        tokens = (
+            _WORD_RE.findall(text.lower()) if self._settings.lowercase else _WORD_RE.findall(text)
+        )
         token_set = set(tokens)
 
         synonyms_applied: list[dict[str, Any]] = []

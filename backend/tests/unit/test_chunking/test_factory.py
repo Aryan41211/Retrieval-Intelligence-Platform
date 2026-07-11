@@ -1,6 +1,5 @@
 """Tests for chunking factory."""
 
-
 from backend.data.chunking.factory import ChunkerFactory
 from backend.data.chunking.markdown_chunker import MarkdownChunker
 from backend.data.chunking.recursive_chunker import RecursiveChunker

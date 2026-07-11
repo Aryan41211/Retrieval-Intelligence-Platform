@@ -46,7 +46,9 @@ class TXTLoader(BaseLoader):
                 except UnicodeDecodeError:
                     continue
             else:
-                raise DocumentLoadError(f"Could not decode file with any encoding: {path}") from None
+                raise DocumentLoadError(
+                    f"Could not decode file with any encoding: {path}"
+                ) from None
 
         if not content.strip():
             raise EmptyDocumentError(f"File is empty or contains only whitespace: {path}")

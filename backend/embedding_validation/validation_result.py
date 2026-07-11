@@ -84,11 +84,7 @@ class ValidationResult:
     @property
     def warning_checks(self) -> list[ValidationCheckResult]:
         """Return all warning and info checks."""
-        return [
-            c
-            for c in self.checks
-            if c.status == ValidationStatus.WARNING
-        ]
+        return [c for c in self.checks if c.status == ValidationStatus.WARNING]
 
     def add_check(self, check: ValidationCheckResult) -> None:
         """Add a check result and update validity."""

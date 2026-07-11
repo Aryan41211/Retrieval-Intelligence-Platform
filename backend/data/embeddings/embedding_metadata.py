@@ -24,9 +24,7 @@ class EmbeddingMetadataBuilder:
         self._metadata["embedding_dimension"] = dimension
         return self
 
-    def with_chunk_info(
-        self, chunk: Chunk, document_id: UUID
-    ) -> "EmbeddingMetadataBuilder":
+    def with_chunk_info(self, chunk: Chunk, document_id: UUID) -> "EmbeddingMetadataBuilder":
         self._metadata["chunk_id"] = str(chunk.chunk_id)
         self._metadata["document_id"] = str(document_id)
         return self

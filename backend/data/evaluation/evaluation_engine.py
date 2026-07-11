@@ -117,12 +117,12 @@ class EvaluationMetrics:
 
         # Map RAGAS metric names to field names
         ragas_mapping = {
-            'faithfulness': 'faithfulness_score',
-            'answer_relevancy': 'answer_relevancy_score',
-            'context_precision': 'context_precision_score',
-            'context_recall': 'context_recall_score',
-            'context_relevancy': 'context_relevancy_score',
-            'answer_correctness': 'answer_correctness_score',
+            "faithfulness": "faithfulness_score",
+            "answer_relevancy": "answer_relevancy_score",
+            "context_precision": "context_precision_score",
+            "context_recall": "context_recall_score",
+            "context_relevancy": "context_relevancy_score",
+            "answer_correctness": "answer_correctness_score",
         }
 
         for ragas_name, value in ragas_results.items():
@@ -131,8 +131,9 @@ class EvaluationMetrics:
 
         # Calculate weighted average
         ragas_scores = [
-            v for k, v in vars(metrics).items()
-            if v is not None and k.endswith('_score') and 'deep' not in k
+            v
+            for k, v in vars(metrics).items()
+            if v is not None and k.endswith("_score") and "deep" not in k
         ]
         if ragas_scores:
             metrics.overall_faithfulness = sum(ragas_scores) / len(ragas_scores)
@@ -147,9 +148,9 @@ class EvaluationMetrics:
 
         # Map DeepEval metric names to field names
         deepeval_mapping = {
-            'hallucination': 'hallucination_score',
-            'answer_quality': 'answer_quality_score',
-            'context_utilization': 'context_utilization_score',
+            "hallucination": "hallucination_score",
+            "answer_quality": "answer_quality_score",
+            "context_utilization": "context_utilization_score",
         }
 
         for metric_name, value in deepeval_results.items():
@@ -158,8 +159,9 @@ class EvaluationMetrics:
 
         # Calculate overall quality
         deepeval_scores = [
-            v for k, v in vars(metrics).items()
-            if v is not None and k.endswith('_score') and 'deep' in k
+            v
+            for k, v in vars(metrics).items()
+            if v is not None and k.endswith("_score") and "deep" in k
         ]
         if deepeval_scores:
             metrics.overall_quality = sum(deepeval_scores) / len(deepeval_scores)
@@ -255,13 +257,20 @@ class EvaluationEngine:
                 evaluator_latency = time.perf_counter() - t_evaluator
 
                 # Store results by evaluator type
-                if hasattr(evaluator, 'evaluator_type'):
+                if hasattr(evaluator, "evaluator_type"):
                     if evaluator.evaluator_type == "ragas":
                         ragas_results.append(results)
                     elif evaluator.evaluator_type == "deepeval":
                         deepeval_results.append(results)
                 # Default classification
-                elif evaluator_name in ["faithfulness", "answer_relevancy", "context_precision", "context_recall", "context_relevancy", "answer_correctness"]:
+                elif evaluator_name in [
+                    "faithfulness",
+                    "answer_relevancy",
+                    "context_precision",
+                    "context_recall",
+                    "context_relevancy",
+                    "answer_correctness",
+                ]:
                     ragas_results.append(results)
                 else:
                     deepeval_results.append(results)
@@ -274,13 +283,11 @@ class EvaluationEngine:
 
         # Convert results to EvaluationMetrics
         ragas_metric = EvaluationMetrics.from_ragas(
-            self._aggregate_ragas_results(ragas_results),
-            len(evaluation_samples)
+            self._aggregate_ragas_results(ragas_results), len(evaluation_samples)
         )
 
         deepeval_metric = EvaluationMetrics.from_deepeval(
-            self._aggregate_deepeval_results(deepeval_results),
-            len(evaluation_samples)
+            self._aggregate_deepeval_results(deepeval_results), len(evaluation_samples)
         )
 
         # Store metrics
@@ -305,10 +312,12 @@ class EvaluationEngine:
                 "total_evaluation_time_ms": total_evaluation_time * 1000,
                 "ragas_results_count": len(ragas_results),
                 "deepeval_results_count": len(deepeval_results),
-            }
+            },
         )
 
-        logger.info(f"Evaluation completed in {total_evaluation_time:.2f}s for {len(evaluation_samples)} samples")
+        logger.info(
+            f"Evaluation completed in {total_evaluation_time:.2f}s for {len(evaluation_samples)} samples"
+        )
 
         return evaluation_result
 
@@ -369,18 +378,22 @@ class EvaluationEngine:
         result = {}
 
         if latest_ragas:
-            result.update({
-                "ragas": latest_ragas.to_dict(),
-                "overall_faithfulness": latest_ragas.overall_faithfulness,
-                "sample_count": latest_ragas.sample_count,
-            })
+            result.update(
+                {
+                    "ragas": latest_ragas.to_dict(),
+                    "overall_faithfulness": latest_ragas.overall_faithfulness,
+                    "sample_count": latest_ragas.sample_count,
+                }
+            )
 
         if latest_deepeval:
-            result.update({
-                "deepeval": latest_deepeval.to_dict(),
-                "overall_quality": latest_deepeval.overall_quality,
-                "sample_count": latest_deepeval.sample_count,
-            })
+            result.update(
+                {
+                    "deepeval": latest_deepeval.to_dict(),
+                    "overall_quality": latest_deepeval.overall_quality,
+                    "sample_count": latest_deepeval.sample_count,
+                }
+            )
 
         return result
 

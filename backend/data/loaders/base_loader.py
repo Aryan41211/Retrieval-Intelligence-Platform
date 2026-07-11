@@ -66,9 +66,7 @@ class BaseLoader(ABC):
 
         max_size = self.config.get("max_file_size_mb", 100) * 1024 * 1024
         if path.stat().st_size > max_size:
-            raise FileSizeError(
-                f"File exceeds maximum size: {path}"
-            )
+            raise FileSizeError(f"File exceeds maximum size: {path}")
 
         return path
 

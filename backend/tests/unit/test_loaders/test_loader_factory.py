@@ -1,6 +1,5 @@
 """Unit tests for loader factory."""
 
-
 import pytest
 
 from backend.core.exceptions import UnsupportedDocumentTypeError
@@ -19,18 +18,21 @@ class TestLoaderFactory:
         """Test getting loader for markdown."""
         loader = LoaderFactory.get_loader(".md")
         from backend.data.loaders.markdown_loader import MarkdownLoader
+
         assert isinstance(loader, MarkdownLoader)
 
     def test_get_loader_for_docx(self):
         """Test getting loader for docx."""
         loader = LoaderFactory.get_loader(".docx")
         from backend.data.loaders.docx_loader import DOCXLoader
+
         assert isinstance(loader, DOCXLoader)
 
     def test_get_loader_for_pdf(self):
         """Test getting loader for pdf."""
         loader = LoaderFactory.get_loader(".pdf")
         from backend.data.loaders.pdf_loader import PDFLoader
+
         assert isinstance(loader, PDFLoader)
 
     def test_unsupported_extension_raises_error(self):
@@ -50,4 +52,5 @@ class TestLoaderFactory:
         """Test that extensions are case-insensitive."""
         loader = LoaderFactory.get_loader(".PDF")
         from backend.data.loaders.pdf_loader import PDFLoader
+
         assert isinstance(loader, PDFLoader)

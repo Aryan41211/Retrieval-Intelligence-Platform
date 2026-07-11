@@ -193,13 +193,14 @@ Major architectural decisions should be documented in `docs/adr/` with format:
 ## CI/CD Pipeline
 
 ```yaml
-# .github/workflows/ci.yml (planned)
-- Lint (ruff, black, mypy)
-- Unit Tests (pytest)
-- Integration Tests
-- Security Scan (pip-audit, bandit)
-- Build & Package
-- Deploy (staging → production)
+# .github/workflows/ci.yml (active)
+- Lint (ruff, black) — full codebase
+- Unit Tests (pytest backend/tests/unit)
+- Integration Tests (pytest backend/tests/integration)
+- Frontend: lint (eslint) → test (vitest) → build (tsc + vite)
+- Security Scan (pip-audit, bandit) — advisory only
+- Build & Package (python -m build)
+- Docker build verification
 ```
 
 ## Useful Commands
@@ -208,11 +209,11 @@ Major architectural decisions should be documented in `docs/adr/` with format:
 # Install dev dependencies
 pip install -e .[dev]
 
-# Run all checks
-ruff check . && black --check . && mypy . && pytest
+# Run all checks (full codebase, excludes mypy — heavy on this codebase)
+ruff check backend/ && black --check backend/ && pytest
 
 # Format code
-ruff check --fix . && black .
+ruff check --fix backend/ && black backend/
 
 # Run tests with coverage
 pytest --cov=backend --cov-report=html
@@ -220,7 +221,7 @@ pytest --cov=backend --cov-report=html
 # Generate requirements from pyproject.toml
 pip-compile pyproject.toml -o requirements.txt
 
-# Pre-commit
+# Pre-commit (config at .pre-commit-config.yaml)
 pre-commit install
 pre-commit run --all-files
 ```

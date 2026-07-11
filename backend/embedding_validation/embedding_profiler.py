@@ -189,9 +189,7 @@ class EmbeddingProfiler:
                 self._metrics.total_embeddings += len(result)
 
                 if result:
-                    self._metrics.embedding_dimensions.append(
-                        result[0].embedding_dimension
-                    )
+                    self._metrics.embedding_dimensions.append(result[0].embedding_dimension)
 
         self._metrics.total_time_ms = (time.perf_counter() - self._start_time) * 1000
         return self._metrics
@@ -279,12 +277,8 @@ class EmbeddingProfiler:
             import psutil
 
             process = psutil.Process()
-            self._metrics.memory_samples_mb.append(
-                process.memory_info().rss / (1024 * 1024)
-            )
-            self._metrics.cpu_samples_percent.append(
-                process.cpu_percent(interval=None)
-            )
+            self._metrics.memory_samples_mb.append(process.memory_info().rss / (1024 * 1024))
+            self._metrics.cpu_samples_percent.append(process.cpu_percent(interval=None))
         except ImportError:
             pass
 
@@ -298,6 +292,7 @@ class EmbeddingProfiler:
         """
         try:
             import torch
+
             return torch.cuda.is_available()
         except ImportError:
             return False

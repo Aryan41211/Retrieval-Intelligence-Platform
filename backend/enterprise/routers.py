@@ -3,7 +3,6 @@ Enterprise API routers: authentication, users, workspaces, conversations and
 administration. All routers are included under the API prefix by the app.
 """
 
-
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -55,7 +54,12 @@ async def register(
 ) -> TokenResponse:
     user = await services.register_user(db, data)
     await services.record_audit(
-        db, action="user.register", user=user, request=request, resource_type="user", resource_id=user.id
+        db,
+        action="user.register",
+        user=user,
+        request=request,
+        resource_type="user",
+        resource_id=user.id,
     )
     return services.issue_tokens(user)
 
@@ -66,9 +70,7 @@ async def login(
 ) -> TokenResponse:
     user = await services.authenticate_user(db, data.identifier, data.password)
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     user.last_login_at = __import__("datetime").datetime.utcnow()
     await services.record_audit(db, action="user.login", user=user, request=request)
     return services.issue_tokens(user)
@@ -118,9 +120,7 @@ async def oauth_login_start(provider: str) -> OAuthStartResponse:
             status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="OAuth provider not configured"
         )
     state = security.generate_oauth_state()
-    return OAuthStartResponse(
-        authorization_url=get_authorization_url(provider, state), state=state
-    )
+    return OAuthStartResponse(authorization_url=get_authorization_url(provider, state), state=state)
 
 
 @auth_router.get("/oauth/{provider}/callback", response_model=TokenResponse)
@@ -147,7 +147,9 @@ async def update_me(
     return await services.update_user_profile(db, current_user, data)
 
 
-@users_router.get("", response_model=list[UserPublic], dependencies=[Depends(require_permissions("manage_users"))])
+@users_router.get(
+    "", response_model=list[UserPublic], dependencies=[Depends(require_permissions("manage_users"))]
+)
 async def list_users(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -276,7 +278,9 @@ async def list_members(
 # ---------------------------------------------------------------------------
 # Conversations
 # ---------------------------------------------------------------------------
-@conversations_router.post("", response_model=ConversationPublic, status_code=status.HTTP_201_CREATED)
+@conversations_router.post(
+    "", response_model=ConversationPublic, status_code=status.HTTP_201_CREATED
+)
 async def create_conversation(
     data: ConversationCreate,
     current_user: User = Depends(get_current_active_user),
@@ -359,9 +363,7 @@ async def export_conversation_route(
     from backend.enterprise.models import Message
 
     result = await db.execute(
-        select(Message)
-        .where(Message.conversation_id == conv.id)
-        .order_by(Message.created_at)
+        select(Message).where(Message.conversation_id == conv.id).order_by(Message.created_at)
     )
     messages = list(result.scalars().all())
     content, media_type, filename = export_conversation(conv, messages, fmt)

@@ -16,6 +16,7 @@ from fastapi import APIRouter, Response
 from pydantic import BaseModel
 
 from backend.configs.settings import get_settings as get_app_settings
+
 from ..config import get_settings
 from ..observability import render_metrics
 

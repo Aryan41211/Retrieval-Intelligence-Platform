@@ -304,8 +304,7 @@ class TestFAISSVectorStore:
         )
 
         requests = [
-            RetrievalRequest(query_vector=sample_embeddings[i].tolist(), top_k=3)
-            for i in range(3)
+            RetrievalRequest(query_vector=sample_embeddings[i].tolist(), top_k=3) for i in range(3)
         ]
 
         results = vector_store.batch_search(requests)

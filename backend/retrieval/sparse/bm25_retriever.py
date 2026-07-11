@@ -212,11 +212,15 @@ class BM25Retriever:
 
     def _record_matches_filters(self, record: dict[str, Any], request: RetrievalRequest) -> bool:
         filters = request.filters
-        if not filters and not any([request.document_ids, request.source_filenames, request.languages]):
+        if not filters and not any(
+            [request.document_ids, request.source_filenames, request.languages]
+        ):
             return True
 
         document_ids = request.document_ids or (filters.document_ids if filters else None)
-        source_filenames = request.source_filenames or (filters.source_filenames if filters else None)
+        source_filenames = request.source_filenames or (
+            filters.source_filenames if filters else None
+        )
         languages = request.languages or (filters.languages if filters else None)
         custom_filters = (filters.custom if filters else {}) or {}
 

@@ -156,7 +156,9 @@ class OpenAICompatibleProvider(LLMProvider):
                     }
                 )
             )
-            raise LLMProviderUnavailableError(f"Provider '{self.provider_name}' failed: {exc}") from exc
+            raise LLMProviderUnavailableError(
+                f"Provider '{self.provider_name}' failed: {exc}"
+            ) from exc
 
     async def _handle_streaming_response(self, response: httpx.Response) -> str:
         """Handle streaming response from OpenAI-compatible API."""

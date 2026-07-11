@@ -67,20 +67,22 @@ async def stream_chat_response(
                 }
                 for chunk in context_chunks
             ],
-            citations=[
-                {
-                    "doc_index": citation.doc_index,
-                    "chunk_id": citation.chunk_id,
-                    "document_id": citation.document_id,
-                    "chunk_text": citation.chunk_text,
-                    "confidence": citation.confidence,
-                    "page_number": citation.page_number,
-                    "extra": citation.extra,
-                }
-                for citation in result.citations
-            ]
-            if result.citations
-            else None,
+            citations=(
+                [
+                    {
+                        "doc_index": citation.doc_index,
+                        "chunk_id": citation.chunk_id,
+                        "document_id": citation.document_id,
+                        "chunk_text": citation.chunk_text,
+                        "confidence": citation.confidence,
+                        "page_number": citation.page_number,
+                        "extra": citation.extra,
+                    }
+                    for citation in result.citations
+                ]
+                if result.citations
+                else None
+            ),
         )
 
         yield f"data: {json.dumps(response.model_dump(mode='json'))}\n\n"

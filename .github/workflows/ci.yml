@@ -16,8 +16,8 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Linting & formatting (scoped to the hardened API surface to avoid flagging
-  # pre-existing technical debt outside this phase's scope).
+  # Linting & formatting — full codebase. Pre-existing complexity warnings
+  # in specific modules are suppressed via pyproject.toml per-file-ignores.
   # ---------------------------------------------------------------------------
   backend-lint:
     name: Backend lint & format
@@ -28,19 +28,11 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install linters
-        run: pip install ruff==0.6.9 black==24.10.0
+        run: pip install ruff black
       - name: Ruff
-        run: |
-          ruff check \
-            backend/api/app.py backend/api/config.py backend/api/middleware.py \
-            backend/api/observability.py backend/api/__init__.py \
-            backend/api/routers/health.py backend/generation/providers/common/http_client.py
+        run: ruff check backend/
       - name: Black
-        run: |
-          black --check \
-            backend/api/app.py backend/api/config.py backend/api/middleware.py \
-            backend/api/observability.py backend/api/__init__.py \
-            backend/api/routers/health.py backend/generation/providers/common/http_client.py
+        run: black --check backend/
 
   # ---------------------------------------------------------------------------
   # Unit & integration tests. Heavy ML dependencies are installed from

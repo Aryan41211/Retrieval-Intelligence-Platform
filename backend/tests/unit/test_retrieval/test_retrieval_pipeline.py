@@ -70,9 +70,7 @@ class TestRetrievalPipeline:
         pipeline = RetrievalPipeline(engine=engine)
 
         query_vector = np.random.randn(384).astype(np.float32).tolist()
-        request = RetrievalRequest(
-            query_vector=query_vector, top_k=5, similarity_threshold=0.999
-        )
+        request = RetrievalRequest(query_vector=query_vector, top_k=5, similarity_threshold=0.999)
 
         with pytest.raises(EmptyRetrievalResultError):
             pipeline.run(request)
@@ -84,9 +82,7 @@ class TestRetrievalPipeline:
 
         query_vector = np.random.randn(384).astype(np.float32).tolist()
         filters = RetrievalFilters(document_ids=[_DOC_UUIDS[0]])
-        request = RetrievalRequest(
-            query_vector=query_vector, top_k=10, filters=filters
-        )
+        request = RetrievalRequest(query_vector=query_vector, top_k=10, filters=filters)
 
         results, metadata = pipeline.run(request)
 
@@ -131,9 +127,7 @@ class TestRetrievalPipeline:
         pipeline = RetrievalPipeline(engine=engine)
 
         query_vector = np.random.randn(384).astype(np.float32).tolist()
-        request = RetrievalRequest(
-            query_vector=query_vector, top_k=5, correlation_id="test-123"
-        )
+        request = RetrievalRequest(query_vector=query_vector, top_k=5, correlation_id="test-123")
 
         results, metadata = pipeline.run(request)
 

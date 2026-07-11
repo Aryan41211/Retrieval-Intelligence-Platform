@@ -52,7 +52,11 @@ class RRFFuser:
         self.stats = RRFFusionStats(
             dense_count=len(dense_results),
             sparse_count=len(sparse_results),
-            fusion_parameters={"k": self._k, "remove_duplicates": self._remove_duplicates, "stable_ranking": self._stable_ranking},
+            fusion_parameters={
+                "k": self._k,
+                "remove_duplicates": self._remove_duplicates,
+                "stable_ranking": self._stable_ranking,
+            },
         )
 
         # Key by chunk_id (stable and unique)
@@ -95,7 +99,9 @@ class RRFFuser:
                 metadata=existing_meta,
             )
 
-        duplicates_removed = 0 if not self._remove_duplicates else max(0, len(fused) - len(set(fused.keys())))
+        duplicates_removed = (
+            0 if not self._remove_duplicates else max(0, len(fused) - len(set(fused.keys())))
+        )
 
         # Sort: by fusion_score desc; for tie preserve stable order
         def sort_key(item: RetrievalChunkResult) -> tuple[float, int]:

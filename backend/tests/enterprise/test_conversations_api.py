@@ -10,9 +10,7 @@ def _token(client, email, username):
 def test_create_and_list_conversations(client):
     token = _token(client, "conv@example.com", "conv")
     h = auth_headers(token)
-    created = client.post(
-        "/api/v1/conversations", headers=h, json={"title": "First chat"}
-    )
+    created = client.post("/api/v1/conversations", headers=h, json={"title": "First chat"})
     assert created.status_code == 201
     conv_id = created.json()["id"]
 
@@ -35,7 +33,11 @@ def test_add_messages_and_get_detail(client):
     m2 = client.post(
         f"/api/v1/conversations/{conv_id}/messages",
         headers=h,
-        json={"role": "assistant", "content": "Retrieval-Augmented Generation.", "citations": {"src": "doc1"}},
+        json={
+            "role": "assistant",
+            "content": "Retrieval-Augmented Generation.",
+            "citations": {"src": "doc1"},
+        },
     )
     assert m2.status_code == 200
 
@@ -50,9 +52,7 @@ def test_rename_conversation(client):
     token = _token(client, "rename@example.com", "rename")
     h = auth_headers(token)
     conv_id = client.post("/api/v1/conversations", headers=h, json={"title": "Old"}).json()["id"]
-    resp = client.patch(
-        f"/api/v1/conversations/{conv_id}", headers=h, json={"title": "New Title"}
-    )
+    resp = client.patch(f"/api/v1/conversations/{conv_id}", headers=h, json={"title": "New Title"})
     assert resp.status_code == 200
     assert resp.json()["title"] == "New Title"
 
@@ -77,7 +77,9 @@ def test_search_conversations_by_content(client):
 def test_delete_conversation(client, db_path):
     token = _token(client, "del@example.com", "del")
     h = auth_headers(token)
-    conv_id = client.post("/api/v1/conversations", headers=h, json={"title": "ToDelete"}).json()["id"]
+    conv_id = client.post("/api/v1/conversations", headers=h, json={"title": "ToDelete"}).json()[
+        "id"
+    ]
     resp = client.delete(f"/api/v1/conversations/{conv_id}", headers=h)
     assert resp.status_code == 200
     detail = client.get(f"/api/v1/conversations/{conv_id}", headers=h)
@@ -87,13 +89,19 @@ def test_delete_conversation(client, db_path):
 def test_export_formats(client):
     token = _token(client, "export@example.com", "export")
     h = auth_headers(token)
-    conv_id = client.post("/api/v1/conversations", headers=h, json={"title": "Exportable"}).json()["id"]
+    conv_id = client.post("/api/v1/conversations", headers=h, json={"title": "Exportable"}).json()[
+        "id"
+    ]
     client.post(
         f"/api/v1/conversations/{conv_id}/messages",
         headers=h,
         json={"role": "user", "content": "hello"},
     )
-    for fmt, ctype in [("json", "application/json"), ("markdown", "text/markdown"), ("pdf", "application/pdf")]:
+    for fmt, ctype in [
+        ("json", "application/json"),
+        ("markdown", "text/markdown"),
+        ("pdf", "application/pdf"),
+    ]:
         resp = client.get(f"/api/v1/conversations/{conv_id}/export?fmt={fmt}", headers=h)
         assert resp.status_code == 200
         assert resp.headers["content-type"].startswith(ctype)
@@ -108,7 +116,5 @@ def test_cannot_access_other_users_conversation(client):
         headers=auth_headers(owner_token),
         json={"title": "Private"},
     ).json()["id"]
-    resp = client.get(
-        f"/api/v1/conversations/{conv_id}", headers=auth_headers(other_token)
-    )
+    resp = client.get(f"/api/v1/conversations/{conv_id}", headers=auth_headers(other_token))
     assert resp.status_code in (403, 404)

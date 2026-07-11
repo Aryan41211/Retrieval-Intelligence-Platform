@@ -124,9 +124,7 @@ class SentenceTransformerProvider(BaseEmbeddingProvider):
             embeddings.append(embedding)
         return embeddings
 
-    def embed_chunks(
-        self, chunks: list[Chunk]
-    ) -> EmbeddingBatchResult:
+    def embed_chunks(self, chunks: list[Chunk]) -> EmbeddingBatchResult:
         if not chunks:
             return EmbeddingBatchResult(results=[])
         model = self._load_model()

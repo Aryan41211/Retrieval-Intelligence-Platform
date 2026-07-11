@@ -41,7 +41,9 @@ def populated_vector_store(tmp_path):
 
     store = FAISSVectorStore(tmp_path)
     store.create_index(index_id="test-index", dimension=64)
-    store.add_embeddings(embeddings=embeddings, ids=[f"id-{i}" for i in range(30)], metadata=metadata)
+    store.add_embeddings(
+        embeddings=embeddings, ids=[f"id-{i}" for i in range(30)], metadata=metadata
+    )
     return store
 
 
@@ -62,7 +64,9 @@ class TestIntelligentRetrievalPipeline:
             try:
                 # chunk_id/document_id are optional depending on records shape; best-effort
                 chunk_uuid = UUID(str(rec.get("chunk_id", f"00000000-0000-0000-0000-{rank0:012d}")))
-                doc_uuid = UUID(str(rec.get("document_id", f"00000000-0000-0000-0000-{(rank0 % 3):012d}")))
+                doc_uuid = UUID(
+                    str(rec.get("document_id", f"00000000-0000-0000-0000-{(rank0 % 3):012d}"))
+                )
             except Exception:
                 # If UUID conversion fails, use deterministic UUIDs
                 chunk_uuid = UUID(int=rank0)
@@ -170,7 +174,9 @@ class TestIntelligentRetrievalPipeline:
 
         fusion = RRFFuser(k=60, remove_duplicates=True, stable_ranking=True)
         query_expander = QueryExpander(settings=QueryExpansionSettings(enabled=False))
-        topk = DynamicTopKSelector(enabled=True, min_k=3, max_k=10, min_confidence=0.2, max_confidence=0.9)
+        topk = DynamicTopKSelector(
+            enabled=True, min_k=3, max_k=10, min_confidence=0.2, max_confidence=0.9
+        )
         reranker = CrossEncoderReranker(
             enabled=False,
             provider="sentence_transformers",
@@ -212,8 +218,12 @@ class TestIntelligentRetrievalPipeline:
         dense_engine = _FakeDenseEngine([])
         fusion = RRFFuser(k=60, remove_duplicates=True, stable_ranking=True)
         query_expander = QueryExpander(settings=QueryExpansionSettings(enabled=False))
-        topk = DynamicTopKSelector(enabled=True, min_k=5, max_k=10, min_confidence=0.2, max_confidence=0.9)
-        reranker = CrossEncoderReranker(enabled=False, provider="sentence_transformers", model_name="x", top_n=20)
+        topk = DynamicTopKSelector(
+            enabled=True, min_k=5, max_k=10, min_confidence=0.2, max_confidence=0.9
+        )
+        reranker = CrossEncoderReranker(
+            enabled=False, provider="sentence_transformers", model_name="x", top_n=20
+        )
 
         pipeline = IntelligentRetrievalPipeline(
             dense_engine=dense_engine,

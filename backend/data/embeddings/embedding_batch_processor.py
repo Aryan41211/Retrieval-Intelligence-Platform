@@ -60,7 +60,9 @@ class EmbeddingBatchProcessor:
             cache_misses += result.cache_misses
             self._total_processed += len(batch)
 
-        self._total_time_ms = sum(r.embedding.processing_time_ms for r in all_results if r.embedding)
+        self._total_time_ms = sum(
+            r.embedding.processing_time_ms for r in all_results if r.embedding
+        )
 
         return EmbeddingBatchResult(
             results=all_results,
@@ -75,9 +77,7 @@ class EmbeddingBatchProcessor:
             batches.append(chunks[i : i + self.config.batch_size])
         return batches
 
-    def _process_batch_with_retry(
-        self, batch: list[Chunk]
-    ) -> EmbeddingBatchResult:
+    def _process_batch_with_retry(self, batch: list[Chunk]) -> EmbeddingBatchResult:
         last_error = None
         for attempt in range(self.config.retry_attempts):
             try:
@@ -101,9 +101,9 @@ class EmbeddingBatchProcessor:
             "total_processed": self._total_processed,
             "total_errors": self._total_errors,
             "total_time_ms": self._total_time_ms,
-            "avg_processing_time_ms": self._total_time_ms / self._total_processed
-            if self._total_processed > 0
-            else 0,
+            "avg_processing_time_ms": (
+                self._total_time_ms / self._total_processed if self._total_processed > 0 else 0
+            ),
             "provider": self.provider.name,
             "batch_size": self.config.batch_size,
         }

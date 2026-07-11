@@ -128,9 +128,7 @@ class AuditLog(Base):
     __tablename__ = "enterprise_audit_logs"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
-    user_id: Mapped[str | None] = mapped_column(
-        ForeignKey("enterprise_users.id"), nullable=True
-    )
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("enterprise_users.id"), nullable=True)
     action: Mapped[str] = mapped_column(String(120))
     resource_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
     resource_id: Mapped[str | None] = mapped_column(String(80), nullable=True)

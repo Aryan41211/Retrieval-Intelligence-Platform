@@ -1,7 +1,5 @@
 """Tests for benchmark report."""
 
-
-
 from backend.embedding_validation.benchmark_report import BenchmarkReport
 from backend.embedding_validation.embedding_benchmark import BenchmarkResult, LatencyMetrics
 from backend.embedding_validation.embedding_statistics import EmbeddingQualityReport, NormStatistics

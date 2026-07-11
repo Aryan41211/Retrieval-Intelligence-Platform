@@ -69,9 +69,7 @@ class DuplicateDetector:
     def __init__(self, threshold: float = 0.99):
         self.threshold = threshold
 
-    def detect_exact_duplicates(
-        self, embeddings: list[Embedding]
-    ) -> list[tuple[int, int]]:
+    def detect_exact_duplicates(self, embeddings: list[Embedding]) -> list[tuple[int, int]]:
         """Detect exact duplicate embeddings by checksum.
 
         Uses pre-computed checksums when available, falling back to
@@ -118,9 +116,7 @@ class DuplicateDetector:
 
         for i in range(len(embeddings)):
             for j in range(i + 1, len(embeddings)):
-                if len(embeddings[i].embedding_vector) != len(
-                    embeddings[j].embedding_vector
-                ):
+                if len(embeddings[i].embedding_vector) != len(embeddings[j].embedding_vector):
                     continue
 
                 similarity = self._cosine_similarity(
@@ -221,9 +217,7 @@ class DuplicateDetector:
             duplicate_rate=duplicate_rate,
         )
 
-    def _cosine_similarity(
-        self, vec1: list[float], vec2: list[float]
-    ) -> float:
+    def _cosine_similarity(self, vec1: list[float], vec2: list[float]) -> float:
         """Compute cosine similarity between two vectors."""
         dot_product = sum(a * b for a, b in zip(vec1, vec2, strict=True))
         magnitude1 = math.sqrt(sum(v * v for v in vec1))

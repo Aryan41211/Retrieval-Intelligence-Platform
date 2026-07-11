@@ -15,7 +15,7 @@ class PromptBuildConfig:
     system_prompt: str = (
         "You are a helpful assistant that answers questions using only the provided context. "
         "Always cite your sources using [doc_N] format. "
-        "If unsure, say \"I don't know.\""
+        'If unsure, say "I don\'t know."'
     )
     developer_prompt: str | None = None
     output_format_instructions: str = "Answer with citations."

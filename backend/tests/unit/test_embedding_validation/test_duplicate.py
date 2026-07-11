@@ -45,7 +45,9 @@ class TestDuplicateDetector:
         ]
 
         for e in embeddings[:2]:
-            e.checksum = hashlib.sha256("".join(str(v) for v in e.embedding_vector).encode()).hexdigest()
+            e.checksum = hashlib.sha256(
+                "".join(str(v) for v in e.embedding_vector).encode()
+            ).hexdigest()
 
         duplicates = detector.detect_exact_duplicates(embeddings)
         assert len(duplicates) == 1

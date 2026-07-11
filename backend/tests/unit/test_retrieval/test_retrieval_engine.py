@@ -85,9 +85,7 @@ class TestRetrievalEngine:
 
         query_vector = np.random.randn(384).astype(np.float32).tolist()
         filters = RetrievalFilters(document_ids=[_DOC_UUIDS[0]])
-        request = RetrievalRequest(
-            query_vector=query_vector, top_k=10, filters=filters
-        )
+        request = RetrievalRequest(query_vector=query_vector, top_k=10, filters=filters)
 
         results = engine.retrieve(request)
 
@@ -100,9 +98,7 @@ class TestRetrievalEngine:
         engine = RetrievalEngine(vector_store=populated_vector_store)
 
         query_vector = np.random.randn(384).astype(np.float32).tolist()
-        request = RetrievalRequest(
-            query_vector=query_vector, top_k=10, similarity_threshold=0.0
-        )
+        request = RetrievalRequest(query_vector=query_vector, top_k=10, similarity_threshold=0.0)
 
         results = engine.retrieve(request)
 
@@ -115,9 +111,7 @@ class TestRetrievalEngine:
 
         # Use a very high threshold that no results will meet
         query_vector = np.random.randn(384).astype(np.float32).tolist()
-        request = RetrievalRequest(
-            query_vector=query_vector, top_k=5, similarity_threshold=0.999
-        )
+        request = RetrievalRequest(query_vector=query_vector, top_k=5, similarity_threshold=0.999)
 
         with pytest.raises(EmptyRetrievalResultError):
             engine.retrieve(request)
@@ -127,9 +121,7 @@ class TestRetrievalEngine:
         engine = RetrievalEngine(vector_store=populated_vector_store)
 
         requests = [
-            RetrievalRequest(
-                query_vector=np.random.randn(384).astype(np.float32).tolist(), top_k=3
-            )
+            RetrievalRequest(query_vector=np.random.randn(384).astype(np.float32).tolist(), top_k=3)
             for _ in range(5)
         ]
 

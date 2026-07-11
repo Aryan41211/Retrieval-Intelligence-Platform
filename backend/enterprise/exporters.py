@@ -85,8 +85,7 @@ def _render_pdf(lines: list[str]) -> bytes:
     for cid in content_ids:
         pid = add(
             b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
-            b"/Resources << /Font << /F1 %d 0 R >> >> /Contents %d 0 R >>"
-            % (font_id, cid)
+            b"/Resources << /Font << /F1 %d 0 R >> >> /Contents %d 0 R >>" % (font_id, cid)
         )
         page_ids.append(pid)
     pages_obj = b"<< /Type /Pages /Kids [%s] /Count %d >>" % (
@@ -98,11 +97,13 @@ def _render_pdf(lines: list[str]) -> bytes:
 
     # Fix page Parent references to the real pages object id.
     objects = [
-        b"<< /Type /Page /Parent %d 0 R /MediaBox [0 0 612 792] "
-        b"/Resources << /Font << /F1 %d 0 R >> >> /Contents %d 0 R >>"
-        % (pages_id, font_id, cid)
-        if obj.startswith(b"<< /Type /Page /Parent 2 0 R")
-        else obj
+        (
+            b"<< /Type /Page /Parent %d 0 R /MediaBox [0 0 612 792] "
+            b"/Resources << /Font << /F1 %d 0 R >> >> /Contents %d 0 R >>"
+            % (pages_id, font_id, cid)
+            if obj.startswith(b"<< /Type /Page /Parent 2 0 R")
+            else obj
+        )
         for obj, cid in zip(objects, content_ids, strict=False)
     ]
 

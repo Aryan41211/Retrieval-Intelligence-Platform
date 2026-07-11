@@ -36,9 +36,7 @@ class EmbeddingFactory:
                     ) from e
             else:
                 available = ", ".join(cls._providers.keys())
-                raise ValueError(
-                    f"Unknown provider type: {provider_type}. Available: {available}"
-                )
+                raise ValueError(f"Unknown provider type: {provider_type}. Available: {available}")
         return cls._providers[provider_type]
 
     @classmethod

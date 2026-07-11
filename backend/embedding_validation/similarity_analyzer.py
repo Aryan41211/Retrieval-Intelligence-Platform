@@ -57,9 +57,7 @@ class SimilarityAnalyzer:
     def __init__(self):
         self._similarity_matrix: np.ndarray | None = None
 
-    def compute_pairwise_similarities(
-        self, embeddings: list[Embedding]
-    ) -> np.ndarray:
+    def compute_pairwise_similarities(self, embeddings: list[Embedding]) -> np.ndarray:
         """Compute pairwise cosine similarity matrix.
 
         Args:
@@ -73,16 +71,12 @@ class SimilarityAnalyzer:
         """
         dimensions = set(e.embedding_dimension for e in embeddings)
         if len(dimensions) > 1:
-            raise ValueError(
-                f"Inconsistent dimensions in embeddings: {dimensions}"
-            )
+            raise ValueError(f"Inconsistent dimensions in embeddings: {dimensions}")
 
         if not embeddings:
             return np.array([])
 
-        matrix = np.zeros(
-            (len(embeddings), len(embeddings)), dtype=np.float64
-        )
+        matrix = np.zeros((len(embeddings), len(embeddings)), dtype=np.float64)
 
         for i, e1 in enumerate(embeddings):
             for j, e2 in enumerate(embeddings):
@@ -116,15 +110,11 @@ class SimilarityAnalyzer:
             row[i] = -1  # Exclude self-similarity
 
             top_indices = np.argsort(row)[-k:][::-1]
-            top_k_results.append(
-                [(int(idx), float(row[idx])) for idx in top_indices]
-            )
+            top_k_results.append([(int(idx), float(row[idx])) for idx in top_indices])
 
         return top_k_results
 
-    def compute_top_k_statistics(
-        self, embeddings: list[Embedding], k: int = 5
-    ) -> dict[str, float]:
+    def compute_top_k_statistics(self, embeddings: list[Embedding], k: int = 5) -> dict[str, float]:
         """Compute statistics of top-K similarities.
 
         Calculates the average similarity to the top-K nearest neighbors
@@ -146,26 +136,18 @@ class SimilarityAnalyzer:
 
         result: dict[str, float] = {}
         for rank in range(min(k, len(top_k_results[0]))):
-            similarities_at_rank = [
-                r[rank][1] for r in top_k_results if len(r) > rank
-            ]
+            similarities_at_rank = [r[rank][1] for r in top_k_results if len(r) > rank]
             if similarities_at_rank:
-                result[f"top_{rank + 1}_avg_similarity"] = float(
-                    np.mean(similarities_at_rank)
-                )
+                result[f"top_{rank + 1}_avg_similarity"] = float(np.mean(similarities_at_rank))
 
-        all_neighbor_sims = [
-            sim for r in top_k_results for _, sim in r
-        ]
+        all_neighbor_sims = [sim for r in top_k_results for _, sim in r]
         result["mean_top_k_similarity"] = (
             float(np.mean(all_neighbor_sims)) if all_neighbor_sims else 0.0
         )
 
         return result
 
-    def compute_nearest_neighbor_stats(
-        self, embeddings: list[Embedding]
-    ) -> dict[str, Any]:
+    def compute_nearest_neighbor_stats(self, embeddings: list[Embedding]) -> dict[str, Any]:
         """Compute nearest neighbor statistics.
 
         Calculates distance distribution to the nearest neighbor (excluding self)
@@ -187,12 +169,8 @@ class SimilarityAnalyzer:
         nn_distances = []
         for i in range(len(embeddings)):
             row = similarities[i]
-            row_without_self = np.concatenate([row[:i], row[i + 1:]])
-            nn_similarity = (
-                float(np.max(row_without_self))
-                if len(row_without_self) > 0
-                else 0
-            )
+            row_without_self = np.concatenate([row[:i], row[i + 1 :]])
+            nn_similarity = float(np.max(row_without_self)) if len(row_without_self) > 0 else 0
             nn_distances.append(1.0 - nn_similarity)
 
         distances_array = np.array(nn_distances, dtype=np.float64)
@@ -234,14 +212,8 @@ class SimilarityAnalyzer:
             nn_similarities = []
             for i in range(len(embeddings)):
                 row = similarities[i]
-                row_without_self = np.concatenate(
-                    [row[:i], row[i + 1:]]
-                )
-                nn_sim = (
-                    float(np.max(row_without_self))
-                    if len(row_without_self) > 0
-                    else 0
-                )
+                row_without_self = np.concatenate([row[:i], row[i + 1 :]])
+                nn_sim = float(np.max(row_without_self)) if len(row_without_self) > 0 else 0
                 nn_similarities.append(nn_sim)
 
             mean_sim = float(np.mean(nn_similarities))
@@ -255,9 +227,7 @@ class SimilarityAnalyzer:
 
         return []
 
-    def compute_density_statistics(
-        self, embeddings: list[Embedding]
-    ) -> dict[str, float]:
+    def compute_density_statistics(self, embeddings: list[Embedding]) -> dict[str, float]:
         """Compute embedding density statistics.
 
         Analyzes how densely packed embeddings are in the vector space
@@ -292,7 +262,7 @@ class SimilarityAnalyzer:
 
         avg_sim = float(np.mean(upper))
         std_sim = float(np.std(upper))
-        sim_variance = std_sim ** 2
+        sim_variance = std_sim**2
 
         return {
             "embedding_density": avg_sim,
@@ -302,9 +272,7 @@ class SimilarityAnalyzer:
             "std_similarity": std_sim,
         }
 
-    def compute_similarity_metrics(
-        self, embeddings: list[Embedding]
-    ) -> SimilarityMetrics:
+    def compute_similarity_metrics(self, embeddings: list[Embedding]) -> SimilarityMetrics:
         """Compute comprehensive similarity metrics.
 
         Calculates all similarity-related metrics including distribution,
@@ -321,9 +289,7 @@ class SimilarityAnalyzer:
 
         similarities = self.compute_pairwise_similarities(embeddings)
 
-        upper_triangle = similarities[
-            np.triu_indices(len(embeddings), k=1)
-        ]
+        upper_triangle = similarities[np.triu_indices(len(embeddings), k=1)]
         sim_list = upper_triangle.tolist()
 
         bins = [
@@ -333,18 +299,18 @@ class SimilarityAnalyzer:
             "0.6-0.8",
             "0.8-1.0",
         ]
-        hist, _ = np.histogram(
-            sim_list, bins=[0, 0.2, 0.4, 0.6, 0.8, 1.0]
-        )
+        hist, _ = np.histogram(sim_list, bins=[0, 0.2, 0.4, 0.6, 0.8, 1.0])
 
         sim_array = np.array(sim_list, dtype=np.float64)
 
         top_k = self.find_top_k_similar(embeddings, k=5)
         top_k_avg: dict[int, float] = {}
         for k in range(1, 6):
-            avg = float(
-                np.mean([r[k - 1][1] for r in top_k if len(r) >= k])
-            ) if any(len(r) >= k for r in top_k) else 0.0
+            avg = (
+                float(np.mean([r[k - 1][1] for r in top_k if len(r) >= k]))
+                if any(len(r) >= k for r in top_k)
+                else 0.0
+            )
             top_k_avg[k] = avg
 
         outliers = self.detect_outlier_embeddings(embeddings)
@@ -380,24 +346,12 @@ class SimilarityAnalyzer:
                     duplicate_clusters += 1
 
         return SimilarityMetrics(
-            average_similarity=float(np.mean(sim_array))
-            if len(sim_array) > 0
-            else 0,
-            median_similarity=float(np.median(sim_array))
-            if len(sim_array) > 0
-            else 0,
-            std_similarity=float(np.std(sim_array))
-            if len(sim_array) > 0
-            else 0,
-            min_similarity=float(np.min(sim_array))
-            if len(sim_array) > 0
-            else 0,
-            max_similarity=float(np.max(sim_array))
-            if len(sim_array) > 0
-            else 0,
-            similarity_distribution=dict(
-                zip(bins, hist.tolist(), strict=False)
-            ),
+            average_similarity=float(np.mean(sim_array)) if len(sim_array) > 0 else 0,
+            median_similarity=float(np.median(sim_array)) if len(sim_array) > 0 else 0,
+            std_similarity=float(np.std(sim_array)) if len(sim_array) > 0 else 0,
+            min_similarity=float(np.min(sim_array)) if len(sim_array) > 0 else 0,
+            max_similarity=float(np.max(sim_array)) if len(sim_array) > 0 else 0,
+            similarity_distribution=dict(zip(bins, hist.tolist(), strict=False)),
             top_k_similarities=top_k_avg,
             similarity_variance=sim_variance,
             outlier_count=len(outliers),
@@ -432,11 +386,7 @@ class SimilarityAnalyzer:
 
         similarities = self.compute_pairwise_similarities(embeddings)
 
-        avg_similarity = float(
-            np.mean(
-                similarities[np.triu_indices(len(embeddings), k=1)]
-            )
-        )
+        avg_similarity = float(np.mean(similarities[np.triu_indices(len(embeddings), k=1)]))
 
         return {
             "silhouette_estimate": avg_similarity,

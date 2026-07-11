@@ -15,7 +15,9 @@ class RetrievalRanker(ABC):
     """
 
     @abstractmethod
-    def rank(self, query: Any, candidates: list[RetrievalChunkResult], top_k: int) -> list[RetrievalChunkResult]:
+    def rank(
+        self, query: Any, candidates: list[RetrievalChunkResult], top_k: int
+    ) -> list[RetrievalChunkResult]:
         raise NotImplementedError
 
 

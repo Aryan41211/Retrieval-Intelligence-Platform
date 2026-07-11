@@ -36,11 +36,19 @@ class EmbeddingValidationSettings(BaseSettings):
 class VectorStoreSettings(BaseSettings):
     """Settings for vector store."""
 
-    provider: str = Field(default="faiss", description="Vector store provider (faiss, chromadb, etc.)")
-    storage_dir: str = Field(default="./data/vectorstore", description="Directory for storing vector indexes")
+    provider: str = Field(
+        default="faiss", description="Vector store provider (faiss, chromadb, etc.)"
+    )
+    storage_dir: str = Field(
+        default="./data/vectorstore", description="Directory for storing vector indexes"
+    )
     index_type: str = Field(default="flat", description="Default index type (flat, hnsw, ivf, pq)")
-    distance_metric: str = Field(default="cosine", description="Default distance metric (cosine, euclidean, inner_product)")
-    auto_save: bool = Field(default=True, description="Automatically save index after modifications")
+    distance_metric: str = Field(
+        default="cosine", description="Default distance metric (cosine, euclidean, inner_product)"
+    )
+    auto_save: bool = Field(
+        default=True, description="Automatically save index after modifications"
+    )
     auto_load: bool = Field(default=True, description="Automatically load index on initialization")
 
     model_config = SettingsConfigDict(
@@ -79,10 +87,10 @@ class RRFSettings(BaseSettings):
 
     enabled: bool = Field(default=True, description="Enable RRF fusion for hybrid retrieval")
     k: int = Field(default=60, ge=1, le=200, description="RRF k parameter")
-    remove_duplicates: bool = Field(default=True, description="Remove duplicate chunks in fused results")
-    stable_ranking: bool = Field(
-        default=True, description="Preserve stable ordering for ties"
+    remove_duplicates: bool = Field(
+        default=True, description="Remove duplicate chunks in fused results"
     )
+    stable_ranking: bool = Field(default=True, description="Preserve stable ordering for ties")
 
     model_config = SettingsConfigDict(
         env_prefix="RRF_",
@@ -96,10 +104,14 @@ class CrossEncoderRerankSettings(BaseSettings):
 
     enabled: bool = Field(default=False, description="Enable cross-encoder reranking stage")
     provider: str = Field(default="sentence_transformers", description="Reranker provider")
-    model_name: str = Field(default="cross-encoder/ms-marco-MiniLM-L-6-v2", description="CrossEncoder model name")
+    model_name: str = Field(
+        default="cross-encoder/ms-marco-MiniLM-L-6-v2", description="CrossEncoder model name"
+    )
     top_n: int = Field(default=20, ge=1, le=2000, description="Number of top candidates to rerank")
     batch_size: int = Field(default=16, ge=1, le=256, description="CrossEncoder batch size")
-    max_length: int = Field(default=512, ge=16, le=4096, description="Max text length for cross-encoder inputs")
+    max_length: int = Field(
+        default=512, ge=16, le=4096, description="Max text length for cross-encoder inputs"
+    )
 
     model_config = SettingsConfigDict(
         env_prefix="CROSS_ENCODER_",
@@ -141,8 +153,12 @@ class DynamicTopKSettings(BaseSettings):
     min_k: int = Field(default=5, ge=1, le=1000, description="Minimum number of final chunks")
     max_k: int = Field(default=30, ge=1, le=1000, description="Maximum number of final chunks")
     # Confidence mapping: use score spread to decide k.
-    min_confidence: float = Field(default=0.2, ge=0.0, le=1.0, description="Minimum confidence to increase k")
-    max_confidence: float = Field(default=0.9, ge=0.0, le=1.0, description="Maximum confidence to cap k")
+    min_confidence: float = Field(
+        default=0.2, ge=0.0, le=1.0, description="Minimum confidence to increase k"
+    )
+    max_confidence: float = Field(
+        default=0.9, ge=0.0, le=1.0, description="Maximum confidence to cap k"
+    )
 
     model_config = SettingsConfigDict(
         env_prefix="DYNAMIC_TOP_K_",
@@ -157,8 +173,12 @@ class IntelligentRetrievalSettings(BaseSettings):
     enabled: bool = Field(default=False, description="Enable IntelligentRetrievalPipeline")
     dense_enabled: bool = Field(default=True, description="Enable dense retrieval stage")
     sparse_enabled: bool = Field(default=True, description="Enable sparse BM25 retrieval stage")
-    retrieval_weight_dense: float = Field(default=1.0, ge=0.0, le=10.0, description="Weight for dense in fusion (optional)")
-    retrieval_weight_sparse: float = Field(default=1.0, ge=0.0, le=10.0, description="Weight for sparse in fusion (optional)")
+    retrieval_weight_dense: float = Field(
+        default=1.0, ge=0.0, le=10.0, description="Weight for dense in fusion (optional)"
+    )
+    retrieval_weight_sparse: float = Field(
+        default=1.0, ge=0.0, le=10.0, description="Weight for sparse in fusion (optional)"
+    )
 
     rerank: CrossEncoderRerankSettings = Field(default_factory=CrossEncoderRerankSettings)
     bm25: BM25Settings = Field(default_factory=BM25Settings)
@@ -176,8 +196,12 @@ class IntelligentRetrievalSettings(BaseSettings):
 class GenerationSettings(BaseSettings):
     """Settings for generation pipeline."""
 
-    provider: str = Field(default="fake", description="LLM provider (fake, openai_compatible, ollama, nim)")
-    model_name: str = Field(default="fake-model", description="Model name for the selected provider")
+    provider: str = Field(
+        default="fake", description="LLM provider (fake, openai_compatible, ollama, nim)"
+    )
+    model_name: str = Field(
+        default="fake-model", description="Model name for the selected provider"
+    )
     temperature: float = Field(default=0.2, ge=0.0, le=2.0, description="Sampling temperature")
     max_tokens: int = Field(default=512, ge=1, le=8192, description="Maximum tokens to generate")
     timeout_s: float = Field(default=60.0, gt=0.0, description="Generation timeout in seconds")
@@ -192,15 +216,27 @@ class GenerationSettings(BaseSettings):
 class RetrievalSettings(BaseSettings):
     """Settings for retrieval engine."""
 
-    top_k: int = Field(default=10, ge=1, le=1000, description="Default number of results to retrieve")
-    similarity_threshold: float | None = Field(default=None, ge=0.0, le=1.0, description="Minimum similarity score threshold")
-    batch_size: int = Field(default=32, ge=1, le=1000, description="Batch size for batch retrieval operations")
+    top_k: int = Field(
+        default=10, ge=1, le=1000, description="Default number of results to retrieve"
+    )
+    similarity_threshold: float | None = Field(
+        default=None, ge=0.0, le=1.0, description="Minimum similarity score threshold"
+    )
+    batch_size: int = Field(
+        default=32, ge=1, le=1000, description="Batch size for batch retrieval operations"
+    )
     auto_load: bool = Field(default=True, description="Automatically load index on initialization")
-    auto_save: bool = Field(default=True, description="Automatically save index after modifications")
+    auto_save: bool = Field(
+        default=True, description="Automatically save index after modifications"
+    )
 
     # Default filters (optional)
-    default_languages: list[str] | None = Field(default=None, description="Default language filters")
-    default_source_filenames: list[str] | None = Field(default=None, description="Default source filename filters")
+    default_languages: list[str] | None = Field(
+        default=None, description="Default language filters"
+    )
+    default_source_filenames: list[str] | None = Field(
+        default=None, description="Default source filename filters"
+    )
 
     intelligent: IntelligentRetrievalSettings = Field(default_factory=IntelligentRetrievalSettings)
 

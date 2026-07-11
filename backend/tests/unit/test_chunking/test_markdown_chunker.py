@@ -13,7 +13,12 @@ class TestMarkdownChunker:
     def test_chunk_respects_headings(self, tmp_path: Path):
         """Test chunking respects markdown headings."""
         doc_file = tmp_path / "doc.md"
-        content = "# Title\n\n" + ("Content under title. " * 30) + "\n\n## Subtitle\n\n" + ("Content under subtitle. " * 30)
+        content = (
+            "# Title\n\n"
+            + ("Content under title. " * 30)
+            + "\n\n## Subtitle\n\n"
+            + ("Content under subtitle. " * 30)
+        )
         doc_file.write_text(content)
 
         doc = Document(

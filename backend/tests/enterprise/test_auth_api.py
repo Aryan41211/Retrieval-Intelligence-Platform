@@ -32,7 +32,9 @@ def test_login_success_and_header(client, db_path):
     assert resp.status_code == 200
     assert "access_token" in resp.json()
     assert resp.headers.get("X-API-Version") == "v1"
-    row = query_one(db_path, "SELECT last_login_at FROM enterprise_users WHERE email=?", ("login@example.com",))
+    row = query_one(
+        db_path, "SELECT last_login_at FROM enterprise_users WHERE email=?", ("login@example.com",)
+    )
     assert row["last_login_at"] is not None
 
 
@@ -61,9 +63,7 @@ def test_protected_endpoint_requires_token(client):
 
 def test_refresh_rotates_token_pair(client):
     tokens = register(client)
-    resp = client.post(
-        "/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
-    )
+    resp = client.post("/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
     assert resp.status_code == 200
     new = resp.json()
     assert new["access_token"]
@@ -83,7 +83,9 @@ def test_logout_is_stateless_ok(client):
 
 def test_password_reset_flow(client, db_path):
     register(client, email="reset@example.com", username="reset")
-    user = query_one(db_path, "SELECT id FROM enterprise_users WHERE email=?", ("reset@example.com",))
+    user = query_one(
+        db_path, "SELECT id FROM enterprise_users WHERE email=?", ("reset@example.com",)
+    )
     raw = "reset-token-" + str(int(time.time()))
     create_token_row(db_path, "enterprise_password_reset_tokens", user["id"], raw, ttl=3600)
 
@@ -107,21 +109,23 @@ def test_password_reset_flow(client, db_path):
 
 
 def test_password_reset_request_does_not_reveal_user(client):
-    resp = client.post(
-        "/api/v1/auth/password-reset/request", json={"email": "nobody@example.com"}
-    )
+    resp = client.post("/api/v1/auth/password-reset/request", json={"email": "nobody@example.com"})
     assert resp.status_code == 200
 
 
 def test_email_verification_flow(client, db_path):
     register(client, email="verify@example.com", username="verify")
-    user = query_one(db_path, "SELECT id FROM enterprise_users WHERE email=?", ("verify@example.com",))
+    user = query_one(
+        db_path, "SELECT id FROM enterprise_users WHERE email=?", ("verify@example.com",)
+    )
     raw = "verify-token-" + str(int(time.time()))
     create_token_row(db_path, "enterprise_email_verification_tokens", user["id"], raw, ttl=86400)
 
     resp = client.post("/api/v1/auth/email/verify", json={"token": raw})
     assert resp.status_code == 200
-    row = query_one(db_path, "SELECT is_verified FROM enterprise_users WHERE email=?", ("verify@example.com",))
+    row = query_one(
+        db_path, "SELECT is_verified FROM enterprise_users WHERE email=?", ("verify@example.com",)
+    )
     assert row["is_verified"] == 1
 
 

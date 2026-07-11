@@ -77,15 +77,11 @@ class EmbeddingValidator:
             if math.isnan(v):
                 if self.allow_nan:
                     continue
-                raise EmbeddingValidationError(
-                    f"Embedding contains NaN at index {i}"
-                )
+                raise EmbeddingValidationError(f"Embedding contains NaN at index {i}")
             if math.isinf(v):
                 if self.allow_inf:
                     continue
-                raise EmbeddingValidationError(
-                    f"Embedding contains Inf at index {i}"
-                )
+                raise EmbeddingValidationError(f"Embedding contains Inf at index {i}")
 
     def _validate_dimension(self, declared_dim: int, actual_dim: int) -> None:
         if declared_dim != actual_dim:
@@ -109,9 +105,7 @@ class EmbeddingValidator:
             return vector
         return [v / magnitude for v in vector]
 
-    def compute_similarity(
-        self, embedding1: Embedding, embedding2: Embedding
-    ) -> float:
+    def compute_similarity(self, embedding1: Embedding, embedding2: Embedding) -> float:
         if len(embedding1.embedding_vector) != len(embedding2.embedding_vector):
             raise EmbeddingDimensionError(
                 f"Cannot compute similarity: dimension mismatch {len(embedding1.embedding_vector)} vs {len(embedding2.embedding_vector)}"

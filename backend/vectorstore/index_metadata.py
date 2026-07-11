@@ -39,7 +39,9 @@ class IndexMetadata(BaseModel):
     checksum: str = Field(default="", description="Checksum of the index file")
     version: str = Field(default="1.0.0", description="Index format version")
     storage_path: str = Field(description="Path to the stored index file")
-    configuration: dict[str, Any] = Field(default_factory=dict, description="Additional configuration")
+    configuration: dict[str, Any] = Field(
+        default_factory=dict, description="Additional configuration"
+    )
 
     model_config = {"protected_namespaces": ()}
 

@@ -72,14 +72,10 @@ class BaseEmbeddingProvider(ABC):
         ...
 
     @abstractmethod
-    def embed_texts(self, texts: list[str]) -> list[Embedding]:
-        ...
+    def embed_texts(self, texts: list[str]) -> list[Embedding]: ...
 
     @abstractmethod
-    def embed_chunks(
-        self, chunks: list[Chunk]
-    ) -> EmbeddingBatchResult:
-        ...
+    def embed_chunks(self, chunks: list[Chunk]) -> EmbeddingBatchResult: ...
 
     def get_device(self) -> str:
         return self.config.get("device", "cpu")
@@ -107,9 +103,7 @@ class BaseEmbeddingProvider(ABC):
             f"{self.name}:{self._model_info.version if self._model_info else 'unknown'}:{text}".encode()
         ).hexdigest()
 
-    def _attach_embedding_to_chunk(
-        self, chunk: Chunk, embedding: Embedding
-    ) -> EmbeddingResult:
+    def _attach_embedding_to_chunk(self, chunk: Chunk, embedding: Embedding) -> EmbeddingResult:
         return EmbeddingResult(chunk=chunk, embedding=embedding)
 
     def _create_embedding(

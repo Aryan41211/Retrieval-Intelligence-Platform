@@ -42,9 +42,7 @@ class EnterpriseSettings(BaseSettings):
     email_verification_ttl_seconds: int = Field(
         default=86400, ge=3600, le=604800, description="Email verification token lifetime."
     )
-    registration_enabled: bool = Field(
-        default=True, description="Allow open self-registration."
-    )
+    registration_enabled: bool = Field(default=True, description="Allow open self-registration.")
     email_verification_required: bool = Field(
         default=False, description="Require verified email before issuing tokens."
     )

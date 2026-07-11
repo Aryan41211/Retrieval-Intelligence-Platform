@@ -92,9 +92,7 @@ class EmbeddingStatistics:
     def __init__(self, embeddings: list[Embedding] | None = None):
         self.embeddings = embeddings or []
 
-    def compute_norm_statistics(
-        self, embeddings: list[Embedding] | None = None
-    ) -> NormStatistics:
+    def compute_norm_statistics(self, embeddings: list[Embedding] | None = None) -> NormStatistics:
         """Compute statistics about vector norms.
 
         Args:
@@ -119,9 +117,7 @@ class EmbeddingStatistics:
             norms_array=norms_array,
         )
 
-    def compute_value_statistics(
-        self, embeddings: list[Embedding] | None = None
-    ) -> EmbeddingStats:
+    def compute_value_statistics(self, embeddings: list[Embedding] | None = None) -> EmbeddingStats:
         """Compute statistics about embedding values across all dimensions.
 
         Args:
@@ -180,7 +176,9 @@ class EmbeddingStatistics:
             if density < density_threshold:
                 outlier_count += 1
 
-        density_array = np.array(density_values, dtype=np.float64) if density_values else np.array([0.0])
+        density_array = (
+            np.array(density_values, dtype=np.float64) if density_values else np.array([0.0])
+        )
 
         return DensityStatistics(
             mean_density=float(np.mean(density_array)),
@@ -233,8 +231,11 @@ class EmbeddingStatistics:
             "median": float(np.median(sim_array)),
             "p95": float(np.percentile(sim_array, 95)),
             "p99": float(np.percentile(sim_array, 99)),
-            "high_similarity_ratio": sum(1 for s in similarities if s >= threshold)
-            / len(similarities) if similarities else 0.0,
+            "high_similarity_ratio": (
+                sum(1 for s in similarities if s >= threshold) / len(similarities)
+                if similarities
+                else 0.0
+            ),
         }
 
     def generate_quality_report(
@@ -273,14 +274,10 @@ class EmbeddingStatistics:
         sim_dist = self.compute_similarity_distribution(embeddings)
 
         if expected_dimension and dimension != expected_dimension:
-            warnings.append(
-                f"Dimension mismatch: expected {expected_dimension}, got {dimension}"
-            )
+            warnings.append(f"Dimension mismatch: expected {expected_dimension}, got {dimension}")
 
         if norm_stats.mean_norm > 0 and norm_stats.mean_norm < 0.9:
-            recommendations.append(
-                "Consider normalizing embeddings for better similarity search"
-            )
+            recommendations.append("Consider normalizing embeddings for better similarity search")
 
         if norm_stats.std_norm > 1.0:
             warnings.append(
@@ -313,9 +310,7 @@ class EmbeddingStatistics:
         total = total_validated or len(embeddings)
         duplicate_percentage = (duplicate_count or 0) / total * 100.0 if total > 0 else 0.0
         invalid_embedding_percentage = (invalid_count or 0) / total * 100.0 if total > 0 else 0.0
-        validation_pass_rate = (
-            (total - (invalid_count or 0)) / total * 100.0 if total > 0 else 0.0
-        )
+        validation_pass_rate = (total - (invalid_count or 0)) / total * 100.0 if total > 0 else 0.0
 
         if duplicate_percentage > 10.0:
             warnings.append(

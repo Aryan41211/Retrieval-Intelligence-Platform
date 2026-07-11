@@ -29,7 +29,11 @@ class CitationGenerator:
         for marker in markers:
             doc_idx = self._marker_to_index[marker]
             if doc_idx < 1 or doc_idx > len(context_items):
-                logger.warning("Citation marker [doc_%s] out of range for %d context items", marker, len(context_items))
+                logger.warning(
+                    "Citation marker [doc_%s] out of range for %d context items",
+                    marker,
+                    len(context_items),
+                )
                 continue
 
             item = context_items[doc_idx - 1]

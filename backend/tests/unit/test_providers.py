@@ -24,15 +24,17 @@ def mock_httpx_response():
     mock_response.status_code = 200
     mock_response.json.return_value = {
         "id": "test-id",
-        "choices": [{
-            "index": 0,
-            "message": {
-                "role": "assistant",
-                "content": "This is a test response. [doc_1] [doc_2]"
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": "This is a test response. [doc_1] [doc_2]",
+                },
             }
-        }],
+        ],
         "usage": {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30},
-        "model": "gpt-3.5-turbo"
+        "model": "gpt-3.5-turbo",
     }
     mock_response.aiter_text.return_value = async_iter(["This is a test response. [doc_1] [doc_2]"])
     return mock_response
@@ -40,9 +42,11 @@ def mock_httpx_response():
 
 def async_iter(items):
     """Create an async iterator from a list."""
+
     async def _async_gen():
         for item in items:
             yield item
+
     return _async_gen()
 
 
@@ -56,7 +60,7 @@ class TestOpenAICompatibleProvider:
             model="gpt-3.5-turbo-test",
             base_url="http://localhost:8000/v1",
             api_key="test-key",
-            timeout_s=30.0
+            timeout_s=30.0,
         )
 
     @pytest.mark.asyncio
@@ -72,14 +76,18 @@ class TestOpenAICompatibleProvider:
     @pytest.mark.asyncio
     async def test_health_check_healthy(self, provider, mock_httpx_response):
         """Test health check when provider is healthy."""
-        with patch.object(provider._http_client, 'health_check', AsyncMock(
-            return_value={
-                "status": "healthy",
-                "status_code": 200,
-                "latency_ms": 100,
-                "data": {}
-            }
-        )):
+        with patch.object(
+            provider._http_client,
+            "health_check",
+            AsyncMock(
+                return_value={
+                    "status": "healthy",
+                    "status_code": 200,
+                    "latency_ms": 100,
+                    "data": {},
+                }
+            ),
+        ):
             result = await provider.health_check()
             assert result["status"] == "healthy"
             assert result["status_code"] == 200
@@ -88,14 +96,18 @@ class TestOpenAICompatibleProvider:
     @pytest.mark.asyncio
     async def test_health_check_unhealthy(self, provider):
         """Test health check when provider is unhealthy."""
-        with patch.object(provider._http_client, 'health_check', AsyncMock(
-            return_value={
-                "status": "unhealthy",
-                "status_code": 500,
-                "latency_ms": 500,
-                "data": {"error": "Service unavailable"}
-            }
-        )):
+        with patch.object(
+            provider._http_client,
+            "health_check",
+            AsyncMock(
+                return_value={
+                    "status": "unhealthy",
+                    "status_code": 500,
+                    "latency_ms": 500,
+                    "data": {"error": "Service unavailable"},
+                }
+            ),
+        ):
             result = await provider.health_check()
             assert result["status"] == "unhealthy"
             assert result["status_code"] == 500
@@ -103,78 +115,82 @@ class TestOpenAICompatibleProvider:
     @pytest.mark.asyncio
     async def test_generate_success(self, provider, mock_httpx_response):
         """Test successful generation."""
-        with patch.object(provider._http_client, '_request_with_retry', AsyncMock(
-            return_value=mock_httpx_response
-        )):
+        with patch.object(
+            provider._http_client,
+            "_request_with_retry",
+            AsyncMock(return_value=mock_httpx_response),
+        ):
             result = await provider.generate(
-                prompt="Test prompt",
-                temperature=0.2,
-                max_tokens=512,
-                timeout_s=60.0,
-                stream=False
+                prompt="Test prompt", temperature=0.2, max_tokens=512, timeout_s=60.0, stream=False
             )
             assert result == "This is a test response. [doc_1] [doc_2]"
 
     @pytest.mark.asyncio
     async def test_generate_with_streaming(self, provider, mock_httpx_response):
         """Test generation with streaming."""
-        mock_httpx_response.aiter_text.return_value = async_iter(["This is a test ", "response. [doc_1] ", "[doc_2]"])
+        mock_httpx_response.aiter_text.return_value = async_iter(
+            ["This is a test ", "response. [doc_1] ", "[doc_2]"]
+        )
 
-        with patch.object(provider._http_client, '_request_with_retry', AsyncMock(
-            return_value=mock_httpx_response
-        )):
+        with patch.object(
+            provider._http_client,
+            "_request_with_retry",
+            AsyncMock(return_value=mock_httpx_response),
+        ):
             result = await provider.generate(
-                prompt="Test prompt",
-                temperature=0.2,
-                max_tokens=512,
-                timeout_s=60.0,
-                stream=True
+                prompt="Test prompt", temperature=0.2, max_tokens=512, timeout_s=60.0, stream=True
             )
             assert result == "This is a test response. [doc_1] [doc_2]"
 
     @pytest.mark.asyncio
     async def test_generate_timeout(self, provider):
         """Test generation timeout handling."""
-        with patch.object(provider._http_client, '_request_with_retry', AsyncMock(
-            side_effect=GenerationTimeoutError("Request timed out after 60.0s")
-        )):
+        with patch.object(
+            provider._http_client,
+            "_request_with_retry",
+            AsyncMock(side_effect=GenerationTimeoutError("Request timed out after 60.0s")),
+        ):
             with pytest.raises(GenerationTimeoutError):
                 await provider.generate(
                     prompt="Test prompt",
                     temperature=0.2,
                     max_tokens=512,
                     timeout_s=60.0,
-                    stream=False
+                    stream=False,
                 )
 
     @pytest.mark.asyncio
     async def test_generate_provider_unavailable(self, provider):
         """Test generation when provider is unavailable."""
-        with patch.object(provider._http_client, '_request_with_retry', AsyncMock(
-            side_effect=LLMProviderUnavailableError("Provider failed")
-        )):
+        with patch.object(
+            provider._http_client,
+            "_request_with_retry",
+            AsyncMock(side_effect=LLMProviderUnavailableError("Provider failed")),
+        ):
             with pytest.raises(LLMProviderUnavailableError):
                 await provider.generate(
                     prompt="Test prompt",
                     temperature=0.2,
                     max_tokens=512,
                     timeout_s=60.0,
-                    stream=False
+                    stream=False,
                 )
 
     @pytest.mark.asyncio
     async def test_generate_http_error(self, provider):
         """Test generation with HTTP error."""
-        with patch.object(provider._http_client, '_request_with_retry', AsyncMock(
-            side_effect=LLMProviderUnavailableError("HTTP 500: Internal Server Error")
-        )):
+        with patch.object(
+            provider._http_client,
+            "_request_with_retry",
+            AsyncMock(side_effect=LLMProviderUnavailableError("HTTP 500: Internal Server Error")),
+        ):
             with pytest.raises(LLMProviderUnavailableError):
                 await provider.generate(
                     prompt="Test prompt",
                     temperature=0.2,
                     max_tokens=512,
                     timeout_s=60.0,
-                    stream=False
+                    stream=False,
                 )
 
     def test_extract_token_usage(self, provider, mock_httpx_response):
@@ -205,7 +221,7 @@ class TestOpenAICompatibleProvider:
             model="gpt-4",
             api_key="test-key",
             max_retries=5,
-            timeout_s=120.0
+            timeout_s=120.0,
         )
         assert settings.base_url == "https://api.openai.com/v1"
         assert settings.model == "gpt-4"
@@ -221,9 +237,7 @@ class TestHTTPProviderClient:
     def http_client(self):
         """Create a test HTTP client instance."""
         return HTTPProviderClient(
-            base_url="http://localhost:8000",
-            model="test-model",
-            timeout_s=30.0
+            base_url="http://localhost:8000", model="test-model", timeout_s=30.0
         )
 
     @pytest.mark.asyncio
@@ -237,7 +251,7 @@ class TestHTTPProviderClient:
         mock_client.request.return_value = mock_response
 
         with patch(
-            'backend.generation.providers.common.http_client.get_provider_client',
+            "backend.generation.providers.common.http_client.get_provider_client",
             AsyncMock(return_value=mock_client),
         ):
             result = await http_client._request_with_retry("GET", "test")
@@ -250,7 +264,7 @@ class TestHTTPProviderClient:
         mock_client.request.side_effect = httpx.TimeoutException("Timeout")
 
         with patch(
-            'backend.generation.providers.common.http_client.get_provider_client',
+            "backend.generation.providers.common.http_client.get_provider_client",
             AsyncMock(return_value=mock_client),
         ):
             with pytest.raises(GenerationTimeoutError):
@@ -263,7 +277,7 @@ class TestHTTPProviderClient:
         mock_client.request.side_effect = Exception("Some error")
 
         with patch(
-            'backend.generation.providers.common.http_client.get_provider_client',
+            "backend.generation.providers.common.http_client.get_provider_client",
             AsyncMock(return_value=mock_client),
         ):
             with pytest.raises(LLMProviderUnavailableError):
@@ -272,9 +286,15 @@ class TestHTTPProviderClient:
     @pytest.mark.asyncio
     async def test_health_check(self, http_client):
         """Test health check functionality."""
-        with patch.object(http_client, '_request_with_retry', AsyncMock(
-            return_value=MagicMock(spec=httpx.Response, status_code=200, json=AsyncMock(return_value={}))
-        )):
+        with patch.object(
+            http_client,
+            "_request_with_retry",
+            AsyncMock(
+                return_value=MagicMock(
+                    spec=httpx.Response, status_code=200, json=AsyncMock(return_value={})
+                )
+            ),
+        ):
             result = await http_client.health_check()
             assert result["status"] == "healthy"
             assert result["status_code"] == 200
@@ -298,10 +318,10 @@ def test_provider_interface_implementation():
     provider = OpenAICompatibleProvider(model="test")
 
     assert isinstance(provider, LLMProvider)
-    assert hasattr(provider, 'provider_name')
-    assert hasattr(provider, 'model_name')
-    assert hasattr(provider, 'generate')
-    assert hasattr(provider, 'health_check')
+    assert hasattr(provider, "provider_name")
+    assert hasattr(provider, "model_name")
+    assert hasattr(provider, "generate")
+    assert hasattr(provider, "health_check")
 
 
 if __name__ == "__main__":

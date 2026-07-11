@@ -22,7 +22,9 @@ def test_update_profile_and_preferences(client, db_path):
     )
     assert resp.status_code == 200
     assert resp.json()["full_name"] == "Prof Name"
-    row = query_one(db_path, "SELECT preferences FROM enterprise_users WHERE email=?", ("prof@example.com",))
+    row = query_one(
+        db_path, "SELECT preferences FROM enterprise_users WHERE email=?", ("prof@example.com",)
+    )
     assert "dark" in row["preferences"]
 
 
@@ -48,11 +50,15 @@ def test_admin_can_deactivate_user(client, db_path):
     promote_user(db_path, "boss@example.com", "admin")
     register(client, email="victim@example.com", username="victim")
 
-    victim = query_one(db_path, "SELECT id FROM enterprise_users WHERE email=?", ("victim@example.com",))
+    victim = query_one(
+        db_path, "SELECT id FROM enterprise_users WHERE email=?", ("victim@example.com",)
+    )
     resp = client.post(
         f"/api/v1/users/{victim['id']}/deactivate",
         headers=auth_headers(admin_tokens["access_token"]),
     )
     assert resp.status_code == 200
-    row = query_one(db_path, "SELECT is_active FROM enterprise_users WHERE email=?", ("victim@example.com",))
+    row = query_one(
+        db_path, "SELECT is_active FROM enterprise_users WHERE email=?", ("victim@example.com",)
+    )
     assert row["is_active"] == 0

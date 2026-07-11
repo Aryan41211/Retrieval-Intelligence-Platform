@@ -9,7 +9,9 @@ from pydantic import BaseModel, Field
 class Citation(BaseModel):
     """Citation mapping answer markers to retrieval chunks."""
 
-    doc_index: int = Field(ge=1, description="1-based doc index used in prompt markers like [doc_1].")
+    doc_index: int = Field(
+        ge=1, description="1-based doc index used in prompt markers like [doc_1]."
+    )
     chunk_id: str | None = None
     document_id: str | None = None
     chunk_text: str | None = None

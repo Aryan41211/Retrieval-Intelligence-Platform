@@ -19,9 +19,7 @@ class ChunkingConfig(BaseModel):
     sentence_overlap: int = Field(default=1, ge=0)
     strategy: ChunkingStrategy = ChunkingStrategy.RECURSIVE
 
-    separators: list[str] = Field(
-        default_factory=lambda: ["\n\n", "\n", ". ", " ", ""]
-    )
+    separators: list[str] = Field(default_factory=lambda: ["\n\n", "\n", ". ", " ", ""])
 
     model_config = {"extra": "ignore"}
 

@@ -45,9 +45,7 @@ class BenchmarkReport:
         self.similarity_metrics: dict[str, SimilarityMetrics] = {}
         self.duplicate_reports: dict[str, DuplicateReport] = {}
 
-    def add_benchmark_result(
-        self, name: str, result: BenchmarkResult
-    ) -> None:
+    def add_benchmark_result(self, name: str, result: BenchmarkResult) -> None:
         """Add a benchmark result to the report.
 
         Args:
@@ -65,9 +63,7 @@ class BenchmarkReport:
         """
         self.statistics[name] = stats
 
-    def add_similarity_metrics(
-        self, name: str, metrics: SimilarityMetrics
-    ) -> None:
+    def add_similarity_metrics(self, name: str, metrics: SimilarityMetrics) -> None:
         """Add similarity metrics to the report.
 
         Args:
@@ -76,9 +72,7 @@ class BenchmarkReport:
         """
         self.similarity_metrics[name] = metrics
 
-    def add_duplicate_report(
-        self, name: str, report: DuplicateReport
-    ) -> None:
+    def add_duplicate_report(self, name: str, report: DuplicateReport) -> None:
         """Add duplicate report to the report.
 
         Args:
@@ -121,9 +115,7 @@ class BenchmarkReport:
             lines.append("## Similarity Analysis")
             lines.append("")
             for name, metrics in self.similarity_metrics.items():
-                lines.extend(
-                    self._format_similarity_section(name, metrics)
-                )
+                lines.extend(self._format_similarity_section(name, metrics))
 
         # Duplicate detection section
         if self.duplicate_reports:
@@ -165,14 +157,12 @@ class BenchmarkReport:
 
         if self.results:
             data["benchmarks"] = {
-                name: self._benchmark_to_dict(result)
-                for name, result in self.results.items()
+                name: self._benchmark_to_dict(result) for name, result in self.results.items()
             }
 
         if self.statistics:
             data["statistics"] = {
-                name: self._statistics_to_dict(stats)
-                for name, stats in self.statistics.items()
+                name: self._statistics_to_dict(stats) for name, stats in self.statistics.items()
             }
 
         if self.similarity_metrics:
@@ -222,9 +212,7 @@ class BenchmarkReport:
             encoding="utf-8",
         )
 
-    def _format_benchmark_section(
-        self, name: str, result: BenchmarkResult
-    ) -> list[str]:
+    def _format_benchmark_section(self, name: str, result: BenchmarkResult) -> list[str]:
         """Format a single benchmark result as Markdown lines."""
         lines = [
             f"### {name}",
@@ -255,47 +243,59 @@ class BenchmarkReport:
         ]
 
         if result.resource_metrics.gpu_detected:
-            lines.extend([
-                f"- **GPU Utilization:** {result.resource_metrics.gpu_utilization_percent or 'N/A'}",
-                f"- **GPU Memory:** {result.resource_metrics.gpu_memory_mb or 'N/A'} MB",
-            ])
+            lines.extend(
+                [
+                    f"- **GPU Utilization:** {result.resource_metrics.gpu_utilization_percent or 'N/A'}",
+                    f"- **GPU Memory:** {result.resource_metrics.gpu_memory_mb or 'N/A'} MB",
+                ]
+            )
 
-        lines.extend([
-            "",
-            "#### Cache Statistics",
-        ])
+        lines.extend(
+            [
+                "",
+                "#### Cache Statistics",
+            ]
+        )
 
         total_cache = result.cache_hits + result.cache_misses
         if total_cache > 0:
-            hit_rate = result.cache_hit_rate if result.cache_hit_rate > 0 else (result.cache_hits / total_cache)
-            lines.extend([
-                f"- **Hits:** {result.cache_hits}",
-                f"- **Misses:** {result.cache_misses}",
-                f"- **Hit Rate:** {hit_rate * 100:.1f}%",
-            ])
+            hit_rate = (
+                result.cache_hit_rate
+                if result.cache_hit_rate > 0
+                else (result.cache_hits / total_cache)
+            )
+            lines.extend(
+                [
+                    f"- **Hits:** {result.cache_hits}",
+                    f"- **Misses:** {result.cache_misses}",
+                    f"- **Hit Rate:** {hit_rate * 100:.1f}%",
+                ]
+            )
         else:
             lines.append("- **Hit Rate:** N/A (no cache data)")
 
         if result.errors:
-            lines.extend([
-                "",
-                "#### Errors",
-                *[f"- {e}" for e in result.errors],
-            ])
+            lines.extend(
+                [
+                    "",
+                    "#### Errors",
+                    *[f"- {e}" for e in result.errors],
+                ]
+            )
 
         if result.warnings:
-            lines.extend([
-                "",
-                "#### Warnings",
-                *[f"- {w}" for w in result.warnings],
-            ])
+            lines.extend(
+                [
+                    "",
+                    "#### Warnings",
+                    *[f"- {w}" for w in result.warnings],
+                ]
+            )
 
         lines.append("")
         return lines
 
-    def _format_statistics_section(
-        self, name: str, stats: EmbeddingQualityReport
-    ) -> list[str]:
+    def _format_statistics_section(self, name: str, stats: EmbeddingQualityReport) -> list[str]:
         """Format a statistics report as Markdown lines."""
         lines = [
             f"### Statistics: {name}",
@@ -315,40 +315,44 @@ class BenchmarkReport:
 
         if stats.norm_statistics:
             ns = stats.norm_statistics
-            lines.extend([
-                "#### Norm Statistics",
-                f"- **Mean Norm:** {ns.mean_norm:.6f}",
-                f"- **Std Norm:** {ns.std_norm:.6f}",
-                f"- **Min Norm:** {ns.min_norm:.6f}",
-                f"- **Max Norm:** {ns.max_norm:.6f}",
-                "",
-            ])
+            lines.extend(
+                [
+                    "#### Norm Statistics",
+                    f"- **Mean Norm:** {ns.mean_norm:.6f}",
+                    f"- **Std Norm:** {ns.std_norm:.6f}",
+                    f"- **Min Norm:** {ns.min_norm:.6f}",
+                    f"- **Max Norm:** {ns.max_norm:.6f}",
+                    "",
+                ]
+            )
 
         if stats.similarity_distribution:
             sd = stats.similarity_distribution
-            lines.extend([
-                "#### Similarity Distribution",
-                f"- **Mean Similarity:** {sd.get('mean', 0):.6f}",
-                f"- **Std Similarity:** {sd.get('std', 0):.6f}",
-                f"- **Median Similarity:** {sd.get('median', 0):.6f}",
-                f"- **P95 Similarity:** {sd.get('p95', 0):.6f}",
-                f"- **P99 Similarity:** {sd.get('p99', 0):.6f}",
-                f"- **High Similarity Ratio:** {sd.get('high_similarity_ratio', 0):.2%}",
-                "",
-            ])
+            lines.extend(
+                [
+                    "#### Similarity Distribution",
+                    f"- **Mean Similarity:** {sd.get('mean', 0):.6f}",
+                    f"- **Std Similarity:** {sd.get('std', 0):.6f}",
+                    f"- **Median Similarity:** {sd.get('median', 0):.6f}",
+                    f"- **P95 Similarity:** {sd.get('p95', 0):.6f}",
+                    f"- **P99 Similarity:** {sd.get('p99', 0):.6f}",
+                    f"- **High Similarity Ratio:** {sd.get('high_similarity_ratio', 0):.2%}",
+                    "",
+                ]
+            )
 
         if stats.warnings:
-            lines.extend([
-                "#### Warnings",
-                *[f"- {w}" for w in stats.warnings],
-                "",
-            ])
+            lines.extend(
+                [
+                    "#### Warnings",
+                    *[f"- {w}" for w in stats.warnings],
+                    "",
+                ]
+            )
 
         return lines
 
-    def _format_similarity_section(
-        self, name: str, metrics: SimilarityMetrics
-    ) -> list[str]:
+    def _format_similarity_section(self, name: str, metrics: SimilarityMetrics) -> list[str]:
         """Format similarity metrics as Markdown lines."""
         lines = [
             f"### Similarity: {name}",
@@ -364,16 +368,11 @@ class BenchmarkReport:
             "#### Distribution",
             *[
                 f"- **{bin_name}:** {count}"
-                for bin_name, count in sorted(
-                    metrics.similarity_distribution.items()
-                )
+                for bin_name, count in sorted(metrics.similarity_distribution.items())
             ],
             "",
             "#### Top-K Similarities",
-            *[
-                f"- **Top-{k}:** {avg:.6f}"
-                for k, avg in sorted(metrics.top_k_similarities.items())
-            ],
+            *[f"- **Top-{k}:** {avg:.6f}" for k, avg in sorted(metrics.top_k_similarities.items())],
             "",
             "#### Anomaly Detection",
             f"- **Outlier Count:** {metrics.outlier_count}",
@@ -383,9 +382,7 @@ class BenchmarkReport:
         ]
         return lines
 
-    def _format_duplicate_section(
-        self, name: str, report: DuplicateReport
-    ) -> list[str]:
+    def _format_duplicate_section(self, name: str, report: DuplicateReport) -> list[str]:
         """Format duplicate report as Markdown lines."""
         lines = [
             f"### Duplicates: {name}",
@@ -432,9 +429,7 @@ class BenchmarkReport:
 
         return lines
 
-    def _benchmark_to_dict(
-        self, result: BenchmarkResult
-    ) -> dict[str, Any]:
+    def _benchmark_to_dict(self, result: BenchmarkResult) -> dict[str, Any]:
         """Convert BenchmarkResult to JSON-compatible dictionary."""
         return {
             "provider_name": result.provider_name,
@@ -477,9 +472,7 @@ class BenchmarkReport:
             "warnings": result.warnings,
         }
 
-    def _statistics_to_dict(
-        self, stats: EmbeddingQualityReport
-    ) -> dict[str, Any]:
+    def _statistics_to_dict(self, stats: EmbeddingQualityReport) -> dict[str, Any]:
         """Convert EmbeddingQualityReport to JSON-compatible dictionary."""
         data: dict[str, Any] = {
             "total_embeddings": stats.total_embeddings,
@@ -512,9 +505,7 @@ class BenchmarkReport:
 
         return data
 
-    def _similarity_to_dict(
-        self, metrics: SimilarityMetrics
-    ) -> dict[str, Any]:
+    def _similarity_to_dict(self, metrics: SimilarityMetrics) -> dict[str, Any]:
         """Convert SimilarityMetrics to JSON-compatible dictionary."""
         return {
             "average_similarity": metrics.average_similarity,
@@ -530,9 +521,7 @@ class BenchmarkReport:
             "duplicate_clusters": metrics.duplicate_clusters,
         }
 
-    def _duplicate_to_dict(
-        self, report: DuplicateReport
-    ) -> dict[str, Any]:
+    def _duplicate_to_dict(self, report: DuplicateReport) -> dict[str, Any]:
         """Convert DuplicateReport to JSON-compatible dictionary."""
         return {
             "total_checked": report.total_checked,

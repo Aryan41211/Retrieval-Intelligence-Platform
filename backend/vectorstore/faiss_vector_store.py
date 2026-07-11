@@ -1,4 +1,3 @@
-
 from pathlib import Path
 from typing import Any
 
@@ -196,7 +195,9 @@ class FAISSVectorStore(BaseVectorStore):
         """
         try:
             if self._index is None or self._metadata is None:
-                raise VectorStoreError("No index loaded. Call create_index() or load_index() first.")
+                raise VectorStoreError(
+                    "No index loaded. Call create_index() or load_index() first."
+                )
 
             embeddings = np.array(embeddings, dtype=np.float32)
 
@@ -225,18 +226,11 @@ class FAISSVectorStore(BaseVectorStore):
                 m = metadata[i] or {}
                 # Best-effort extraction with common keys
                 chunk_text = (
-                    m.get("chunk_text")
-                    or m.get("text")
-                    or m.get("content")
-                    or m.get("chunk")
-                    or ""
+                    m.get("chunk_text") or m.get("text") or m.get("content") or m.get("chunk") or ""
                 )
 
                 source_filename = (
-                    m.get("source_file")
-                    or m.get("filename")
-                    or m.get("source_filename")
-                    or ""
+                    m.get("source_file") or m.get("filename") or m.get("source_filename") or ""
                 )
 
                 self._vector_records[str(embedding_id)] = {
@@ -244,11 +238,15 @@ class FAISSVectorStore(BaseVectorStore):
                     "document_id": m.get("document_id"),
                     "chunk_text": chunk_text,
                     "source_filename": source_filename,
-                    "metadata": m.get("metadata", m.get("chunk_metadata", m.get("custom_metadata", m.get("custom", {})))),
+                    "metadata": m.get(
+                        "metadata",
+                        m.get("chunk_metadata", m.get("custom_metadata", m.get("custom", {}))),
+                    ),
                     "language": m.get("language") or m.get("lang"),
                     "custom": m.get("custom", {}),
                     "embedding_model": m.get("embedding_model") or m.get("model_name"),
-                    "embedding_model_version": m.get("embedding_model_version") or m.get("model_version"),
+                    "embedding_model_version": m.get("embedding_model_version")
+                    or m.get("model_version"),
                 }
 
             self._index.add(embeddings)
@@ -371,11 +369,13 @@ class FAISSVectorStore(BaseVectorStore):
         }
 
         if self._index is not None:
-            status.update({
-                "num_embeddings": self._index.ntotal,
-                "dimension": self._index.d if hasattr(self._index, "d") else "unknown",
-                "index_type": type(self._index).__name__,
-            })
+            status.update(
+                {
+                    "num_embeddings": self._index.ntotal,
+                    "dimension": self._index.d if hasattr(self._index, "d") else "unknown",
+                    "index_type": type(self._index).__name__,
+                }
+            )
 
         if self._metadata:
             status["metadata"] = self._metadata.to_dict()
@@ -420,7 +420,9 @@ class FAISSVectorStore(BaseVectorStore):
 
         # Explicit dimensions (request.*) should take precedence if provided
         document_ids = request.document_ids or (filters.document_ids if filters else None)
-        source_filenames = request.source_filenames or (filters.source_filenames if filters else None)
+        source_filenames = request.source_filenames or (
+            filters.source_filenames if filters else None
+        )
         languages = request.languages or (filters.languages if filters else None)
         custom_filters = (filters.custom if filters else {}) or {}
 

@@ -77,7 +77,9 @@ class GenerationPipeline:
             hallucination_guard=hallucination_guard,
         )
 
-    async def generate(self, query: str, retrieved_chunks: list[Any], *, correlation_id: str | None = None) -> GenerationResult:
+    async def generate(
+        self, query: str, retrieved_chunks: list[Any], *, correlation_id: str | None = None
+    ) -> GenerationResult:
         """Asynchronous generation entry point.
 
         Args:
@@ -94,17 +96,23 @@ class GenerationPipeline:
 
         # 1) Context
         try:
-            context_items = self._context_builder.build(query=query, retrieved_chunks=retrieved_chunks)
+            context_items = self._context_builder.build(
+                query=query, retrieved_chunks=retrieved_chunks
+            )
         except EmptyContextError:
             latency_ms = int((time.perf_counter() - t0) * 1000)
             return GenerationResult(
                 answer="I don't know.",
                 incomplete=True,
-                metadata=self._empty_metadata(correlation_id=correlation_id, total_latency_ms=latency_ms),
+                metadata=self._empty_metadata(
+                    correlation_id=correlation_id, total_latency_ms=latency_ms
+                ),
             )
 
         # 2) Prompt
-        prompt, token_est_prompt = self._prompt_builder.build(query=query, context_items=context_items)
+        prompt, token_est_prompt = self._prompt_builder.build(
+            query=query, context_items=context_items
+        )
 
         # 3) LLM call
         try:
@@ -115,14 +123,20 @@ class GenerationPipeline:
             latency_ms = int((time.perf_counter() - t0) * 1000)
             logger.error(
                 json.dumps(
-                    {"event": "generation.provider_unavailable", "correlation_id": correlation_id, "error": str(e)}
+                    {
+                        "event": "generation.provider_unavailable",
+                        "correlation_id": correlation_id,
+                        "error": str(e),
+                    }
                 )
             )
             return GenerationResult(
                 answer="I don't know.",
                 incomplete=True,
                 metadata=self._empty_metadata(
-                    correlation_id=correlation_id, total_latency_ms=latency_ms, llm_latency_ms=llm_latency_ms
+                    correlation_id=correlation_id,
+                    total_latency_ms=latency_ms,
+                    llm_latency_ms=llm_latency_ms,
                 ),
             )
         except GenerationError:
@@ -130,11 +144,15 @@ class GenerationPipeline:
             return GenerationResult(
                 answer="I don't know.",
                 incomplete=True,
-                metadata=self._empty_metadata(correlation_id=correlation_id, total_latency_ms=latency_ms),
+                metadata=self._empty_metadata(
+                    correlation_id=correlation_id, total_latency_ms=latency_ms
+                ),
             )
 
         # 4) Citations
-        citations = self._citation_generator.generate(answer=raw_answer, context_items=context_items)
+        citations = self._citation_generator.generate(
+            answer=raw_answer, context_items=context_items
+        )
 
         # 5) Validate + guard
         grounded_result = self._response_validator.validate(
@@ -143,7 +161,9 @@ class GenerationPipeline:
             context_items=context_items,
             citations=citations,
         )
-        final_result = self._hallucination_guard.apply(query=query, result=grounded_result, context_items=context_items)
+        final_result = self._hallucination_guard.apply(
+            query=query, result=grounded_result, context_items=context_items
+        )
 
         total_latency_ms = int((time.perf_counter() - t0) * 1000)
         final_result.metadata.total_latency_ms = total_latency_ms
@@ -171,7 +191,9 @@ class GenerationPipeline:
 
 
 class GenerationMetadataPlaceholder:
-    def __init__(self, correlation_id: str | None, total_latency_ms: int, llm_latency_ms: int | None):
+    def __init__(
+        self, correlation_id: str | None, total_latency_ms: int, llm_latency_ms: int | None
+    ):
         self._correlation_id = correlation_id
         self._total_latency_ms = total_latency_ms
         self._llm_latency_ms = llm_latency_ms

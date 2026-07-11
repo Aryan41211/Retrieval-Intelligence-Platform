@@ -1,6 +1,5 @@
 """Tests for embedding statistics."""
 
-
 from uuid import uuid4
 
 from backend.data.models.embedding import Embedding
