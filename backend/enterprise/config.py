@@ -26,7 +26,7 @@ class EnterpriseSettings(BaseSettings):
     )
 
     jwt_secret_key: str = Field(
-        default="dev-insecure-change-me",
+        default="",
         description="Secret used to sign JWTs. REQUIRED and must be strong in production.",
     )
     jwt_algorithm: str = Field(default="HS256", description="JWT signing algorithm.")
@@ -63,11 +63,11 @@ class EnterpriseSettings(BaseSettings):
 
     @field_validator("jwt_secret_key")
     @classmethod
-    def _validate_secret(cls, value: str, info: object) -> str:
-        env = getattr(info, "data", {}).get("environment")
-        if env == "production" and value in (None, "", "dev-insecure-change-me"):
+    def _validate_secret(cls, value: str) -> str:
+        if not value or value in ("dev-insecure-change-me", "change-me"):
             raise ValueError(
-                "ENTERPRISE_JWT_SECRET_KEY must be set to a strong value in production."
+                "ENTERPRISE_JWT_SECRET_KEY must be set to a strong, non-default value. "
+                "Generate one with: openssl rand -hex 32"
             )
         return value
 

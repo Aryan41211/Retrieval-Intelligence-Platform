@@ -233,33 +233,39 @@ class TestHTTPProviderClient:
         mock_response.status_code = 200
         mock_response.json.return_value = {"result": "success"}
 
-        with patch('backend.generation.providers.common.http_client.AsyncClient') as mock_client:
-            mock_client_instance = AsyncMock()
-            mock_client.return_value.__aenter__.return_value = mock_client_instance
-            mock_client_instance.request.return_value = mock_response
+        mock_client = AsyncMock()
+        mock_client.request.return_value = mock_response
 
+        with patch(
+            'backend.generation.providers.common.http_client.get_provider_client',
+            AsyncMock(return_value=mock_client),
+        ):
             result = await http_client._request_with_retry("GET", "test")
             assert result == mock_response
 
     @pytest.mark.asyncio
     async def test_request_with_retry_timeout(self, http_client):
         """Test request timeout with retry logic."""
-        with patch('backend.generation.providers.common.http_client.AsyncClient') as mock_client:
-            mock_client_instance = AsyncMock()
-            mock_client.return_value.__aenter__.return_value = mock_client_instance
-            mock_client_instance.request.side_effect = httpx.TimeoutException("Timeout")
+        mock_client = AsyncMock()
+        mock_client.request.side_effect = httpx.TimeoutException("Timeout")
 
+        with patch(
+            'backend.generation.providers.common.http_client.get_provider_client',
+            AsyncMock(return_value=mock_client),
+        ):
             with pytest.raises(GenerationTimeoutError):
                 await http_client._request_with_retry("GET", "test")
 
     @pytest.mark.asyncio
     async def test_request_with_retry_max_retries_exceeded(self, http_client):
         """Test request when max retries are exceeded."""
-        with patch('backend.generation.providers.common.http_client.AsyncClient') as mock_client:
-            mock_client_instance = AsyncMock()
-            mock_client.return_value.__aenter__.return_value = mock_client_instance
-            mock_client_instance.request.side_effect = Exception("Some error")
+        mock_client = AsyncMock()
+        mock_client.request.side_effect = Exception("Some error")
 
+        with patch(
+            'backend.generation.providers.common.http_client.get_provider_client',
+            AsyncMock(return_value=mock_client),
+        ):
             with pytest.raises(LLMProviderUnavailableError):
                 await http_client._request_with_retry("GET", "test")
 

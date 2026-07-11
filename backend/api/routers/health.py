@@ -15,6 +15,7 @@ from typing import Literal
 from fastapi import APIRouter, Response
 from pydantic import BaseModel
 
+from backend.configs.settings import get_settings as get_app_settings
 from ..config import get_settings
 from ..observability import render_metrics
 
@@ -59,9 +60,11 @@ async def liveness() -> HealthStatus:
 async def readiness() -> HealthStatus:
     """Readiness probe: required runtime dependencies are available."""
     settings = get_settings()
+    app_settings = get_app_settings()
+    vector_store_dir = app_settings.vector_store.storage_dir or "./data/vectorstore"
 
     # Vector store persistence directory must be reachable/writable.
-    store_dir = os.environ.get("VECTOR_STORE_PATH", "backend/data/vectorstore")
+    store_dir = vector_store_dir
     parent = os.path.dirname(store_dir) or "."
     is_ready = True
     if parent and not (os.path.isdir(parent) and os.access(parent, os.W_OK | os.R_OK)):

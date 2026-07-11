@@ -1,15 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import { experimentsApi } from '@/services';
-import { FlaskConical, Plus } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { FlaskConical } from 'lucide-react';
 
 export function Experiments() {
-  const queryClient = useQueryClient();
   const { data: experiments, isLoading } = useQuery({
     queryKey: ['experiments'],
     queryFn: experimentsApi.list,

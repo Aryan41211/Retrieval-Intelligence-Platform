@@ -1,6 +1,6 @@
 [project]
 name = "retrieval-intelligence-platform"
-version = "0.1.0"
+version = "1.0.0"
 description = "Production-grade Retrieval-Augmented Generation platform"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -17,7 +17,7 @@ keywords = [
     "embeddings"
 ]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
@@ -105,8 +105,8 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = ["backend"]
-include = ["retrieval_intelligence*"]
+where = ["."]
+include = ["backend*"]
 
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]

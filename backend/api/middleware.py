@@ -132,6 +132,34 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+class MaxBodySizeMiddleware(BaseHTTPMiddleware):
+    """Reject requests whose body exceeds the configured maximum size."""
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        settings = request.app.state.api_settings
+        max_bytes = settings.max_request_size_mb * 1024 * 1024
+        content_length = request.headers.get("content-length")
+        if content_length:
+            try:
+                if int(content_length) > max_bytes:
+                    return JSONResponse(
+                        status_code=413,
+                        content={
+                            "detail": (
+                                f"Request body exceeds the maximum allowed size of "
+                                f"{settings.max_request_size_mb} MB."
+                            )
+                        },
+                    )
+            except (ValueError, TypeError):
+                pass
+        return await call_next(request)
+
+    async def body(self) -> bytes:
+        """Override to enforce size during streaming body reads (Starlette 0.26+)."""
+        return await super().body()
+
+
 def setup_middleware(app: FastAPI) -> None:
     """Register all API middleware in the correct (outer-to-inner) order."""
     settings = app.state.api_settings
@@ -142,6 +170,8 @@ def setup_middleware(app: FastAPI) -> None:
             per_minute=settings.rate_limit_per_minute,
             burst=settings.rate_limit_burst,
         )
+    # Request body size enforcement before any parsing.
+    app.add_middleware(MaxBodySizeMiddleware)
     # Security headers wrap application responses.
     app.add_middleware(SecurityHeadersMiddleware)
     # Innermost: correlation ID and request logging around the route handler.

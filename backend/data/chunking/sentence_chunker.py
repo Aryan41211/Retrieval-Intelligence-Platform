@@ -63,26 +63,35 @@ class SentenceChunker(BaseChunker):
     def _split_sentences(self, text: str) -> list[str]:
         """Split text into sentences.
 
+        Uses the precompiled SENTENCE_PATTERN to avoid pathological regex split
+        behavior on repetitive text.
+
         Args:
             text: Text to split.
 
         Returns:
             List of sentences.
         """
-        sentences = re.split(r"([.!?]+(?:\s+|\s*$))", text)
-        result = []
+        matches = list(self.SENTENCE_PATTERN.finditer(text))
+        if not matches:
+            return [text]
 
-        i = 0
-        while i < len(sentences):
-            if sentences[i]:
-                if i + 1 < len(sentences) and sentences[i + 1]:
-                    result.append(sentences[i] + sentences[i + 1])
-                    i += 2
-                else:
-                    result.append(sentences[i])
-                    i += 1
+        # Preserve original text slices for correctness and performance.
+        sentences: list[str] = []
+        start = 0
+        for m in matches:
+            end = m.end()
+            snippet = text[start:end].strip()
+            if snippet:
+                sentences.append(snippet)
+            start = end
 
-        return result if result else [text]
+        # Handle any trailing text after the last match.
+        tail = text[start:].strip()
+        if tail and (not sentences or sentences[-1] != tail):
+            sentences.append(tail)
+
+        return sentences if sentences else [text]
 
     def _merge_sentences(self, sentences: list[str]) -> list[str]:
         """Merge sentences into chunks respecting size limits.

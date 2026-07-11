@@ -82,7 +82,7 @@ class RetrievalPipeline:
                     "retrieved_chunks": len(results),
                     "latency_ms": latency_ms,
                     "top_k": request.top_k,
-                    "filters": request.filters.model_dump() if request.filters else None,
+                    "filters": request.filters.model_dump(mode="json") if request.filters else None,
                     "top_scores": metadata.top_scores,
                 }
             )

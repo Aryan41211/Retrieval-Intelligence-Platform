@@ -68,7 +68,7 @@ export function Chat() {
 
     return (
       <div className="space-y-6">
-        {messages.map((msg: { role: string; content: string; timestamp?: string; retrieved_chunks?: Array<{ chunk_id: string; document_id: string; content: string; similarity_score: number }>; citations?: Array<{ doc_index: number; chunk_id: string }> }, idx: number) => (
+        {messages.map((msg: { role: string; content: string; timestamp?: string; retrieved_chunks?: Array<{ chunk_id: string; document_id: string; content: string; similarity_score: number }>; citations?: Array<{ doc_index: number; chunk_id: string; document_id: string }> }, idx: number) => (
           <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {msg.role === 'assistant' && (
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
@@ -81,8 +81,13 @@ export function Chat() {
               </div>
               {msg.citations && msg.citations.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {msg.citations.map((citation, cIdx) => (
-                    <CitationLink key={cIdx} {...citation} />
+                    {msg.citations.map((citation, cIdx) => (
+                    <CitationLink
+                      key={cIdx}
+                      docIndex={citation.doc_index}
+                      chunkId={citation.chunk_id}
+                      documentId={citation.document_id}
+                    />
                   ))}
                 </div>
               )}
