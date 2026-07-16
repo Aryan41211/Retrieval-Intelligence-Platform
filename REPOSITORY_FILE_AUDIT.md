@@ -14,17 +14,17 @@
 | `.mypy_cache/` | Dir | ❌ REMOVE | Generated cache |
 | `.pytest_cache/` | Dir | ❌ REMOVE | Generated cache |
 | `.ruff_cache/` | Dir | ❌ REMOVE | Generated cache |
-| `assets/` | Dir | ⚠️ REVIEW | Only `.gitkeep` - likely not needed |
+| `assets/` | Dir | ❌ REMOVE | Only `.gitkeep` - not needed |
 | `backend/` | Dir | ✅ KEEP | Production runtime code |
 | `build/` | Dir | ❌ REMOVE | Build artifact |
-| `deploy/` | Dir | ✅ KEEP | Deployment configs |
+| `deploy/` | Dir | ✅ KEEP | Deployment configs (prometheus.yml) |
 | `dist/` | Dir | ❌ REMOVE | Build artifact |
 | `docs/` | Dir | ✅ KEEP | Documentation |
 | `frontend/` | Dir | ✅ KEEP | Frontend application |
-| `notebooks/` | Dir | ⚠️ REVIEW | Only `.gitkeep` - likely not needed |
+| `notebooks/` | Dir | ❌ REMOVE | Only `.gitkeep` - not needed |
 | `retrieval_intelligence_platform-1.0.0/` | Dir | ❌ REMOVE | Old wheel extraction |
 | `retrieval_intelligence_platform.egg-info/` | Dir | ❌ REMOVE | Generated package metadata |
-| `scripts/` | Dir | ⚠️ REVIEW | Only `.gitkeep` - likely not needed |
+| `scripts/` | Dir | ❌ REMOVE | Only `.gitkeep` - not needed |
 | `.coverage` | File | ❌ REMOVE | Generated coverage data |
 | `.dockerignore` | File | ✅ KEEP | Docker build context |
 | `.env.example` | File | ✅ KEEP | Environment template |
@@ -36,17 +36,17 @@
 | `docker-compose.yml` | File | ✅ KEEP | Docker compose |
 | `docker-entrypoint.sh` | File | ✅ KEEP | Docker entrypoint |
 | `Dockerfile` | File | ✅ KEEP | Docker build |
-| `EMBEDDING_VALIDATION_REVIEW_REPORT.md` | File | ❌ REMOVE | Obsolete report |
-| `FINAL_CODE_REVIEW.md` | File | ❌ REMOVE | Obsolete report |
+| `EMBEDDING_VALIDATION_REVIEW_REPORT.md` | File | ❌ REMOVE | Obsolete root-level report |
+| `FINAL_CODE_REVIEW.md` | File | ❌ REMOVE | Obsolete root-level report |
 | `FINAL_RELEASE_VERIFICATION.md` | File | ✅ KEEP | Final verification |
 | `LICENSE` | File | ✅ KEEP | License |
 | `pyproject.toml` | File | ✅ KEEP | Build config |
 | `README.md` | File | ✅ KEEP | Project readme |
-| `requirements-runtime.txt` | File | ⚠️ REVIEW | May duplicate pyproject.toml |
-| `requirements.txt` | File | ⚠️ REVIEW | May duplicate pyproject.toml |
-| `SYSTEM_ACCEPTANCE_REPORT.md` | File | ❌ REMOVE | Obsolete report |
+| `requirements-runtime.txt` | File | ✅ KEEP | Production deps (used by Dockerfile) |
+| `requirements.txt` | File | ✅ KEEP | Full deps incl test tools (used by CI) |
+| `SYSTEM_ACCEPTANCE_REPORT.md` | File | ❌ REMOVE | Obsolete root-level report |
 | `TODO.md` | File | ❌ REMOVE | Obsolete task list |
-| `VERSION` | File | ⚠️ REVIEW | Version file - check if used |
+| `VERSION` | File | ❌ REMOVE | Not used - version is in pyproject.toml/code |
 
 ---
 
@@ -76,7 +76,7 @@
 
 ## DOCUMENTATION REVIEW
 
-### Root Level Reports (REMOVE - obsolete/development artifacts)
+### Root Level Reports (REMOVE - obsolete development artifacts)
 | File | Date | Reason |
 |------|------|--------|
 | `EMBEDDING_VALIDATION_REVIEW_REPORT.md` | 2026-07-01 | Old review |
@@ -84,7 +84,7 @@
 | `SYSTEM_ACCEPTANCE_REPORT.md` | 2026-07-07 | Old report |
 | `TODO.md` | 2026-07-08 | Old task list |
 
-### Docs Directory - Architecture (KEEP - production docs)
+### Docs Directory - Main Documentation (KEEP - production quality)
 | File | Status |
 |------|--------|
 | `docs/ARCHITECTURE.md` | ✅ KEEP |
@@ -138,70 +138,74 @@ All 19 files under `docs/architecture/` → **KEEP**
 
 | File | Content | Status |
 |------|---------|--------|
-| `requirements.txt` | 80 lines - full deps from pyproject.toml | ⚠️ REVIEW |
-| `requirements-runtime.txt` | 8 lines - minimal runtime deps | ⚠️ REVIEW |
+| `requirements.txt` | 80 lines - full deps including test/lint tools | ✅ KEEP (used by CI) |
+| `requirements-runtime.txt` | 81 lines - production deps only | ✅ KEEP (used by Dockerfile) |
 
-**Note**: `pyproject.toml` is the canonical source. These may be redundant.
-
----
-
-## AGENT TOOLING (REMOVE)
-
-| Path | Reason |
-|------|--------|
-| `.kilo/` | Opencode agent workspace - not part of project |
+Both are needed: `requirements.txt` for CI testing, `requirements-runtime.txt` for lean production Docker image.
 
 ---
 
-## FRONTEND BUILD OUTPUT (REMOVE)
+## VERIFICATION CHECKLIST
 
-| Path | Reason |
-|------|--------|
-| `frontend/dist/` | Vite build output |
-| `frontend/node_modules/` | Dependencies (reinstall via `npm ci`) |
+### Referenced by Docker/Dockerfile:
+- `backend/` ✅ (COPY backend ./backend)
+- `docker-entrypoint.sh` ✅ (COPY)
+- `requirements-runtime.txt` ✅ (COPY)
+- `pyproject.toml` ✅ (COPY)
+- `deploy/prometheus.yml` ✅ (docker-compose volume)
+
+### Referenced by GitHub Actions CI:
+- `requirements.txt` ✅ (backend-test, security jobs)
+- `.github/workflows/ci.yml` ✅
+
+### Referenced by README.md:
+- `docs/ARCHITECTURE.md` ✅
+- `docs/API.md` ✅
+- `docs/DEVELOPER.md` ✅
+- `docs/CONTRIBUTING.md` ✅
+- `docs/BENCHMARKS.md` ✅
+- `DEPLOYMENT.md` ✅
+- `docs/architecture/` ✅
+- `docs/RELEASE_NOTES_v1.0.0.md` ✅
+- `docs/reports/PHASE9_*.md` ⚠️ (references to be removed)
+
+### Referenced by code imports:
+- No imports from `assets/`, `notebooks/`, `scripts/`, `.kilo/`
 
 ---
 
-## REFERENCE CHECKS NEEDED BEFORE DELETION
+## SUMMARY: SAFE TO REMOVE
 
-### Check if referenced in:
-- `Dockerfile` / `docker-compose.yml`
-- `.github/workflows/ci.yml`
-- `README.md`
-- `pyproject.toml` (package data, scripts)
-- Python imports (`import x` or `from x import y`)
-- Shell scripts
+### Directories (8):
+1. `.kilo/` - Agent workspace
+2. `assets/` - Empty
+3. `build/` - Build artifact
+4. `dist/` - Build artifact
+5. `notebooks/` - Empty
+6. `retrieval_intelligence_platform-1.0.0/` - Extracted wheel
+7. `retrieval_intelligence_platform.egg-info/` - Package metadata
+8. `scripts/` - Empty
 
-### Specific items to verify:
-1. `VERSION` file - is it read by any script?
-2. `requirements.txt` / `requirements-runtime.txt` - used by Docker or CI?
-3. `scripts/` - referenced anywhere?
-4. `assets/` - referenced anywhere?
-5. `notebooks/` - referenced anywhere?
-5. `docs/CHANGELOG_PROJECT.md` - duplicate of root `CHANGELOG.md`?
+### Files (8):
+1. `.coverage` - Coverage data
+2. `EMBEDDING_VALIDATION_REVIEW_REPORT.md` - Obsolete
+3. `FINAL_CODE_REVIEW.md` - Obsolete
+4. `SYSTEM_ACCEPTANCE_REPORT.md` - Obsolete
+5. `TODO.md` - Obsolete task list
+6. `VERSION` - Not used
+7. `docs/CHANGELOG_PROJECT.md` - Duplicates root CHANGELOG.md
+8. 14 files under `docs/reports/` - Phase reports
+
+### Cache directories (to be cleaned):
+- All `__pycache__/` (100+)
+- `.mypy_cache/`, `.pytest_cache/`, `.ruff_cache/`
+- `*.pyc`, `*.pyo`
 
 ---
 
-## SUMMARY: CLEANUP CANDIDATES
-
-### DEFINITELY REMOVE (generated/obsolete)
-- `build/`, `dist/`, `retrieval_intelligence_platform.egg-info/`, `retrieval_intelligence_platform-1.0.0/`
-- `.coverage`, `.mypy_cache/`, `.pytest_cache/`, `.ruff_cache/`
-- All `__pycache__/` directories, `*.pyc`, `*.pyo`
-- `.kilo/`
-- `EMBEDDING_VALIDATION_REVIEW_REPORT.md`, `FINAL_CODE_REVIEW.md`, `SYSTEM_ACCEPTANCE_REPORT.md`, `TODO.md`
-- All files under `docs/reports/` (14 files)
-- `frontend/dist/`, `frontend/node_modules/`
-- `assets/`, `notebooks/`, `scripts/` (empty except .gitkeep)
-
-### REVIEW BEFORE REMOVING
-- `requirements.txt`, `requirements-runtime.txt` - check Docker/CI usage
-- `VERSION` - check if read by build scripts
-- `docs/CHANGELOG_PROJECT.md` - check if duplicate
-
-### KEEP (production required)
-- `backend/`, `frontend/src/`, `frontend/public/`, `deploy/`
-- `.github/`, `docs/` (core docs), `Dockerfile`, `docker-compose.yml`
-- `README.md`, `LICENSE`, `CHANGELOG.md`, `CLAUDE.md`, `DEPLOYMENT.md`
-- `pyproject.toml`, `.env.example`, `.dockerignore`, `.gitignore`, `.pre-commit-config.yaml`
-- `docker-entrypoint.sh`
+## SPACE ESTIMATE
+- Build artifacts: ~50-100 MB
+- Cache directories: ~20-50 MB
+- Obsolete reports: ~2-5 MB
+- Empty directories: negligible
+- **Total reclaimable: ~70-150 MB**
