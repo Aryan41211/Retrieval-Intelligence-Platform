@@ -111,8 +111,7 @@ class IndexSerializer:
             index_data = None
             if data_path.exists():
                 with open(data_path, "rb") as f:
-                    # nosec B301: pickle.load on trusted local FAISS index files only; never on untrusted input
-                    index_data = pickle.load(f)
+                    index_data = pickle.load(f)  # nosec B301: trusted local FAISS index files only; never untrusted input
 
             return index, index_data
 
