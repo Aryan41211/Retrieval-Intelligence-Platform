@@ -28,11 +28,13 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install linters
-        run: pip install ruff black
+        run: pip install ruff==0.5.7 black==24.8.0 mypy==1.11.2
       - name: Ruff
         run: ruff check backend/
       - name: Black
         run: black --check backend/
+      - name: MyPy
+        run: mypy backend/
 
   # ---------------------------------------------------------------------------
   # Unit & integration tests. Heavy ML dependencies are installed from
@@ -84,14 +86,13 @@ jobs:
         run: npm run build
 
   # ---------------------------------------------------------------------------
-  # Security scanning (advisory). Surfaced but not blocking the merge gate so
-  # transitive ML-dependency advisories do not false-negative the pipeline.
+  # Security scanning — blocks on findings. Run pip-audit with --fail-on-vuln
+  # and bandit without || true so real issues fail the build.
   # ---------------------------------------------------------------------------
   security:
     name: Security scan
     runs-on: ubuntu-latest
     needs: backend-lint
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -99,12 +100,12 @@ jobs:
           python-version: "3.12"
       - name: Dependency audit
         run: |
-          pip install pip-audit
-          pip-audit -r requirements.txt || true
+          pip install pip-audit==2.8.0
+          pip-audit -r requirements.txt --fail-on-vuln
       - name: Static security analysis
         run: |
-          pip install bandit
-          bandit -r backend -x backend/tests -ll || true
+          pip install bandit==1.8.3
+          bandit -r backend -x backend/tests -ll
 
   # ---------------------------------------------------------------------------
   # Build verification - produce a wheel/sdist.
