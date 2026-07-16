@@ -44,8 +44,9 @@ class APISettings(BaseSettings):
 
     # --- Server ----------------------------------------------------------------
     host: str = Field(
-        default="0.0.0.0", description="Bind host for the HTTP server."
-    )  # nosec B104: standard for containerized deployments behind reverse proxy; overridden via API_HOST
+        default="0.0.0.0",  # nosec B104: standard for containerized deployments behind reverse proxy; overridden via API_HOST
+        description="Bind host for the HTTP server.",
+    )
     port: int = Field(default=8000, ge=1, le=65535, description="Bind port for the HTTP server.")
     debug: bool = Field(
         default=False,
