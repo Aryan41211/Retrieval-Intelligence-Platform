@@ -11,6 +11,13 @@ ENV/
 .env
 .venv
 
+# Node.js dependencies
+node_modules/
+frontend/node_modules/
+
+# ML evaluation
+.deepeval/
+
 # Environment variables
 .env
 .env.local
