@@ -261,22 +261,27 @@ class MaxBodySizeMiddleware(BaseHTTPMiddleware):
 
 
 class HealthProbeExemptTrustedHostMiddleware(TrustedHostMiddleware):
-    """``TrustedHostMiddleware`` that lets container health probes through.
+    """``TrustedHostMiddleware`` that lets infrastructure probes through.
 
     Host validation exists to stop Host-header poisoning: an attacker-supplied
     ``Host`` reflected into a cache key or into an absolute URL such as a
-    password-reset link. The health endpoints do neither - they return a fixed
-    JSON body and build no URLs - so the check protects nothing on those paths
-    while reliably breaking deployment.
+    password-reset link. The health and metrics endpoints do neither - they
+    return a fixed body and build no URLs - so the check protects nothing on
+    those paths while reliably breaking deployment.
 
-    It breaks deployment because a probe addresses the app by *address*, not by
-    hostname. The image's ``HEALTHCHECK`` sends ``Host: 127.0.0.1:8000`` and a
-    Kubernetes kubelet sends the pod IP, and neither can be listed in
+    It breaks deployment because infrastructure addresses the app by *address or
+    service name*, never by the public hostname. The image's ``HEALTHCHECK``
+    sends ``Host: 127.0.0.1:8000``, a Kubernetes kubelet sends the pod IP, and
+    the Prometheus scrape sends ``Host: api:8000``. None can be listed in
     ``API_TRUSTED_HOSTS`` up front - the pod IP does not exist until the pod is
     scheduled. Under the stock middleware every probe was answered 400, so a
-    production container never became healthy: compose held the frontend at
-    ``depends_on: service_healthy`` indefinitely and Kubernetes crash-looped the
-    pod against a failing liveness probe.
+    production container never became healthy (compose held the frontend at
+    ``depends_on: service_healthy`` indefinitely, Kubernetes crash-looped the pod
+    against a failing liveness probe) and every metrics scrape failed.
+
+    Access control is not what is being relaxed here: ``/metrics`` keeps its own
+    bearer token, and a ``Host`` header is attacker-chosen in any case, so it was
+    never a gate.
 
     Args:
         app: The wrapped ASGI application.

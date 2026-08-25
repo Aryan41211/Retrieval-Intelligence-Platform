@@ -131,10 +131,12 @@ API_TRUSTED_HOSTS=["app.example.com","api.example.com"]
 A rejected Host is logged at WARNING with the offending value and the configured
 list, so check the API logs first if requests 400 while `/health/ready` is fine.
 
-The health endpoints are deliberately exempt from this check. Orchestrators
-probe by address — the image `HEALTHCHECK` uses `127.0.0.1` and a Kubernetes
-kubelet uses the pod IP, which cannot be known in advance — and those endpoints
-reflect no `Host` anywhere, so validating it there only ever broke deployments.
+The health and metrics endpoints are deliberately exempt from this check.
+Infrastructure reaches them by address or service name — the image `HEALTHCHECK`
+uses `127.0.0.1`, a Kubernetes kubelet uses the pod IP, and Prometheus scrapes
+`http://api:8000` — none of which can be known in advance or would occur to
+anyone to list. Those endpoints reflect no `Host` anywhere, so validating it
+there only ever broke deployments. `/metrics` keeps its bearer token.
 
 ---
 

@@ -52,6 +52,12 @@ owning user's or workspace's knowledge base.
   the pod. Health paths are now exempt from Host validation, which costs
   nothing: they return a fixed body and build no URLs, so there is no Host to
   poison. Every other path is still validated.
+- **Every Prometheus scrape failed in production.** Compose scrapes
+  `http://api:8000/api/v1/metrics`, so the `Host` is the service name `api` -
+  not something anyone would think to add to `API_TRUSTED_HOSTS` - and the
+  target sat permanently `down` with a `400`. `/metrics` is exempt for the same
+  reason as the health paths and keeps its own bearer token, which is what
+  actually guards it.
 - **`API_TRUSTED_HOSTS` could not be set for the compose `api` service.** It was
   absent from the `environment:` block, so a value in `.env` never reached the
   container and `API_ENVIRONMENT=production docker compose up` always died on

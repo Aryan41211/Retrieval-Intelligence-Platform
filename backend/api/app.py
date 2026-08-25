@@ -126,15 +126,17 @@ def create_application() -> FastAPI:
     prefix = settings.api_prefix
 
     # Host validation guards against Host-header poisoning; wildcard is rejected
-    # in production by APISettings.validate_for_environment. Health probes are
-    # exempt: an orchestrator reaches the container by address (127.0.0.1 for the
-    # image HEALTHCHECK, the pod IP for a kubelet), which cannot be enumerated in
-    # API_TRUSTED_HOSTS, and those endpoints reflect no Host anywhere.
+    # in production by APISettings.validate_for_environment. The infrastructure
+    # endpoints are exempt: they are reached by address or service name
+    # (127.0.0.1 for the image HEALTHCHECK, the pod IP for a kubelet, "api:8000"
+    # for the Prometheus scrape), none of which can be enumerated in
+    # API_TRUSTED_HOSTS, and neither reflects a Host anywhere. /metrics is
+    # guarded by its own bearer token instead.
     if settings.trusted_hosts and settings.trusted_hosts != ["*"]:
         app.add_middleware(
             HealthProbeExemptTrustedHostMiddleware,
             allowed_hosts=settings.trusted_hosts,
-            exempt_paths=(f"{prefix}/health",),
+            exempt_paths=(f"{prefix}/health", f"{prefix}/metrics"),
         )
 
     app.include_router(health_router, prefix=prefix)

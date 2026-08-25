@@ -208,6 +208,10 @@ class TestHealthProbeExemptTrustedHost:
         async def live() -> dict[str, str]:
             return {"status": "ok"}
 
+        @app.get("/api/v1/metrics")
+        async def metrics() -> dict[str, str]:
+            return {"status": "ok"}
+
         @app.get("/api/v1/chat")
         async def chat() -> dict[str, str]:
             return {"status": "ok"}
@@ -215,7 +219,7 @@ class TestHealthProbeExemptTrustedHost:
         app.add_middleware(
             HealthProbeExemptTrustedHostMiddleware,
             allowed_hosts=trusted_hosts,
-            exempt_paths=("/api/v1/health",),
+            exempt_paths=("/api/v1/health", "/api/v1/metrics"),
         )
         return TestClient(app)
 
@@ -223,6 +227,13 @@ class TestHealthProbeExemptTrustedHost:
     def test_probe_paths_ignore_the_host_header(self, host: str) -> None:
         client = self._client(["api.example.com"])
         response = client.get("/api/v1/health/live", headers={"host": host})
+        assert response.status_code == 200
+
+    def test_prometheus_scrapes_by_service_name(self) -> None:
+        """Compose scrapes ``http://api:8000/api/v1/metrics``; ``api`` is not a
+        hostname anyone would think to put in ``API_TRUSTED_HOSTS``."""
+        client = self._client(["app.example.com"])
+        response = client.get("/api/v1/metrics", headers={"host": "api:8000"})
         assert response.status_code == 200
 
     def test_non_probe_paths_still_reject_untrusted_hosts(self) -> None:
