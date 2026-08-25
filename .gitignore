@@ -113,7 +113,13 @@ backend/data/processed/*
 *.onnx
 *.gguf
 *.safetensors
-models/
+# Downloaded weights, not source. The bare `models/` this replaced also matched
+# backend/data/models/ - the domain-model package - so five source files were
+# silently never committed and a clean clone died at import with
+# `ModuleNotFoundError: No module named 'backend.data.models'`. Anchored to the
+# directories that actually hold artifacts.
+/models/
+/data/models/
 checkpoints/
 artifacts/
 *.joblib

@@ -52,6 +52,15 @@ owning user's or workspace's knowledge base.
   the pod. Health paths are now exempt from Host validation, which costs
   nothing: they return a fixed body and build no URLs, so there is no Host to
   poison. Every other path is still validated.
+- **A clean clone could not import the application.** `.gitignore` carried a
+  bare `models/` rule for downloaded weights, which also matched
+  `backend/data/models/` - the domain-model package - so five source files were
+  never committed while staying present locally, where every test run and every
+  local Docker build used them happily. A checkout died at startup with
+  `ModuleNotFoundError: No module named 'backend.data.models'`. The rule is
+  anchored to the artifact directories, and a test now asserts that no Python
+  file under `backend/` is git-ignored: a passing working tree is not evidence
+  that a checkout works.
 - **Every Prometheus scrape failed in production.** Compose scrapes
   `http://api:8000/api/v1/metrics`, so the `Host` is the service name `api` -
   not something anyone would think to add to `API_TRUSTED_HOSTS` - and the
