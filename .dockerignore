@@ -1,4 +1,7 @@
 # Docker ignore - keep the build context lean and avoid leaking secrets.
+.env
+.env.*
+!.env.example
 .git
 .gitignore
 .github
@@ -21,12 +24,23 @@ logs
 backend/data/raw/*
 backend/data/processed/*
 backend/data/vectorstore/*
+# Runtime state written by a local (non-container) run: the FAISS index and its
+# sidecars. Baking these in would ship one machine's knowledge base in the image
+# and then be shadowed by the /app/data volume anyway.
+data
 *.db
 *.sqlite
 *.sqlite3
 mlruns
 mlartifacts
 chroma_db
+dist
+build
+*.egg-info
 backend/tests
 docker-compose.override.yml
 .deepeval
+
+# Required in the image for `alembic upgrade head`.
+!alembic.ini
+!migrations

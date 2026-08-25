@@ -99,6 +99,13 @@ backend/data/processed/*
 !backend/data/raw/.gitkeep
 !backend/data/processed/.gitkeep
 
+# Runtime state from a local (non-container) run: FAISS index + sidecars.
+# In a deployment this lives on the /app/data volume, never in the repo.
+/data/
+
+# Prometheus scrape credential (see DEPLOYMENT.md); generated, never committed.
+/deploy/metrics_token
+
 # Model weights & artifacts
 *.bin
 *.pt
@@ -152,8 +159,6 @@ dmypy.json
 # Ruff
 .ruff_cache/
 
-# Pre-commit
-.pre-commit-config.yaml
 
 # IDE specific
 .project
@@ -193,7 +198,7 @@ docker-compose.override.yml
 kubeconfig
 
 # Secrets
-*.env
 *.key
 *.pem
 secrets/
+!.env.example

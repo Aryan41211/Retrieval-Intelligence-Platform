@@ -64,11 +64,16 @@ class IndexSerializer:
             metadata_dict = metadata.to_dict()
             metadata_path.write_text(json.dumps(metadata_dict, indent=2), encoding="utf-8")
 
-            # Save additional data if provided
+            # Save additional data if provided. The sidecar is deserialized with
+            # pickle on load, so a checksum is recorded here and verified before
+            # unpickling: an attacker who can write to the storage directory
+            # would otherwise achieve code execution.
             if index_data:
                 data_path = self.storage_dir / f"{metadata.index_id}.data.pkl"
                 with open(data_path, "wb") as f:
                     pickle.dump(index_data, f)
+                metadata.data_checksum = self._compute_file_checksum(data_path)
+                metadata_path.write_text(json.dumps(metadata.to_dict(), indent=2), encoding="utf-8")
 
             return index_path
 
@@ -110,10 +115,18 @@ class IndexSerializer:
             data_path = self.storage_dir / f"{metadata.index_id}.data.pkl"
             index_data = None
             if data_path.exists():
+                expected = getattr(metadata, "data_checksum", None)
+                if expected:
+                    actual = self._compute_file_checksum(data_path)
+                    if actual != expected:
+                        raise IndexCorruptionError(
+                            f"Index sidecar checksum mismatch for {metadata.index_id}: "
+                            "refusing to deserialize a modified file."
+                        )
                 with open(data_path, "rb") as f:
-                    index_data = pickle.load(
-                        f
-                    )  # nosec B301: trusted local FAISS index files only; never untrusted input
+                    # Checksum-verified above against the value written by
+                    # save_index; the storage directory must remain trusted.
+                    index_data = pickle.load(f)  # nosec B301
 
             return index, index_data
 
@@ -128,9 +141,11 @@ class IndexSerializer:
         Args:
             index_id: Unique identifier for the index.
         """
-        base_path = self.storage_dir / index_id
+        # Build names by concatenation, not Path.with_suffix: with_suffix
+        # *replaces* the final suffix, so an index_id such as "v1.0" resolved to
+        # "v1.index" and deleted (or missed) the wrong file.
         for ext in [".index", ".meta.json", ".data.pkl"]:
-            file_path = base_path.with_suffix(ext)
+            file_path = self.storage_dir / f"{index_id}{ext}"
             if file_path.exists():
                 file_path.unlink()
 

@@ -37,6 +37,10 @@ class IndexMetadata(BaseModel):
     creation_timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
     checksum: str = Field(default="", description="Checksum of the index file")
+    data_checksum: str = Field(
+        default="",
+        description="Checksum of the pickled sidecar, verified before deserialization",
+    )
     version: str = Field(default="1.0.0", description="Index format version")
     storage_path: str = Field(description="Path to the stored index file")
     configuration: dict[str, Any] = Field(
@@ -62,6 +66,7 @@ class IndexMetadata(BaseModel):
             "creation_timestamp": self.creation_timestamp.isoformat(),
             "last_updated": self.last_updated.isoformat(),
             "checksum": self.checksum,
+            "data_checksum": self.data_checksum,
             "version": self.version,
             "storage_path": self.storage_path,
             "configuration": self.configuration,
@@ -71,6 +76,7 @@ class IndexMetadata(BaseModel):
     def from_dict(cls, data: dict[str, Any]) -> "IndexMetadata":
         """Create metadata from dictionary."""
         data = data.copy()
+        data.setdefault("data_checksum", "")
         data["index_type"] = IndexType(data["index_type"])
         data["distance_metric"] = DistanceMetric(data["distance_metric"])
         data["creation_timestamp"] = datetime.fromisoformat(data["creation_timestamp"])

@@ -6,7 +6,7 @@ audit logs, and token records for password reset / email verification.
 """
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     JSON,
@@ -25,8 +25,19 @@ def _uuid() -> str:
     return str(uuid.uuid4())
 
 
-def _now() -> datetime:
-    return datetime.utcnow()
+def utcnow() -> datetime:
+    """Return the current UTC time as a naive datetime.
+
+    The ORM columns are naive ``DateTime``, and existing rows were written with
+    the now-deprecated ``datetime.utcnow()``. Producing a naive UTC value keeps
+    every stored timestamp and comparison consistent without a schema migration,
+    while dropping the deprecation warning.
+    """
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
+# Backwards-compatible alias used as a column default.
+_now = utcnow
 
 
 class User(Base):

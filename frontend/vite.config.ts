@@ -27,4 +27,20 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split rarely-changing vendor code out of the app chunk so a deploy
+        // does not invalidate the whole 1.1 MB bundle, and heavy libraries
+        // used by a few pages load separately.
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          query: ['@tanstack/react-query', 'axios'],
+          charts: ['recharts'],
+          markdown: ['react-markdown', 'remark-gfm', 'rehype-sanitize', 'react-syntax-highlighter'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 700,
+  },
 });

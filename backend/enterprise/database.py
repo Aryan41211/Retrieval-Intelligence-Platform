@@ -20,6 +20,19 @@ from sqlalchemy.orm import DeclarativeBase
 
 DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///./rip.db"
 
+# The enterprise layer runs on SQLAlchemy's asyncio extension, which refuses any
+# synchronous DBAPI driver. Operators (and our own .env / docker-compose files)
+# naturally write the familiar sync form, so map the well-known sync drivers onto
+# their async equivalents instead of failing deep inside the first request with
+# "The loaded 'pysqlite' is not async".
+_ASYNC_DRIVER_BY_SYNC_SCHEME = {
+    "sqlite": "sqlite+aiosqlite",
+    "postgresql": "postgresql+asyncpg",
+    "postgres": "postgresql+asyncpg",
+    "postgresql+psycopg2": "postgresql+asyncpg",
+    "mysql": "mysql+aiomysql",
+}
+
 
 class Base(DeclarativeBase):
     """Declarative base for enterprise ORM models."""
@@ -29,8 +42,44 @@ _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
+def normalize_database_url(url: str) -> str:
+    """Return an asyncio-compatible SQLAlchemy URL.
+
+    Args:
+        url: Raw database URL, possibly naming a synchronous driver.
+
+    Returns:
+        The same URL with a synchronous driver upgraded to its async equivalent.
+
+    Raises:
+        ValueError: If the URL has no scheme, or names a driver with no known
+            async counterpart, so misconfiguration fails fast and legibly.
+    """
+    if "://" not in url:
+        raise ValueError(
+            f"Invalid DATABASE_URL {url!r}: expected a SQLAlchemy URL such as "
+            "'postgresql+asyncpg://user:pass@host/db' or 'sqlite+aiosqlite:///./rip.db'."
+        )
+    scheme, remainder = url.split("://", 1)
+    if "+" in scheme:
+        # Already driver-qualified; only remap known-sync drivers (e.g. psycopg2).
+        replacement = _ASYNC_DRIVER_BY_SYNC_SCHEME.get(scheme)
+        if replacement is None:
+            return url
+        return f"{replacement}://{remainder}"
+
+    replacement = _ASYNC_DRIVER_BY_SYNC_SCHEME.get(scheme)
+    if replacement is None:
+        raise ValueError(
+            f"Unsupported DATABASE_URL scheme {scheme!r}. The enterprise layer requires an "
+            "async driver; supported forms are "
+            f"{', '.join(sorted(_ASYNC_DRIVER_BY_SYNC_SCHEME))} or an explicit '+driver' URL."
+        )
+    return f"{replacement}://{remainder}"
+
+
 def _resolve_database_url() -> str:
-    return os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL)
+    return normalize_database_url(os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL))
 
 
 def get_engine() -> AsyncEngine:
@@ -49,9 +98,28 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
     return _session_factory
 
 
+def _auto_create_enabled() -> bool:
+    """Return True when the app may create tables itself.
+
+    Alembic owns the schema in any deployment that can outlive a single release
+    (`alembic upgrade head` runs from the container entrypoint). ``create_all``
+    remains the default for local development and tests, where a throwaway
+    SQLite file is created from scratch. Set ``DB_AUTO_CREATE=false`` wherever
+    migrations are authoritative so the two cannot disagree.
+    """
+    return os.environ.get("DB_AUTO_CREATE", "true").strip().lower() not in {
+        "false",
+        "0",
+        "no",
+    }
+
+
 async def init_db() -> None:
-    """Create all enterprise tables. Import models so they register on ``Base``."""
+    """Create enterprise tables unless migrations own the schema."""
     from backend.enterprise import models  # noqa: F401 - ensure models are registered
+
+    if not _auto_create_enabled():
+        return
 
     engine = get_engine()
     async with engine.begin() as conn:

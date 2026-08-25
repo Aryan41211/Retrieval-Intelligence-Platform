@@ -18,6 +18,9 @@ export interface DocumentUploadResponse {
   filename: string;
   status: string;
   message: string;
+  /** Knowledge base the document was written to, e.g. "user:<id>". */
+  namespace?: string | null;
+  chunks_indexed: number;
 }
 
 export interface ChatMessage {

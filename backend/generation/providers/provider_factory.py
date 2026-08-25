@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.configs.settings import get_settings
+from backend.configs.settings import SUPPORTED_GENERATION_PROVIDERS, get_settings
 from backend.generation.exceptions import GenerationError
 from backend.generation.providers.anthropic_provider import AnthropicProvider
 from backend.generation.providers.base_provider import LLMProvider
@@ -14,34 +14,60 @@ class ProviderFactory:
 
     @staticmethod
     def create() -> LLMProvider:
+        """Build the configured LLM provider with its credentials and endpoint.
+
+        Returns:
+            A ready-to-use provider instance.
+
+        Raises:
+            GenerationError: If the configured provider is not supported. It is
+                deliberately *not* silently replaced by the stub provider, which
+                previously caused a typo in GENERATION_PROVIDER to serve
+                fabricated answers with a 200 response.
+        """
         settings = get_settings()
         gen = settings.generation
-        provider = (gen.provider or "fake").lower()
+        provider = (gen.provider or "fake").strip().lower()
 
         if provider == "fake":
             return FakeProvider()
 
+        # Options shared by every HTTP-backed provider. Previously none of these
+        # were passed, so providers ran with no API key and a localhost base URL.
+        common: dict[str, object] = {
+            "model": gen.model_name,
+            "timeout_s": gen.timeout_s,
+            "max_retries": gen.max_retries,
+        }
+        base_url = gen.resolved_base_url()
+        if base_url:
+            common["base_url"] = base_url
+        if gen.api_key:
+            common["api_key"] = gen.api_key
+
         if provider in {"openai", "openai_compatible", "openai-compatible"}:
             return OpenAICompatibleProvider(
-                model=gen.model_name,
+                organization=gen.organization,
+                project=gen.project,
+                **common,
             )
 
         if provider == "ollama":
-            return OllamaProvider(
-                model=gen.model_name,
-            )
+            return OllamaProvider(**common)
 
         if provider == "nim":
-            return NIMProvider(
-                model=gen.model_name,
-            )
+            return NIMProvider(**common)
 
         if provider == "anthropic":
             return AnthropicProvider(
-                model=gen.model_name,
+                anthropic_version=gen.anthropic_version,
+                **common,
             )
 
-        return FakeProvider()
+        supported = ", ".join(sorted(SUPPORTED_GENERATION_PROVIDERS))
+        raise GenerationError(
+            f"Unsupported GENERATION_PROVIDER {gen.provider!r}. Supported providers: {supported}."
+        )
 
 
 class FakeProvider(LLMProvider):

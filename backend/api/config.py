@@ -44,7 +44,9 @@ class APISettings(BaseSettings):
 
     # --- Server ----------------------------------------------------------------
     host: str = Field(
-        default="0.0.0.0",  # nosec B104: standard for containerized deployments behind reverse proxy; overridden via API_HOST
+        default="0.0.0.0",  # nosec B104
+        # Binding all interfaces is standard for containers behind a reverse
+        # proxy; override with API_HOST for a direct-exposure deployment.
         description="Bind host for the HTTP server.",
     )
     port: int = Field(default=8000, ge=1, le=65535, description="Bind port for the HTTP server.")
@@ -86,6 +88,57 @@ class APISettings(BaseSettings):
     )
     rate_limit_enabled: bool = Field(
         default=True, description="Enable the in-memory per-IP rate limiter. Disable in tests."
+    )
+    rate_limit_auth_per_minute: int = Field(
+        default=10,
+        ge=1,
+        description="Stricter sustained rate for authentication endpoints (per client IP).",
+    )
+    rate_limit_max_tracked_clients: int = Field(
+        default=10000,
+        ge=100,
+        description="Maximum client buckets held in memory before idle ones are evicted.",
+    )
+
+    # --- Proxy / client identity ------------------------------------------------
+    trust_proxy_headers: bool = Field(
+        default=False,
+        description=(
+            "Honour X-Forwarded-For when determining the client IP. Enable ONLY when "
+            "every request passes through a proxy you control, otherwise clients can "
+            "spoof their address and bypass rate limiting."
+        ),
+    )
+    trusted_proxy_count: int = Field(
+        default=1,
+        ge=1,
+        le=10,
+        description=(
+            "Number of trusted proxies in front of the app. The client IP is taken this "
+            "many hops from the right of X-Forwarded-For, which spoofed entries cannot reach."
+        ),
+    )
+    trusted_hosts: list[str] = Field(
+        default_factory=lambda: ["*"],
+        description=(
+            "Permitted Host header values; required in production. List the hostnames "
+            "browsers use to reach the app, not the API's own service name: the bundled "
+            "nginx forwards the original Host, so behind it this is the frontend's "
+            "hostname. Health probes are exempt (they arrive by IP)."
+        ),
+    )
+
+    # --- Metrics ----------------------------------------------------------------
+    metrics_require_auth: bool = Field(
+        default=True,
+        description="Require a bearer token on /metrics. Disable only on a private network.",
+    )
+    metrics_token: str | None = Field(
+        default=None,
+        description=(
+            "Shared token accepted by /metrics (Authorization: Bearer <token>). When unset "
+            "and metrics_require_auth is true, /metrics requires a normal user JWT."
+        ),
     )
 
     # --- Logging ---------------------------------------------------------------
@@ -147,6 +200,45 @@ class APISettings(BaseSettings):
             raise ValueError(
                 "CORS misconfiguration: wildcard origin '*' cannot be used with "
                 "credentialed requests (cors_credentials=True). Set explicit origins."
+            )
+        if self.environment == "production":
+            if "*" in self.cors_origins:
+                raise ValueError(
+                    "CORS misconfiguration: wildcard origin '*' is not permitted in "
+                    "production. Set API_CORS_ORIGINS to your explicit frontend origins."
+                )
+            if "*" in self.trusted_hosts:
+                raise ValueError(
+                    "Host validation: API_TRUSTED_HOSTS must list explicit hostnames in "
+                    "production to prevent Host-header attacks."
+                )
+            self._reject_placeholder_signing_secret()
+
+    @staticmethod
+    def _reject_placeholder_signing_secret() -> None:
+        """Refuse to serve production traffic with a copied example secret.
+
+        ``EnterpriseSettings`` rejects six exact placeholder strings, which the
+        common shapes slip past: a value like
+        ``dev-secret-key-change-in-production-32chars-long`` is long enough and
+        varied enough to satisfy every other check while being completely
+        guessable. A predictable signing key means forgeable access tokens, so
+        production refuses to start on one.
+
+        Imported lazily to keep the API config module importable on its own.
+
+        Raises:
+            ValueError: If the configured signing secret looks like a placeholder.
+        """
+        from backend.enterprise.config import EnterpriseSettings, get_enterprise_settings
+
+        secret = get_enterprise_settings().jwt_secret_key
+        marker = EnterpriseSettings.placeholder_marker(secret)
+        if marker is not None:
+            raise ValueError(
+                f"ENTERPRISE_JWT_SECRET_KEY looks like a placeholder (contains {marker!r}) "
+                "and must not sign tokens in production. Generate one with: "
+                "openssl rand -hex 32"
             )
 
 

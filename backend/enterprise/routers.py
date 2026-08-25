@@ -3,6 +3,8 @@ Enterprise API routers: authentication, users, workspaces, conversations and
 administration. All routers are included under the API prefix by the app.
 """
 
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -71,7 +73,7 @@ async def login(
     user = await services.authenticate_user(db, data.identifier, data.password)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-    user.last_login_at = __import__("datetime").datetime.utcnow()
+    user.last_login_at = datetime.now(UTC)
     await services.record_audit(db, action="user.login", user=user, request=request)
     return services.issue_tokens(user)
 
@@ -119,7 +121,12 @@ async def oauth_login_start(provider: str) -> OAuthStartResponse:
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="OAuth provider not configured"
         )
+    from backend.enterprise.oauth import remember_state
+
     state = security.generate_oauth_state()
+    # Record the state so the callback can verify it; previously the value was
+    # generated and then never checked, leaving the flow open to login CSRF.
+    remember_state(state)
     return OAuthStartResponse(authorization_url=get_authorization_url(provider, state), state=state)
 
 
@@ -127,6 +134,13 @@ async def oauth_login_start(provider: str) -> OAuthStartResponse:
 async def oauth_callback(
     provider: str, code: str, state: str | None = None, db: AsyncSession = Depends(get_db)
 ) -> TokenResponse:
+    from backend.enterprise.oauth import consume_state
+
+    if not consume_state(state):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired OAuth state",
+        )
     return await services.oauth_login(db, provider, code)
 
 
@@ -216,13 +230,7 @@ async def get_workspace(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> Workspace:
-    ws = await services.get_workspace(db, workspace_id)
-    if ws is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
-    role = await services.user_workspace_role(db, current_user.id, workspace_id)
-    if role is None and ws.owner_id != current_user.id and current_user.role != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
-    return ws
+    return await _ensure_workspace_access(db, workspace_id, current_user)
 
 
 @workspaces_router.post("/{workspace_id}/members", response_model=WorkspaceMemberPublic)
@@ -262,15 +270,31 @@ async def remove_member(
     return {"detail": "member removed"}
 
 
+async def _ensure_workspace_access(db: AsyncSession, workspace_id: str, user: User) -> Workspace:
+    """Return the workspace if the user may read it, else raise 403/404.
+
+    Membership, ownership and the global admin role all grant read access.
+    """
+    ws = await services.get_workspace(db, workspace_id)
+    if ws is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
+    if ws.owner_id == user.id or user.role == "admin":
+        return ws
+    role = await services.user_workspace_role(db, user.id, workspace_id)
+    if role is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
+    return ws
+
+
 @workspaces_router.get("/{workspace_id}/members", response_model=list[WorkspaceMemberPublic])
 async def list_members(
     workspace_id: str,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[WorkspaceMemberPublic]:
-    ws = await services.get_workspace(db, workspace_id)
-    if ws is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
+    # Previously this route performed no authorization at all, so any
+    # authenticated user could enumerate the membership of any workspace.
+    ws = await _ensure_workspace_access(db, workspace_id, current_user)
     rows = await services.list_workspace_members(db, ws)
     return [WorkspaceMemberPublic(user_id=r[0], role=r[1], username=r[2]) for r in rows]
 
@@ -292,19 +316,24 @@ async def create_conversation(
 @conversations_router.get("", response_model=list[ConversationPublic])
 async def list_conversations(
     workspace_id: str | None = Query(default=None),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[Conversation]:
-    return await services.list_conversations(db, current_user, workspace_id=workspace_id)
+    return await services.list_conversations(
+        db, current_user, workspace_id=workspace_id, limit=limit, offset=offset
+    )
 
 
 @conversations_router.get("/search", response_model=list[ConversationPublic])
 async def search_conversations(
-    q: str = Query(min_length=1),
+    q: str = Query(min_length=1, max_length=200),
+    limit: int = Query(50, ge=1, le=200),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[Conversation]:
-    return await services.search_conversations(db, current_user, q)
+    return await services.search_conversations(db, current_user, q, limit=limit)
 
 
 @conversations_router.get("/{conversation_id}", response_model=ConversationDetailPublic)

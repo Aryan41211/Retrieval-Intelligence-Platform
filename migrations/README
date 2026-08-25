@@ -1,0 +1,18 @@
+Database migrations (Alembic).
+
+Alembic owns the enterprise schema. `alembic upgrade head` runs automatically
+from the container entrypoint, and `DB_AUTO_CREATE=false` in the image stops the
+application from also calling `create_all`, so the two cannot disagree.
+
+Local development still defaults to `create_all` (DB_AUTO_CREATE unset), which
+builds a throwaway SQLite database from the models.
+
+Common commands:
+
+    alembic upgrade head                      # apply everything
+    alembic downgrade -1                      # roll back one revision
+    alembic revision --autogenerate -m "..."  # after changing models.py
+    alembic current                           # show the applied revision
+
+The URL comes from DATABASE_URL via normalize_database_url(), so a synchronous
+driver string is upgraded to its async equivalent automatically.

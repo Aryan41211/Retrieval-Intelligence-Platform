@@ -33,6 +33,32 @@ class EmbeddingValidationSettings(BaseSettings):
     )
 
 
+class EmbeddingSettings(BaseSettings):
+    """Settings for the embedding provider.
+
+    The model name and device were previously hardcoded in the factory while
+    SENTENCE_TRANSFORMERS_MODEL / _DEVICE were documented in .env.example but
+    read by nothing.
+    """
+
+    provider: str = Field(
+        default="sentence_transformers", description="Embedding provider identifier."
+    )
+    model_name: str = Field(
+        default="all-MiniLM-L6-v2", description="Sentence-transformers model name."
+    )
+    device: str | None = Field(
+        default=None, description="Torch device override (e.g. 'cpu', 'cuda'). Auto when unset."
+    )
+    batch_size: int = Field(default=32, ge=1, le=512, description="Embedding batch size.")
+
+    model_config = SettingsConfigDict(
+        env_prefix="EMBEDDING_",
+        env_file=".env",
+        extra="ignore",
+    )
+
+
 class VectorStoreSettings(BaseSettings):
     """Settings for vector store."""
 
@@ -193,11 +219,47 @@ class IntelligentRetrievalSettings(BaseSettings):
     )
 
 
+# Providers that reach a real LLM. ``fake`` is deliberately excluded: it is a
+# development/test stub and must never be selected in a production environment.
+REAL_GENERATION_PROVIDERS = frozenset(
+    {
+        "openai",
+        "openai_compatible",
+        "openai-compatible",
+        "anthropic",
+        "ollama",
+        "nim",
+    }
+)
+
+SUPPORTED_GENERATION_PROVIDERS = REAL_GENERATION_PROVIDERS | {"fake"}
+
+# Default API endpoint per provider, used when GENERATION_BASE_URL is unset.
+DEFAULT_PROVIDER_BASE_URLS = {
+    "openai": "https://api.openai.com/v1",
+    "openai_compatible": "https://api.openai.com/v1",
+    "openai-compatible": "https://api.openai.com/v1",
+    "anthropic": "https://api.anthropic.com/v1",
+    "ollama": "http://localhost:11434",
+    "nim": "https://integrate.api.nvidia.com/v1",
+}
+
+# Providers that cannot authenticate without a credential. Ollama runs locally
+# and is normally unauthenticated, so it is not included.
+PROVIDERS_REQUIRING_API_KEY = frozenset(
+    {"openai", "openai_compatible", "openai-compatible", "anthropic", "nim"}
+)
+
+
 class GenerationSettings(BaseSettings):
     """Settings for generation pipeline."""
 
     provider: str = Field(
-        default="fake", description="LLM provider (fake, openai_compatible, ollama, nim)"
+        default="fake",
+        description=(
+            "LLM provider: openai, openai_compatible, anthropic, ollama, nim, or "
+            "'fake' for a deterministic development stub (rejected in production)."
+        ),
     )
     model_name: str = Field(
         default="fake-model", description="Model name for the selected provider"
@@ -206,11 +268,75 @@ class GenerationSettings(BaseSettings):
     max_tokens: int = Field(default=512, ge=1, le=8192, description="Maximum tokens to generate")
     timeout_s: float = Field(default=60.0, gt=0.0, description="Generation timeout in seconds")
 
+    # --- Provider credentials / endpoint --------------------------------------
+    # These were previously absent, so ProviderFactory constructed every provider
+    # with only a model name: no key and a localhost default base URL, making all
+    # real providers unusable.
+    api_key: str | None = Field(
+        default=None,
+        description="API key for the selected provider (GENERATION_API_KEY). Secret.",
+    )
+    base_url: str | None = Field(
+        default=None,
+        description="Override the provider API base URL. Defaults per provider when unset.",
+    )
+    organization: str | None = Field(default=None, description="Optional OpenAI organization id.")
+    project: str | None = Field(default=None, description="Optional OpenAI project id.")
+    anthropic_version: str = Field(
+        default="2023-06-01", description="Anthropic API version header."
+    )
+    max_retries: int = Field(
+        default=3, ge=0, le=10, description="Retry attempts for transient provider failures."
+    )
+
     model_config = SettingsConfigDict(
         env_prefix="GENERATION_",
         env_file=".env",
         extra="ignore",
     )
+
+    @field_validator("provider")
+    @classmethod
+    def _validate_provider(cls, value: str) -> str:
+        """Reject unknown providers up front instead of silently using the stub."""
+        normalized = (value or "").strip().lower()
+        if normalized not in SUPPORTED_GENERATION_PROVIDERS:
+            supported = ", ".join(sorted(SUPPORTED_GENERATION_PROVIDERS))
+            raise ValueError(
+                f"Unknown GENERATION_PROVIDER {value!r}. Supported providers: {supported}."
+            )
+        return normalized
+
+    def resolved_base_url(self) -> str | None:
+        """Return the effective API base URL for the configured provider."""
+        if self.base_url:
+            return self.base_url.rstrip("/")
+        return DEFAULT_PROVIDER_BASE_URLS.get(self.provider)
+
+    def requires_api_key(self) -> bool:
+        """Return True when the configured provider cannot work without a key."""
+        return self.provider in PROVIDERS_REQUIRING_API_KEY
+
+    def validate_for_environment(self, environment: str) -> None:
+        """Fail fast on provider configuration that cannot serve real traffic.
+
+        Args:
+            environment: Deployment environment (``development``/``staging``/``production``).
+
+        Raises:
+            ValueError: If the stub provider is selected in production, or a
+                credential-requiring provider has no API key configured.
+        """
+        if environment == "production" and self.provider == "fake":
+            raise ValueError(
+                "GENERATION_PROVIDER='fake' returns stub answers and must not be used in "
+                "production. Set a real provider (e.g. 'anthropic' or 'openai') and "
+                "GENERATION_API_KEY."
+            )
+        if self.requires_api_key() and not self.api_key:
+            raise ValueError(
+                f"GENERATION_PROVIDER='{self.provider}' requires GENERATION_API_KEY to be set."
+            )
 
 
 class RetrievalSettings(BaseSettings):
@@ -301,6 +427,7 @@ class Settings(BaseSettings):
     embedding_validation: EmbeddingValidationSettings = Field(
         default_factory=EmbeddingValidationSettings
     )
+    embedding: EmbeddingSettings = Field(default_factory=EmbeddingSettings)
     vector_store: VectorStoreSettings = Field(default_factory=VectorStoreSettings)
     retrieval: RetrievalSettings = Field(default_factory=RetrievalSettings)
     generation: GenerationSettings = Field(default_factory=GenerationSettings)

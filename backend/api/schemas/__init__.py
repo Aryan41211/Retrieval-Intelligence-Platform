@@ -6,16 +6,29 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+# Upper bounds for user-supplied input. Without these a single request could
+# submit an unbounded query or document body, driving both memory use and
+# per-token provider cost.
+MAX_QUERY_LENGTH = 4000
+MAX_DOCUMENT_BYTES = 5_000_000
+MAX_FILENAME_LENGTH = 255
+MAX_TOP_K = 100
 
 
 # Document schemas
 class DocumentUploadRequest(BaseModel):
     """Request model for document upload."""
 
-    filename: str
-    content: str
+    filename: str = Field(min_length=1, max_length=MAX_FILENAME_LENGTH)
+    content: str = Field(min_length=1, max_length=MAX_DOCUMENT_BYTES)
     metadata: dict[str, Any] | None = None
+    workspace_id: str | None = Field(
+        default=None,
+        max_length=36,
+        description="Target workspace. Omit to use your private knowledge base.",
+    )
 
 
 class DocumentUploadResponse(BaseModel):
@@ -25,6 +38,20 @@ class DocumentUploadResponse(BaseModel):
     filename: str
     status: str
     message: str
+    namespace: str | None = Field(
+        default=None, description="Knowledge base the document was written to."
+    )
+    chunks_indexed: int = Field(default=0, description="Number of chunks added to the index.")
+
+
+class DocumentSummary(BaseModel):
+    """One indexed document, aggregated from the vector store's records."""
+
+    document_id: str
+    filename: str
+    namespace: str
+    chunk_count: int
+    status: str = "indexed"
 
 
 class DocumentMetadata(BaseModel):
@@ -50,8 +77,8 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     """Request model for chat completion."""
 
-    query: str
-    conversation_id: str | None = None
+    query: str = Field(min_length=1, max_length=MAX_QUERY_LENGTH)
+    conversation_id: str | None = Field(default=None, max_length=64)
     context: dict[str, Any] | None = None
 
 
@@ -80,11 +107,11 @@ class RetrievalResult(BaseModel):
 class RetrievalRequest(BaseModel):
     """Request model for retrieval operation."""
 
-    query: str
-    top_k: int = 10
-    threshold: float | None = None
+    query: str = Field(min_length=1, max_length=MAX_QUERY_LENGTH)
+    top_k: int = Field(default=10, ge=1, le=MAX_TOP_K)
+    threshold: float | None = Field(default=None, ge=0.0, le=1.0)
     filters: dict[str, Any] | None = None
-    strategy: str | None = None
+    strategy: str | None = Field(default=None, max_length=64)
 
 
 class RetrievalResponse(BaseModel):
@@ -94,6 +121,10 @@ class RetrievalResponse(BaseModel):
     total_found: int
     processing_time_ms: float
     strategy: str | None = None
+    namespaces_searched: list[str] = Field(
+        default_factory=list,
+        description="Knowledge bases consulted: the caller's own plus their workspaces.",
+    )
 
 
 # Evaluation schemas

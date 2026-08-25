@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
-import { Toaster } from 'react-hot-toast';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -19,12 +18,6 @@ export function AppShell({ children }: AppShellProps) {
           {children}
         </main>
       </div>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          className: 'dark:bg-slate-800 dark:text-white',
-        }}
-      />
     </div>
   );
 }

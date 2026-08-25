@@ -115,11 +115,15 @@ class GenerationPipeline:
         )
 
         # 3) LLM call
+        # llm_start is bound before the try so the failure paths can still report
+        # how long the provider was given before it errored; previously the
+        # latency was only computed on success, so the provider-unavailable
+        # handler raised UnboundLocalError and turned every outage into a 500.
+        llm_start = time.perf_counter()
         try:
-            llm_start = time.perf_counter()
             raw_answer = await self._llm_gateway.generate(prompt=prompt)
-            llm_latency_ms = int((time.perf_counter() - llm_start) * 1000)
         except LLMProviderUnavailableError as e:
+            llm_latency_ms = int((time.perf_counter() - llm_start) * 1000)
             latency_ms = int((time.perf_counter() - t0) * 1000)
             logger.error(
                 json.dumps(
@@ -139,15 +143,28 @@ class GenerationPipeline:
                     llm_latency_ms=llm_latency_ms,
                 ),
             )
-        except GenerationError:
+        except GenerationError as e:
+            llm_latency_ms = int((time.perf_counter() - llm_start) * 1000)
             latency_ms = int((time.perf_counter() - t0) * 1000)
+            logger.error(
+                json.dumps(
+                    {
+                        "event": "generation.failed",
+                        "correlation_id": correlation_id,
+                        "error": str(e),
+                    }
+                )
+            )
             return GenerationResult(
                 answer="I don't know.",
                 incomplete=True,
                 metadata=self._empty_metadata(
-                    correlation_id=correlation_id, total_latency_ms=latency_ms
+                    correlation_id=correlation_id,
+                    total_latency_ms=latency_ms,
+                    llm_latency_ms=llm_latency_ms,
                 ),
             )
+        llm_latency_ms = int((time.perf_counter() - llm_start) * 1000)
 
         # 4) Citations
         citations = self._citation_generator.generate(

@@ -1,7 +1,10 @@
 """Tests for embedding profiler."""
 
 import time
+from unittest import mock
 from uuid import uuid4
+
+import pytest
 
 from backend.data.models.chunk import Chunk
 from backend.data.models.embedding import Embedding
@@ -111,11 +114,46 @@ class TestEmbeddingProfiler:
         assert profiler.metrics.total_embeddings == 0
 
     def test_detect_gpu_not_available(self):
-        profiler = EmbeddingProfiler()
-        result = profiler.detect_gpu()
-        assert result is False
+        """GPU detection reports False when CUDA is unavailable.
 
-    def test_get_gpu_metrics(self):
+        ``torch.cuda.is_available`` is patched so the result does not depend on
+        whether the machine running the suite happens to have a GPU.
+        """
+        torch = pytest.importorskip("torch")
         profiler = EmbeddingProfiler()
-        metrics = profiler.get_gpu_metrics()
-        assert metrics["available"] is False
+        with mock.patch.object(torch.cuda, "is_available", return_value=False):
+            assert profiler.detect_gpu() is False
+
+    def test_detect_gpu_available(self):
+        """GPU detection reports True when CUDA reports a device."""
+        torch = pytest.importorskip("torch")
+        profiler = EmbeddingProfiler()
+        with mock.patch.object(torch.cuda, "is_available", return_value=True):
+            assert profiler.detect_gpu() is True
+
+    def test_get_gpu_metrics_unavailable(self):
+        """Metrics collapse to a single 'available' flag with no GPU present."""
+        torch = pytest.importorskip("torch")
+        profiler = EmbeddingProfiler()
+        with mock.patch.object(torch.cuda, "is_available", return_value=False):
+            assert profiler.get_gpu_metrics() == {"available": False}
+
+    def test_get_gpu_metrics_available(self):
+        """Metrics include device details when CUDA reports a device."""
+        torch = pytest.importorskip("torch")
+        profiler = EmbeddingProfiler()
+        with (
+            mock.patch.object(torch.cuda, "is_available", return_value=True),
+            mock.patch.object(torch.cuda, "device_count", return_value=1),
+            mock.patch.object(torch.cuda, "current_device", return_value=0),
+            mock.patch.object(torch.cuda, "get_device_name", return_value="TestGPU"),
+            mock.patch.object(torch.cuda, "memory_allocated", return_value=512 * 1024 * 1024),
+            mock.patch.object(torch.cuda, "memory_reserved", return_value=1024 * 1024 * 1024),
+            mock.patch.object(torch.cuda, "max_memory_allocated", return_value=1024 * 1024 * 1024),
+        ):
+            metrics = profiler.get_gpu_metrics()
+
+        assert metrics["available"] is True
+        assert metrics["device_name"] == "TestGPU"
+        assert metrics["memory_allocated_mb"] == 512.0
+        assert metrics["utilization_percent"] == 50.0

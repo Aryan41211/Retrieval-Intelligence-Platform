@@ -15,6 +15,10 @@ import jwt
 from backend.enterprise.config import get_enterprise_settings
 from backend.enterprise.rbac import permissions_for_role
 
+# Pre-computed hash of an unguessable value, used to equalise login timing for
+# identifiers that do not exist. Computed once at import; never matches input.
+DUMMY_PASSWORD_HASH = bcrypt.hashpw(secrets.token_bytes(32), bcrypt.gensalt()).decode("utf-8")
+
 
 def hash_password(password: str) -> str:
     """Hash a plaintext password with bcrypt."""

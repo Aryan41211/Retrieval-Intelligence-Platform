@@ -16,14 +16,12 @@ from fastapi.testclient import TestClient
 
 from backend.api.app import app
 from backend.api.dependencies import (
-    DEFAULT_INDEX_ID,
-    RetrievalService,
     get_current_user,
     get_embedding_provider,
     get_generation_pipeline,
-    get_retrieval_service,
-    get_vector_store,
+    reset_store_cache,
 )
+from backend.api.namespaces import user_namespace
 from backend.data.models.chunk import Chunk
 from backend.data.models.embedding import (
     Embedding,
@@ -32,8 +30,6 @@ from backend.data.models.embedding import (
 )
 from backend.enterprise.models import User
 from backend.generation.generation_pipeline import GenerationPipeline
-from backend.retrieval.retrieval_engine import RetrievalEngine
-from backend.retrieval.retrieval_pipeline import RetrievalPipeline
 from backend.vectorstore.vector_store_factory import VectorStoreFactory
 
 DIM = 8
@@ -70,9 +66,25 @@ class FakeEmbeddingProvider:
 
 
 @pytest.fixture
-def auth_client(tmp_path):
+def auth_client(tmp_path, monkeypatch):
+    """A client authenticated as a fixed user whose namespace is pre-populated.
+
+    Documents are indexed per tenant, so the seed data is written to the test
+    user's own namespace index rather than a shared one.
+    """
+    import backend.api.dependencies as deps
+    from backend.enterprise import database as enterprise_database
+
+    # Isolated database so workspace-membership lookups have somewhere to run.
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'rip_api.db'}")
+    enterprise_database._engine = None
+    enterprise_database._session_factory = None
+
+    user_id = str(uuid4())
+    namespace = user_namespace(user_id)
+
     store = VectorStoreFactory.create("faiss", str(tmp_path))
-    store.create_index(DEFAULT_INDEX_ID, dimension=DIM)
+    store.create_index(namespace.index_id, dimension=DIM)
     rng = np.random.RandomState(0)
     vectors = rng.rand(5, DIM).astype("float32")
     ids = [str(uuid4()) for _ in range(5)]
@@ -90,29 +102,24 @@ def auth_client(tmp_path):
         for i in range(5)
     ]
     store.add_embeddings(vectors, ids=ids, metadata=metadatas)
-    store.save_index(DEFAULT_INDEX_ID)
+    store.save_index(namespace.index_id)
+
+    # Seed the namespace store cache so the real retrieval path resolves to this
+    # store, exercising build_pipeline_for_index rather than bypassing it.
+    reset_store_cache()
+    deps._store_cache[namespace.index_id] = store
 
     provider = FakeEmbeddingProvider()
 
     def _provider():
         return provider
 
-    def _store():
-        return store
-
-    def _retrieval_service():
-        return RetrievalService(
-            embedding_provider=provider,
-            retrieval_pipeline=RetrievalPipeline(RetrievalEngine(store)),
-            top_k=10,
-        )
-
     def _generation():
         return GenerationPipeline.from_config()
 
     def _user():
         return User(
-            id=str(uuid4()),
+            id=user_id,
             email="test@example.com",
             username="tester",
             role="admin",
@@ -121,15 +128,16 @@ def auth_client(tmp_path):
 
     app.dependency_overrides[get_current_user] = _user
     app.dependency_overrides[get_embedding_provider] = _provider
-    app.dependency_overrides[get_vector_store] = _store
-    app.dependency_overrides[get_retrieval_service] = _retrieval_service
     app.dependency_overrides[get_generation_pipeline] = _generation
 
-    client = TestClient(app)
-    try:
-        yield client
-    finally:
-        app.dependency_overrides.clear()
+    # Context manager so the lifespan runs: it creates the enterprise tables the
+    # namespace lookup queries. A bare TestClient(app) skips startup entirely.
+    with TestClient(app) as client:
+        try:
+            yield client
+        finally:
+            app.dependency_overrides.clear()
+            reset_store_cache()
 
 
 AUTH = {"Authorization": "Bearer test-token"}

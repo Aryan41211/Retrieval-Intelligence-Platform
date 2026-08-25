@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+import httpx
 from httpx import TimeoutException
 
 from backend.generation.exceptions import (
@@ -186,7 +187,3 @@ class OllamaProvider(LLMProvider):
             return data.get("usage")
         except (json.JSONDecodeError, ValueError, KeyError):
             return None
-
-
-# Import httpx at module level for streaming handling
-import httpx

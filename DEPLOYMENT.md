@@ -1,124 +1,212 @@
-# Deployment Guide
+# Deployment
 
-The Retrieval Intelligence Platform (RIP) API is a single FastAPI/ASGI process.
-It is containerised via a multi-stage `Dockerfile` (non-root, hardened, with
-health checks) and can be deployed to Railway, Render, AWS or Azure.
-
-> **Prerequisites**
-> - A container image built from the `Dockerfile`, or direct Python execution
->   (`uvicorn backend.api:app`).
-> - Set `API_ENVIRONMENT=production` and supply secrets via the platform secret
->   store (never bake secrets into the image).
-> - Bind to `0.0.0.0` on the platform-provided `$PORT`.
-
-## Endpoints
-
-| Path | Purpose |
-|------|---------|
-| `/api/v1/health/live` | Liveness probe. |
-| `/api/v1/health/ready` | Readiness probe (dependency checks). |
-| `/api/v1/health` | Service info (env, version, uptime). |
-| `/api/v1/metrics` | Prometheus metrics. |
-| `/docs`, `/redoc` | Interactive docs (auto-disabled in production). |
+How to run the Retrieval Intelligence Platform in a real environment.
 
 ---
 
-## Railway
+## Required configuration
 
-Railway supports Dockerfile-based deployments directly.
+The application **will not start** without these. Both are validated at boot —
+misconfiguration fails fast rather than surfacing later as a broken request.
 
-1. Create a new project and link the Git repository.
-2. Add a service from the repo root; Railway auto-detects the `Dockerfile`.
-3. Set environment variables (Variables tab):
-   - `API_ENVIRONMENT=production`
-   - `API_DOCS_ENABLED=false`
-   - `API_HSTS_ENABLED=true`
-   - `API_CORS_ORIGINS=["https://your-frontend.example.com"]`
-   - `OPENAI_API_KEY`, `DATABASE_URL`, `REDIS_URL`, etc. (mark as secret).
-4. Railway assigns a `$PORT`; the container reads it automatically.
-5. Use the generated `/api/v1/health/ready` endpoint as the health check URL.
+| Variable | Why |
+|---|---|
+| `ENTERPRISE_JWT_SECRET_KEY` | Signs access/refresh tokens. Minimum 32 characters, and rejected outright if it has too little variety. In `production` a value that *looks* like a copied placeholder (contains `change-in-production`, `dev-secret`, `example`, `ci-only`, ...) is refused too, because a guessable HS256 key means forgeable admin tokens. Generate with `python -c "import secrets; print(secrets.token_hex(32))"`. |
+| `GENERATION_PROVIDER` + `GENERATION_API_KEY` | The default provider is `fake`, a development stub that returns canned text. It is **refused outright** when `API_ENVIRONMENT=production`. |
 
-Railway automatically provides `REDIS_URL` if you add a Redis plugin; wire it
-to `REDIS_URL`.
+Additionally, in `production` the following are rejected:
 
----
+- `API_CORS_ORIGINS=["*"]` — list your real frontend origins.
+- `API_TRUSTED_HOSTS=["*"]` — list your real hostnames.
 
-## Render
+Every supported variable is documented in [`.env.example`](.env.example), which
+is **generated from the settings classes**:
 
-Render supports Docker and also a direct Python web service.
-
-**Option A — Docker (recommended):**
-
-1. New → Web Service → connect repo, select "Docker".
-2. Set `API_ENVIRONMENT=production` and other vars in the Environment section
-   (use the "Secret" toggle for keys).
-3. Render exposes `$PORT`; the entrypoint binds to it.
-4. Health check path: `/api/v1/health/ready`.
-
-**Option B — Python (no Docker):**
-
-1. Runtime: `Python 3.12`; Build command: `pip install -r requirements.txt`.
-2. Start command:
-   `uvicorn backend.api:app --host 0.0.0.0 --port $PORT --workers 1`
-3. Add the same environment variables.
+```bash
+python scripts/generate_env_example.py          # regenerate
+python scripts/generate_env_example.py --check  # CI drift check
+```
 
 ---
 
-## AWS
+## Docker Compose (recommended for a single host)
 
-### Elastic Container Service (Fargate) + Application Load Balancer
+```bash
+python scripts/bootstrap_deployment.py    # writes .env + deploy/metrics_token
+docker compose up --build
+```
 
-1. Push the image to **Amazon ECR** (`aws ecr create-repository`, `docker push`).
-2. Create a **Fargate** task definition:
-   - Container port `8000`, `essential: true`.
-   - `healthCheck` → `CMD-SHELL`, `python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/live').status==200 else 1)"`.
-   - `logConfiguration` → `awslogs` to CloudWatch (JSON logs are parsed).
-3. ALB target group health check: `/api/v1/health/ready` (HTTP 200).
-4. Store secrets in **AWS Secrets Manager** and inject as env vars via task
-   definitions (`valueFrom` ARN).
-5. (Optional) Scale with an Auto Scaling policy on request count.
+`bootstrap_deployment.py` creates `.env` from `.env.example`, generates
+`ENTERPRISE_JWT_SECRET_KEY` and `API_METRICS_TOKEN`, and writes the metrics
+token to `deploy/metrics_token` so the API and Prometheus agree on it. Re-running
+it only fills in what is missing; `--force` rotates both secrets, and `--check`
+verifies a host without writing anything.
 
-### Alternatives
+To do it by hand instead:
 
-- **App Runner:** Point at the ECR image; set `API_PORT`/`$PORT` and env vars.
-- **ECS + Copilot:** `copilot svc init` using the Dockerfile.
+```bash
+cp .env.example .env
+python -c "import secrets; print(secrets.token_hex(32))"   # -> ENTERPRISE_JWT_SECRET_KEY
+```
+
+Keys that are **commented out** in `.env.example` are optional — leave them
+commented. Assigning an empty value is not the same as leaving one unset, and
+for the numeric settings it fails validation at startup.
+
+| Service | Port | Purpose |
+|---|---|---|
+| `frontend` | 3000 | React SPA on nginx; proxies `/api` to the API |
+| `api` | 8000 | FastAPI application |
+| `postgres` | — | Conversations, users, workspaces, audit log |
+| `redis` | — | Reserved for shared rate limiting |
+| `prometheus` | 9090 | Scrapes `/api/v1/metrics` |
+
+Open <http://localhost:3000> and register an account.
+
+**Persistence.** The `apidata` volume holds the FAISS index (and the SQLite
+database if you are not using Postgres). Without it, the knowledge base is lost
+on every restart.
+
+**Compose refuses to start** if `ENTERPRISE_JWT_SECRET_KEY` is unset — that is
+deliberate, not a bug.
 
 ---
 
-## Azure
+## Database migrations
 
-### Container Apps (recommended)
+Alembic owns the schema.
 
-1. `az containerapp up` (or Bicep) referencing the built image in ACR.
-2. Ingress: external, target port `8000`.
-3. Set `API_ENVIRONMENT=production` and secrets as **secret** env vars.
-4. Health probes:
-   - Liveness: `GET /api/v1/health/live`
-   - Readiness: `GET /api/v1/health/ready`
-5. Mount Azure Key Vault secrets as env vars via the managed identity.
+```bash
+alembic upgrade head                       # apply
+alembic current                            # inspect
+alembic revision --autogenerate -m "..."   # after changing models.py
+```
 
-### Alternatives
+The container entrypoint runs `alembic upgrade head` on every start (idempotent),
+and the image sets `DB_AUTO_CREATE=false` so the app does not also run
+`create_all`. Local development leaves `DB_AUTO_CREATE` unset, which creates
+tables directly from the models.
 
-- **App Service (Containers):** set `WEBSITES_PORT=8000`, `API_ENVIRONMENT=production`,
-  and configure health check path `/api/v1/health/ready`.
-- **AKS:** deploy the image with a `Deployment` + `Service` + `Ingress`, using
-  the supplied `docker-compose.yml` as a reference topology (api + redis +
-  postgres + prometheus).
+`DATABASE_URL` must reach an **async** driver. A synchronous URL is upgraded
+automatically (`postgresql://` → `postgresql+asyncpg://`), and an unsupported
+scheme fails immediately with a clear message.
 
 ---
 
-## Observability in production
+## Running behind a reverse proxy
 
-- Scrape `/api/v1/metrics` with Prometheus (see `deploy/prometheus.yml`).
-- Ship JSON stdout logs to your aggregator (CloudWatch, Log Analytics, Loki).
-- Correlation IDs are echoed in every response under `X-Correlation-ID` and
-  attached to every structured log line for end-to-end tracing.
+Per-IP rate limiting is only as trustworthy as the client address, so proxy
+headers are **not** trusted by default.
 
-## Notes on image size
+```bash
+API_TRUST_PROXY_HEADERS=true
+API_TRUSTED_PROXY_COUNT=1        # hops between the client and this app
+FORWARDED_ALLOW_IPS=10.0.0.5     # uvicorn: your proxy's address, not '*'
+```
 
-The runtime image installs the full ML dependency set (PyTorch CPU,
-`sentence-transformers`, `chromadb`, `mlflow`, `wandb`, etc.). Expect a large
-image. To reduce size you can:
-- Move optional providers (MLflow/W&B, DeepEval) to optional extras.
-- Use a GPU/base image only where embeddings run in-process.
-- Pre-bake the image in a registry and pull by digest.
+With `TRUSTED_PROXY_COUNT=1` the client IP is read one hop from the right of
+`X-Forwarded-For`, which a spoofed prefix cannot reach. Leaving these unset
+means the direct peer address is used — correct for a directly exposed service.
+
+Also set:
+
+```bash
+API_HSTS_ENABLED=true            # only behind TLS
+API_TRUSTED_HOSTS=["app.example.com"]
+API_CORS_ORIGINS=["https://app.example.com"]
+```
+
+**`API_TRUSTED_HOSTS` lists the hostnames browsers use, not the API's.** The
+bundled nginx forwards the original `Host` header (`proxy_set_header Host
+$host`), so what reaches the API is whatever the browser typed — the *frontend's*
+hostname. Listing `api.example.com` while users visit `app.example.com` leaves
+the health probes green and 400s every real request with `Invalid host header`.
+Include every hostname the app is reached by, and the API's own if it is also
+exposed directly:
+
+```bash
+API_TRUSTED_HOSTS=["app.example.com","api.example.com"]
+```
+
+A rejected Host is logged at WARNING with the offending value and the configured
+list, so check the API logs first if requests 400 while `/health/ready` is fine.
+
+The health endpoints are deliberately exempt from this check. Orchestrators
+probe by address — the image `HEALTHCHECK` uses `127.0.0.1` and a Kubernetes
+kubelet uses the pod IP, which cannot be known in advance — and those endpoints
+reflect no `Host` anywhere, so validating it there only ever broke deployments.
+
+---
+
+## Metrics
+
+`/api/v1/metrics` requires authentication. Prometheus cannot log in, so give it
+a dedicated token:
+
+```bash
+python scripts/bootstrap_deployment.py    # sets both sides consistently
+```
+
+The API reads the token from `API_METRICS_TOKEN`; Prometheus presents the
+contents of `deploy/metrics_token`. **The two must match** or every scrape
+returns 401. Compose mounts the whole `./deploy` directory at `/etc/prometheus`,
+so the token file is picked up alongside `prometheus.yml`.
+
+A normal user access token is also accepted. On a fully private network you may
+set `API_METRICS_REQUIRE_AUTH=false` and drop the `authorization` block from
+`deploy/prometheus.yml`.
+
+`deploy/metrics_token` is git-ignored — it is a generated credential, not
+configuration.
+
+---
+
+## Scaling
+
+Single-instance deployments work as shipped. Before running multiple replicas,
+be aware of two **per-process** stores:
+
+| Component | Consequence of replicas |
+|---|---|
+| Rate limiter buckets | Effective limit multiplies by replica count |
+| OAuth `state` store | A callback may land on a replica that never issued the state |
+
+Both need a shared backend (Redis) first. The `redis` service and `REDIS_URL`
+are already provisioned for this.
+
+The FAISS index is also process-local and guarded by an in-process write lock,
+so concurrent ingestion is safe **within** one instance. Multi-instance writes
+need an external vector store.
+
+---
+
+## Health probes
+
+| Endpoint | Meaning | Use for |
+|---|---|---|
+| `/api/v1/health/live` | Process is up | Liveness probe |
+| `/api/v1/health/ready` | Database reachable, vector store writable | Readiness probe |
+| `/api/v1/health` | Version and uptime | Dashboards |
+
+`/health/ready` returns **503** when a dependency is down and reports each check
+individually, so an orchestrator stops routing traffic to a broken instance.
+
+Allow a generous start period: the embedding model is loaded at startup
+(deliberately, so the first request does not pay for it). The compose
+healthcheck uses `start_period: 90s`.
+
+---
+
+## Platform notes
+
+**Kubernetes.** Use `/health/live` and `/health/ready` as the probes, mount a
+PVC at `/app/data`, and supply `ENTERPRISE_JWT_SECRET_KEY` from a Secret. Run
+migrations as an init container: `docker-entrypoint.sh migrate`.
+
+**Railway / Render.** Both inject `$PORT`, which the entrypoint honours. Set the
+required variables above; use a managed Postgres and set `DATABASE_URL`.
+
+**Workers.** `API_WORKERS` defaults to 1. CPU-bound work (embedding, indexing)
+runs in a thread pool so the event loop stays responsive, but each worker holds
+its own embedding model and FAISS index — size memory accordingly, and do not
+run multiple workers while the vector store is process-local.

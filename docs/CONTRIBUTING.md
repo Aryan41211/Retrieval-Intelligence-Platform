@@ -9,7 +9,7 @@ flow through review cleanly.
 
 - Open an issue describing the change (bug, feature, docs).
 - Check [`docs/ROADMAP.md`](../docs/ROADMAP.md) and
-  [`TODO.md`](../TODO.md) to avoid duplicate work.
+  [`docs/TECHNICAL_DEBT.md`](../docs/TECHNICAL_DEBT.md) to understand project state.
 - For large changes, sketch the design in [`docs/architecture/`](../docs/architecture/)
   or an ADR under `docs/architecture/` first.
 
@@ -83,5 +83,5 @@ maintainers so fixes can land before disclosure.
 
 ## 8. Code of Conduct
 
-Be respectful, assume good intent, and keep discussions focused on the code
-and the user's problem.
+This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md).
+By participating, you are expected to uphold this code.

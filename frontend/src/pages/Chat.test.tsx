@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Chat } from '@/pages/Chat';
@@ -24,13 +24,13 @@ describe('Chat', () => {
     expect(screen.getByText('AI Chat')).toBeDefined();
   });
 
-  it('renders empty state message', () => {
+  it('renders empty state message', async () => {
     render(<Chat />, { wrapper: Wrapper });
-    expect(screen.getByText('Start a conversation')).toBeDefined();
+    await waitFor(() => expect(screen.getByText('Start a conversation')).toBeDefined());
   });
 
-  it('renders input field', () => {
+  it('renders input field', async () => {
     render(<Chat />, { wrapper: Wrapper });
-    expect(screen.getByPlaceholderText(/ask a question/i)).toBeDefined();
+    await waitFor(() => expect(screen.getByPlaceholderText(/ask a question/i)).toBeDefined());
   });
 });

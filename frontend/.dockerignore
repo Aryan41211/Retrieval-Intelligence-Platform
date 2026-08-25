@@ -1,0 +1,23 @@
+# Keep the frontend build context lean and, critically, stop the host's
+# node_modules from being copied over the one `npm ci` installs inside the
+# image. The host tree may hold platform-native binaries (rollup/esbuild build
+# for win32/darwin), which fail to execute in the linux builder stage.
+node_modules
+dist
+.dockerignore
+Dockerfile
+
+# Local tooling / caches
+.vite
+.eslintcache
+coverage
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Never bake environment files into the bundle: VITE_ variables are inlined at
+# build time, so a stray .env would end up in the shipped JavaScript.
+.env
+.env.*
+!.env.example

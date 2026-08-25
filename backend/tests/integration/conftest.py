@@ -1,4 +1,5 @@
 """Test configuration for integration tests."""
+
 import os
 
 # Configure required settings BEFORE any backend module is imported

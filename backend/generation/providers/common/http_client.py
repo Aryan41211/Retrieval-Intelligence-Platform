@@ -4,7 +4,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 from httpx import AsyncClient, HTTPStatusError, Response, TimeoutException
 
@@ -135,8 +135,16 @@ class HTTPProviderClient:
                     )
                     await asyncio.sleep(delay)
                     continue
+                # Log the body for operators, but keep it out of the exception
+                # message: it propagates to API clients and can contain upstream
+                # endpoint or credential detail.
+                logger.error(
+                    "Provider returned HTTP %s: %s",
+                    exc.response.status_code,
+                    exc.response.text[:2000],
+                )
                 raise LLMProviderUnavailableError(
-                    f"HTTP {exc.response.status_code}: {exc.response.text}"
+                    f"Provider request failed with HTTP {exc.response.status_code}"
                 ) from exc
             except Exception as exc:
                 raise LLMProviderUnavailableError(f"Request failed: {exc}") from exc
@@ -154,7 +162,9 @@ class HTTPProviderClient:
         try:
             response = await self._request_with_retry("GET", "health")
             status_code = response.status_code
-            data = await response.json()
+            # httpx's Response.json() is synchronous; awaiting it raised TypeError
+            # and made every health check report {'status': 'error'}.
+            data = response.json()
 
             latency_ms = int((time.perf_counter() - start_time) * 1000)
 
@@ -180,20 +190,6 @@ class HTTPProviderClient:
                 "error": str(exc),
                 "latency_ms": latency_ms,
             }
-
-
-@dataclass(frozen=True)
-class GenerationSettings:
-    """LLM generation settings."""
-
-    provider: str = "fake"
-    model_name: str = "fake-model"
-    temperature: float = 0.2
-    max_tokens: int = 512
-    timeout_s: float = 60.0
-
-
-from typing import Protocol  # noqa: E402
 
 
 class StructuredResponse(Protocol):

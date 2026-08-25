@@ -22,7 +22,7 @@ from backend.enterprise.routers import (
 )
 
 from .config import get_settings
-from .middleware import setup_middleware
+from .middleware import HealthProbeExemptTrustedHostMiddleware, setup_middleware
 from .observability import configure_logging, get_logger
 from .routers.chat import router as chat_router
 from .routers.documents import router as documents_router
@@ -49,12 +49,31 @@ async def _lifespan(app: FastAPI):
     """Validate configuration, initialise the database and warm caches."""
     settings = app.state.api_settings
     settings.validate_for_environment()
+
+    # Provider configuration is validated here too: a stub provider or a missing
+    # API key must stop the process at boot rather than surface as fabricated or
+    # 401-failing answers once traffic arrives.
+    from backend.configs.settings import get_settings as get_app_settings
+
+    get_app_settings().generation.validate_for_environment(settings.environment)
+
     logger.info(
         "Starting %s in %s environment",
         settings.app_name,
         settings.environment,
     )
     await init_db()
+
+    # Build the expensive singletons before serving traffic. Loading the
+    # sentence-transformers model lazily meant the first real request paid a
+    # multi-second stall and readiness reported OK before the model existed.
+    from starlette.concurrency import run_in_threadpool
+
+    from backend.api.dependencies import warm_up_caches
+
+    await run_in_threadpool(warm_up_caches)
+    logger.info("Startup complete: caches warmed")
+
     yield
     logger.info("Shutting down %s", settings.app_name)
     try:
@@ -89,6 +108,13 @@ def create_application() -> FastAPI:
     app.state.api_settings = settings
     app.state.correlation_header = settings.correlation_header
 
+    setup_middleware(app)
+    app.add_middleware(VersionHeaderMiddleware)
+
+    # CORS is registered LAST so it becomes the outermost layer. Registering it
+    # first made it innermost, which meant rate-limit 429s and body-size 413s
+    # were returned without CORS headers and surfaced in browsers as opaque
+    # network errors instead of the real status.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -97,10 +123,20 @@ def create_application() -> FastAPI:
         allow_headers=settings.cors_headers,
     )
 
-    setup_middleware(app)
-    app.add_middleware(VersionHeaderMiddleware)
-
     prefix = settings.api_prefix
+
+    # Host validation guards against Host-header poisoning; wildcard is rejected
+    # in production by APISettings.validate_for_environment. Health probes are
+    # exempt: an orchestrator reaches the container by address (127.0.0.1 for the
+    # image HEALTHCHECK, the pod IP for a kubelet), which cannot be enumerated in
+    # API_TRUSTED_HOSTS, and those endpoints reflect no Host anywhere.
+    if settings.trusted_hosts and settings.trusted_hosts != ["*"]:
+        app.add_middleware(
+            HealthProbeExemptTrustedHostMiddleware,
+            allowed_hosts=settings.trusted_hosts,
+            exempt_paths=(f"{prefix}/health",),
+        )
+
     app.include_router(health_router, prefix=prefix)
     app.include_router(documents_router, prefix=prefix)
     app.include_router(chat_router, prefix=prefix)

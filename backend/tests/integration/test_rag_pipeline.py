@@ -5,12 +5,16 @@ from __future__ import annotations
 from typing import Any
 from uuid import uuid4
 
+import pytest
+from pydantic import ValidationError
+
 from backend.configs.settings import get_settings
 from backend.core.exceptions import RipError
+from backend.generation.exceptions import GenerationError
 from backend.generation.generation_pipeline import GenerationPipeline
 from backend.generation.models import GenerationResult
 from backend.generation.pipeline_components.llm_gateway import LLMGateway
-from backend.generation.providers.provider_factory import FakeProvider
+from backend.generation.providers.provider_factory import FakeProvider, ProviderFactory
 from backend.retrieval.retrieval_engine import RetrievalEngine
 from backend.retrieval.retrieval_metadata import RetrievalMetadata
 from backend.retrieval.retrieval_result import RetrievalChunkResult
@@ -128,31 +132,74 @@ class TestGenerationPipelineEndToEnd:
         assert isinstance(result, GenerationResult)
         assert result.answer != ""
 
-    async def test_invalid_provider_configuration(self):
-        """Test that provider factory falls back to fake on invalid config."""
+    async def test_default_development_provider_is_the_stub(self):
+        """With no provider configured, development defaults to the stub."""
         gen = GenerationPipeline.from_config()
         chunks = [_make_chunk(chunk_text="text")]
         result = await gen.generate(query="test", retrieved_chunks=chunks)
         assert isinstance(result, GenerationResult)
         assert result.metadata.provider == "fake"
 
-    async def test_unsupported_provider_falls_back(self):
-        """Test that unsupported provider type falls back to fake."""
-        # Temporarily set an unsupported provider
-        settings = get_settings()
-        original = settings.generation.provider
+    async def test_unsupported_provider_is_rejected(self, monkeypatch):
+        """An unrecognised provider must raise, not silently serve stub answers.
+
+        Previously ProviderFactory returned FakeProvider for any unknown value,
+        so a typo in GENERATION_PROVIDER produced fabricated ``[fake] ...``
+        answers with a 200 response. The old test for this asserted the
+        fallback but mutated settings in a way that was reverted by
+        ``cache_clear()``, so it never exercised the path at all.
+        """
+        monkeypatch.setenv("GENERATION_PROVIDER", "gpt-9000")
+        get_settings.cache_clear()
         try:
-            settings.generation.provider = "unsupported_provider"
-            # Clear cache to pick up new settings
-            get_settings.cache_clear()
-            gen = GenerationPipeline.from_config()
-            chunks = [_make_chunk(chunk_text="text")]
-            result = await gen.generate(query="test", retrieved_chunks=chunks)
-            assert result.metadata.provider == "fake"
+            with pytest.raises(ValidationError, match="Unknown GENERATION_PROVIDER"):
+                get_settings()
         finally:
-            settings.generation.provider = original
             get_settings.cache_clear()
-            GenerationPipeline.from_config()
+
+    async def test_provider_factory_rejects_unsupported_provider_directly(self, monkeypatch):
+        """ProviderFactory itself refuses an unsupported provider."""
+        settings = get_settings()
+        monkeypatch.setattr(settings.generation, "provider", "gpt-9000", raising=False)
+        with pytest.raises(GenerationError, match="Unsupported GENERATION_PROVIDER"):
+            ProviderFactory.create()
+
+    async def test_real_provider_receives_credentials_and_base_url(self, monkeypatch):
+        """A configured real provider must be built with its key and endpoint.
+
+        Regression test for the factory constructing every provider with only a
+        model name, which left OpenAI pointed at localhost with no API key and
+        Anthropic sending an empty ``x-api-key`` header.
+        """
+        monkeypatch.setenv("GENERATION_PROVIDER", "anthropic")
+        monkeypatch.setenv("GENERATION_MODEL_NAME", "claude-sonnet-5")
+        monkeypatch.setenv("GENERATION_API_KEY", "test-key-123")
+        get_settings.cache_clear()
+        try:
+            provider = ProviderFactory.create()
+            assert provider.provider_name == "anthropic"
+            assert provider.model_name == "claude-sonnet-5"
+            assert provider._api_key == "test-key-123"
+            assert provider._base_url == "https://api.anthropic.com/v1"
+        finally:
+            get_settings.cache_clear()
+
+    async def test_production_rejects_fake_provider(self):
+        """The stub provider must be refused in a production environment."""
+        settings = get_settings()
+        with pytest.raises(ValueError, match="must not be used in production"):
+            settings.generation.validate_for_environment("production")
+
+    async def test_real_provider_without_api_key_is_rejected(self, monkeypatch):
+        """A credential-requiring provider with no key fails validation."""
+        monkeypatch.setenv("GENERATION_PROVIDER", "openai")
+        monkeypatch.delenv("GENERATION_API_KEY", raising=False)
+        get_settings.cache_clear()
+        try:
+            with pytest.raises(ValueError, match="requires GENERATION_API_KEY"):
+                get_settings().generation.validate_for_environment("production")
+        finally:
+            get_settings.cache_clear()
 
     def test_vector_store_error_inherits_rip_error(self):
         """Verify vector store exceptions are part of the RIP error hierarchy."""

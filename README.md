@@ -1,178 +1,162 @@
-# Retrieval Intelligence Platform
+<h1 align="center">Retrieval Intelligence Platform</h1>
 
-A production-grade Retrieval-Augmented Generation platform focused on document retrieval, grounded generation, automated evaluation, explainable retrieval, and experiment tracking.
+<p align="center">
+  Production-grade <strong>R</strong>etrieval-<strong>A</strong>ugmented <strong>G</strong>eneration —
+  ingest, retrieve, generate, evaluate, repeat.
+</p>
 
-## Project Overview
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python 3.11+">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
+  <img src="https://img.shields.io/badge/code%20style-black-000000" alt="Code Style: Black">
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs Welcome">
+</p>
 
-The Retrieval Intelligence Platform (RIP) is an enterprise-ready system designed to build, evaluate, and deploy retrieval-augmented generation pipelines at scale. It provides a modular architecture that separates concerns across data ingestion, preprocessing, embedding, retrieval, generation, evaluation, and experimentation — enabling teams to iterate rapidly while maintaining production quality.
+---
 
-## Enterprise Features
+## Overview
 
-The platform ships a full enterprise layer (`backend/enterprise/`) wired into the
-API under `/api/v1`:
+The Retrieval Intelligence Platform (RIP) is a **modular, enterprise-ready RAG system** that connects large language models to your documents. It handles the full pipeline — from raw document ingestion through chunking, embedding, hybrid retrieval, grounded generation, and automated evaluation — with experiment tracking for every configuration.
 
-- **Authentication** — JWT access/refresh tokens (HS256), optional Google OAuth,
-  password reset, and email verification. Passwords are bcrypt-hashed.
-- **Authorization** — Role-Based Access Control (`admin` / `member` / `viewer`)
-  with an explicit permission matrix and FastAPI dependency guards.
-- **User management** — profiles, preferences, and admin user administration.
-- **Workspaces** — multi-user workspaces with shared knowledge bases and team
-  membership/roles.
-- **Persistent chat** — conversation history, full-text search, rename, delete,
-  and export to JSON / Markdown / PDF.
-- **Administration** — dashboard analytics, usage statistics, system health, and
-  append-only audit/activity logs.
-- **API** — versioned responses (`X-API-Version`), structured audit logging, and
-  config-driven, fail-fast settings.
+## Key Features
 
-Configuration is environment-driven (`ENTERPRISE_*` variables); the JWT secret is
-mandatory and rejected in production if left at the dev default. See
-`docs/reports/PHASE9_*.md` for the detailed reports.
+- **Hybrid Retrieval** — Dense (FAISS) + sparse (BM25) with RRF fusion and optional
+  cross-encoder reranking. Opt in with `INTELLIGENT_RETRIEVAL_ENABLED=true`;
+  dense-only is the default.
+- **Multi-Provider LLM** — OpenAI, Anthropic, Ollama, NVIDIA NIM and any
+  OpenAI-compatible endpoint, selected by `GENERATION_PROVIDER`.
+- **Enterprise Auth** — JWT access/refresh tokens, RBAC, OAuth 2.0 (Google),
+  password reset and email verification.
+- **Collaborative Workspaces** — Multi-user shared knowledge bases with role-based access.
+- **Persistent Chat** — History, search and export (JSON/Markdown/PDF).
+- **Admin Dashboard** — Usage analytics, audit logs and health probes.
+- **Observability** — Prometheus metrics, structured JSON logs, correlation IDs.
+- **Config-Driven** — Every setting is an environment variable, validated on startup.
 
-## Document Ingestion
+### Not yet implemented
 
-The ingestion engine accepts multiple document formats and converts them into a standardized internal Document model for downstream processing.
+These are scaffolded but **not** wired up; the endpoints return `501` rather
+than simulated results:
 
-### Supported Formats
+- **Evaluation suite** (Ragas / DeepEval) — `/evaluation/*`
+- **Experiment tracking** (MLflow / WandB) — `/experiments/*`
 
-| Format | Extension | Loader |
-|--------|-----------|--------|
-| Plain Text | `.txt` | TXTLoader |
-| Markdown | `.md`, `.markdown` | MarkdownLoader |
-| PDF | `.pdf` | PDFLoader |
-| Word | `.docx` | DOCXLoader |
+Chat responses are delivered over SSE, but the answer is generated in full
+before the frame is emitted — this is not yet token-by-token streaming.
 
-Additional formats (PPTX, HTML, CSV) and OCR support are planned.
-
-### Architecture
+## Architecture
 
 ```
-Document File
-     │
-     ▼
-┌─────────────────┐
-│  LoaderFactory  │  Select appropriate loader by extension
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Format Loader  │  Extract text + metadata
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Text Cleaning  │  Normalize unicode, whitespace
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Document Model │  Standardized output
-└─────────────────┘
+Ingestion → Chunking → Embedding → Vector Store
+                                         ↓
+Query → Expansion → Hybrid Retrieval → Reranker → LLM → Grounded Answer
+                                         ↓
+                              Evaluation → Metrics → Experiment Log
 ```
 
-### How Ingestion Works
+The system is built on a **clean modular architecture** with a FastAPI backend,
+async SQLAlchemy data layer, and React/TypeScript frontend. See the
+[Architecture Guide](docs/ARCHITECTURE.md) for detailed diagrams.
 
-1. **Loader Selection**: `LoaderFactory` inspects file extension and returns the appropriate loader
-2. **Document Loading**: Each loader extracts text content and extracts format-specific metadata (title, author, page count)
-3. **Validation**: Files are validated for existence, size limits, and content
-4. **Checksum**: SHA256 checksum is computed for deduplication and integrity
-5. **Preprocessing**: `TextCleaner` normalizes whitespace, unicode characters, and removes excessive blank lines
-6. **Output**: All loaders produce a standardized `Document` model instance
+## Tech Stack
 
-### Usage
+| Layer | Technology |
+|-------|-----------|
+| **API** | FastAPI, Pydantic v2, Starlette |
+| **Auth** | JWT (HS256), bcrypt, OAuth 2.0 |
+| **Database** | SQLAlchemy 2.0 async, SQLite/PostgreSQL |
+| **Embeddings** | Sentence-Transformers (local), batch processing, caching |
+| **Vector Store** | FAISS, HNSW, IVF indexes |
+| **LLM Providers** | OpenAI, Anthropic, Ollama, NVIDIA NIM |
+| **Retrieval** | BM25 (rank-bm25), RRF fusion, Cross-Encoder reranking |
+| **Evaluation** | Ragas, DeepEval, MLflow, WandB *(scaffolded, not wired up)* |
+| **Frontend** | React 18, TypeScript, Tailwind CSS, Vite |
+| **Observability** | Prometheus metrics, structured JSON logging, correlation IDs |
+| **Infrastructure** | Docker, Railway/Render/AWS/Azure ready |
 
-```python
-from backend.data.loaders.loader_factory import LoaderFactory
+## Quick Start
 
-# Load a document
-doc = LoaderFactory.load_document("/path/to/document.pdf")
-
-# Access content
-print(doc.content)  # Extracted text
-
-# Access metadata
-print(doc.metadata.title)
-print(doc.metadata.language)
-print(doc.checksum)
-
-# Clean the document
-from backend.data.preprocessing.text_cleaner import clean_document
-cleaned = clean_document(doc)
-```
-
-### Configuration
-
-All settings are configurable via environment variables (using pydantic-settings):
+### Backend
 
 ```bash
-# Maximum file size in MB
-INGESTION_MAX_FILE_SIZE_MB=100
+git clone https://github.com/user/rip.git
+cd rip
+pip install -e ".[dev]"
 
-# Default encoding for text files
-INGESTION_DEFAULT_ENCODING=utf-8
+# Configure. Generates .env with a valid ENTERPRISE_JWT_SECRET_KEY, which is
+# REQUIRED - the app will not import without it - and must be >= 32 characters.
+python scripts/bootstrap_deployment.py
 
-# Default language for documents
-INGESTION_DEFAULT_LANGUAGE=en
+# Run (module path is backend.api, not backend.api.main)
+uvicorn backend.api:app --reload
+
+# Open http://localhost:8000/docs
 ```
 
-### Error Handling
+To use a real LLM instead of the built-in development stub, set both:
 
-| Error Type | Description |
-|------------|-------------|
-| `EmptyDocumentError` | File is empty or contains only whitespace |
-| `UnsupportedDocumentTypeError` | File extension not supported |
-| `DocumentLoadError` | Could not read/parse the document |
-| `FileSizeError` | File exceeds maximum allowed size |
-| `ValidationError` | File validation failed |
+```bash
+GENERATION_PROVIDER=anthropic     # or openai / ollama / nim
+GENERATION_API_KEY=sk-...
+```
 
-## Folder Responsibilities
+The stub provider (`fake`) is rejected outright in a production environment.
 
-| Folder | Purpose |
-|--------|---------|
-| `backend/data/loaders/` | Document loading implementations (PDF, DOCX, TXT, MD) |
-| `backend/data/preprocessing/` | Text cleaning and normalization |
-| `backend/data/models/` | Domain models (Document, DocumentMetadata, etc.) |
-| `backend/core/exceptions.py` | Custom exception hierarchy |
-| `backend/configs/settings.py` | Configuration management via pydantic-settings |
-| `backend/tests/unit/test_loaders/` | Unit tests for loaders |
+Optional settings are shipped **commented out** in `.env.example`. Leave them
+that way to use the built-in default — assigning an empty value is not the same
+as leaving one unset, and the numeric settings reject it at startup.
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173, proxies /api to localhost:8000
+```
+
+Register an account on first load; every API route except the health probes
+requires a bearer token.
+
+See the [Developer Guide](docs/DEVELOPER.md) for full setup instructions.
 
 ## Documentation
 
-| Guide | Purpose |
-|-------|---------|
-| [Architecture](docs/ARCHITECTURE.md) | System overview, data/request flows, auth, module map (with diagrams) |
-| [API](docs/API.md) | Full endpoint contract (health, auth, users, workspaces, conversations, admin, RAG) |
-| [Developer](docs/DEVELOPER.md) | Local setup, run, test, conventions |
-| [Contributing](docs/CONTRIBUTING.md) | Branching, commit format, PR checklist |
-| [Benchmarks](docs/BENCHMARKS.md) | Latency, memory, evaluation metrics + methodology |
-| [Deployment](DEPLOYMENT.md) | Docker, Railway/Render/AWS/Azure |
-| [Architecture deep-dive](docs/architecture/) | 19-part component reference |
-| [Release notes v1.0.0](docs/RELEASE_NOTES_v1.0.0.md) | What's in the release |
+| Guide | Description |
+|-------|-------------|
+| [Architecture](docs/ARCHITECTURE.md) | System overview, data flows, auth, module map (with Mermaid diagrams) |
+| [API Reference](API_REFERENCE.md) | Full endpoint contract — request/response schemas, streaming, error codes |
+| [Developer Guide](docs/DEVELOPER.md) | Local setup, running, testing, and conventions |
+| [Contributing](docs/CONTRIBUTING.md) | Branching, commit format, PR checklist, code of conduct |
+| [Deployment](DEPLOYMENT.md) | Docker, Railway, Render, AWS, Azure |
+| [Configuration](docs/CONFIGURATION.md) | All environment variables with defaults and descriptions |
+| [Benchmarks](docs/BENCHMARKS.md) | Latency, memory, evaluation metrics and methodology |
+| [Architecture Deep-Dive](docs/architecture/) | 19-part component reference |
 
-Phase reports (including enterprise and release) live in
-[`docs/reports/`](docs/reports/).
+## Screenshots
+
+<!--
+  Add screenshots here before publishing:
+  ![Chat Interface](docs/screenshots/chat.png)
+  ![Dashboard](docs/screenshots/dashboard.png)
+  ![Admin Panel](docs/screenshots/admin.png)
+-->
 
 ## Roadmap
 
-**Status:** All planned phases are complete. The platform is released as
-**v1.0.0** (production-ready + enterprise-grade). See
-[`docs/RELEASE_NOTES_v1.0.0.md`](docs/RELEASE_NOTES_v1.0.0.md).
+The ingestion → retrieval → generation path is complete and covered by tests.
+Next up:
 
-| Phase | Focus Area | Status |
-|-------|------------|--------|
-| 1 | Document Ingestion Engine | ✅ Complete |
-| 2 | Chunking Strategies | ✅ Complete |
-| 3 | Embedding Integration | ✅ Complete |
-| 4 | Vector Store & Retrieval | ✅ Complete |
-| 4.1–4.3 | Embedding Validation & Benchmarking | ✅ Complete |
-| 4.5 | Experiment Tracking (foundation) | ✅ Complete |
-| 5 | Grounded Generation | ✅ Complete |
-| 6 | Evaluation Framework | ✅ Complete |
-| 7 | Experiment Tracking (MLflow / WandB) | ✅ Complete |
-| 8 | Production Engineering | ✅ Complete |
-| 9 | Enterprise Features | ✅ Complete |
-| 10 | Final Release & Portfolio | ✅ Complete |
+- **Evaluation and experiment tracking** — wire Ragas/DeepEval and MLflow to the API
+- **Token-by-token streaming** — stream from the provider through to the SSE channel
+- **Shared-state scaling** — move rate limiting and OAuth state to Redis for multi-instance
+- **Streaming agentic capabilities** — tool use, multi-step reasoning
+- **On-premise LLM support** — vLLM, llama.cpp integrations
+- **Advanced RAG patterns** — self-RAG, FLARE, CRAG
+- **Multi-modal RAG** — image, audio, video understanding
+- **Kubernetes helm chart** — production-grade orchestration
+
+See the full [Release Notes](docs/RELEASE_NOTES_v1.0.0.md) for v1.0.0 details.
 
 ## License
 
-This project is licensed under the MIT License.
+MIT — see [LICENSE](LICENSE).

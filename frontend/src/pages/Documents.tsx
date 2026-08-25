@@ -1,127 +1,217 @@
-import { useState, useRef } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+/**
+ * Knowledge base management.
+ *
+ * Uploads files (PDF, DOCX, Markdown, plain text) or pasted text into either the
+ * user's private knowledge base or a workspace they can write to, and lists what
+ * is currently indexed.
+ */
+
+import { useMemo, useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { FileText, Loader2, Search, Trash2, Upload } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Badge } from '@/components/ui/Badge';
-import { documentsApi } from '@/services';
-import { Upload, Trash2, RefreshCw, Search } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { documentsApi, type DocumentSummary } from '@/services/documents';
+import { enterpriseApi } from '@/services/enterprise';
 
 export function Documents() {
   const [search, setSearch] = useState('');
+  const [workspaceId, setWorkspaceId] = useState<string>('');
+  const [progress, setProgress] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
-  const { data: documents, isLoading } = useQuery({
+  const documents = useQuery({
     queryKey: ['documents'],
     queryFn: documentsApi.list,
   });
 
+  const formats = useQuery({
+    queryKey: ['documents', 'formats'],
+    queryFn: documentsApi.supportedFormats,
+  });
+
+  const workspaces = useQuery({
+    queryKey: ['workspaces'],
+    queryFn: () => enterpriseApi.myWorkspaces(),
+  });
+
   const uploadMutation = useMutation({
-    mutationFn: (formData: FormData) => documentsApi.upload(formData),
-    onSuccess: () => {
+    mutationFn: (file: File) =>
+      documentsApi.uploadFile(file, workspaceId || undefined, setProgress),
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['documents'] });
-      toast.success('Document uploaded successfully');
+      toast.success(`Indexed ${result.chunks_indexed} chunk(s) from ${result.filename}`);
     },
     onError: () => {
-      toast.error('Failed to upload document');
+      // The interceptor already surfaced the server's message.
     },
+    onSettled: () => setProgress(null),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => documentsApi.delete(id),
+    mutationFn: (doc: DocumentSummary) =>
+      documentsApi.remove(
+        doc.document_id,
+        doc.namespace.startsWith('workspace:') ? doc.namespace.split(':')[1] : undefined
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documents'] });
-      toast.success('Document deleted');
+      toast.success('Document removed');
     },
-    onError: () => toast.error('Failed to delete document'),
   });
 
-  const reindexMutation = useMutation({
-    mutationFn: (id: string) => documentsApi.reindex(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
-      toast.success('Re-indexing started');
-    },
-    onError: () => toast.error('Failed to re-index document'),
-  });
+  const accept = useMemo(
+    () => formats.data?.extensions.join(',') ?? '.txt,.md,.pdf,.docx',
+    [formats.data]
+  );
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append('file', file);
-    uploadMutation.mutate(formData);
-    e.target.value = '';
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) uploadMutation.mutate(file);
+    event.target.value = '';
   };
 
-  const filteredDocs = documents?.filter((doc: { filename: string }) =>
+  const filtered = (documents.data ?? []).filter((doc) =>
     doc.filename.toLowerCase().includes(search.toLowerCase())
   );
 
-  const getStatusVariant = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'ready':
-      case 'completed':
-        return 'success';
-      case 'processing':
-        return 'warning';
-      case 'error':
-        return 'destructive';
-      default:
-        return 'secondary';
-    }
-  };
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Documents</h1>
-          <p className="text-muted-foreground">Manage your knowledge base</p>
-        </div>
-        <input ref={fileInputRef} type="file" className="hidden" onChange={handleUpload} accept=".pdf,.docx,.txt,.md,.markdown" />
-        <Button onClick={() => fileInputRef.current?.click()}>
-          <Upload className="mr-2 h-4 w-4" />
-          Upload
-        </Button>
+      <div>
+        <h1 className="text-2xl font-semibold">Documents</h1>
+        <p className="text-sm text-muted-foreground">
+          Upload documents to make them retrievable in chat.
+        </p>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search documents..."
-            className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
+      <Card>
+        <CardContent className="space-y-4 p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <label htmlFor="workspace" className="mb-1 block text-sm font-medium">
+                Destination
+              </label>
+              <select
+                id="workspace"
+                value={workspaceId}
+                onChange={(e) => setWorkspaceId(e.target.value)}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">My knowledge base (private)</option>
+                {(workspaces.data ?? []).map((ws) => (
+                  <option key={ws.id} value={ws.id}>
+                    {ws.name} (shared)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={accept}
+                onChange={handleFileChange}
+                className="hidden"
+                data-testid="file-input"
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadMutation.isPending}
+              >
+                {uploadMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="mr-2 h-4 w-4" />
+                )}
+                Upload file
+              </Button>
+            </div>
+          </div>
+
+          {progress !== null && (
+            <div
+              className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+              role="progressbar"
+              aria-valuenow={progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          )}
+
+          {formats.data && (
+            <p className="text-xs text-muted-foreground">
+              Accepts {formats.data.extensions.join(', ')} up to{' '}
+              {formats.data.max_file_size_mb} MB.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Filter documents"
+          className="pl-9"
+          aria-label="Filter documents"
+        />
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-12"><Spinner /></div>
-      ) : filteredDocs && filteredDocs.length > 0 ? (
-        <div className="grid gap-4">
-          {filteredDocs.map((doc: { document_id: string; filename: string; size_bytes: number; uploaded_at: string; status: string; chunk_count?: number }) => (
-            <Card key={doc.document_id}>
-              <CardContent className="flex items-center justify-between p-4">
-                <div className="space-y-1">
-                  <h3 className="font-medium">{doc.filename}</h3>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <span>{(doc.size_bytes / 1024).toFixed(1)} KB</span>
-                    <span>Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}</span>
-                    {doc.chunk_count !== undefined && <span>{doc.chunk_count} chunks</span>}
-                  </div>
-                  <Badge variant={getStatusVariant(doc.status)}>{doc.status}</Badge>
+      {documents.isLoading ? (
+        <div className="flex justify-center py-12">
+          <Spinner />
+        </div>
+      ) : documents.isError ? (
+        <ErrorState
+          title="Could not load documents"
+          description="Please try again."
+          onRetry={() => documents.refetch()}
+        />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={<FileText className="h-8 w-8" />}
+          title={search ? 'No matching documents' : 'No documents yet'}
+          description={
+            search
+              ? 'Try a different filter.'
+              : 'Upload a document to make it retrievable in chat.'
+          }
+        />
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((doc) => (
+            <Card key={`${doc.namespace}:${doc.document_id}`}>
+              <CardContent className="flex items-center justify-between gap-4 p-4">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{doc.filename}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {doc.chunk_count} chunk{doc.chunk_count === 1 ? '' : 's'} ·{' '}
+                    {doc.namespace.startsWith('workspace:') ? 'Shared' : 'Private'}
+                  </p>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="icon" onClick={() => reindexMutation.mutate(doc.document_id)} disabled={reindexMutation.isPending}>
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                  <Button variant="destructive" size="icon" onClick={() => deleteMutation.mutate(doc.document_id)} disabled={deleteMutation.isPending}>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Badge variant="success">{doc.status}</Badge>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Remove ${doc.filename}`}
+                    onClick={() => deleteMutation.mutate(doc)}
+                    disabled={deleteMutation.isPending}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -129,17 +219,6 @@ export function Documents() {
             </Card>
           ))}
         </div>
-      ) : (
-        <EmptyState
-          title="No documents found"
-          description="Upload a document to get started. Supported formats: PDF, DOCX, TXT, MD."
-          action={
-            <Button onClick={() => fileInputRef.current?.click()}>
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Document
-            </Button>
-          }
-        />
       )}
     </div>
   );

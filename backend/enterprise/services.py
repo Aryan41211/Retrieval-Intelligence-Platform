@@ -7,7 +7,7 @@ test against an in-memory SQLite database.
 """
 
 import secrets
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any
 
 from sqlalchemy import func, or_, select
@@ -24,6 +24,7 @@ from backend.enterprise.models import (
     User,
     Workspace,
     WorkspaceMembership,
+    utcnow,
 )
 from backend.enterprise.oauth import exchange_code, is_oauth_configured
 from backend.enterprise.schemas import (
@@ -72,9 +73,15 @@ async def authenticate_user(db: AsyncSession, identifier: str, password: str) ->
         select(User).where(or_(User.email == identifier, User.username == identifier))
     )
     user = result.scalar_one_or_none()
-    if user is None or not user.is_active:
+    if user is None:
+        # Burn an equivalent bcrypt verification against a dummy hash so a
+        # non-existent account takes the same time as a wrong password. Without
+        # this, response latency reveals which identifiers are registered.
+        security.verify_password(password, security.DUMMY_PASSWORD_HASH)
         return None
     if not security.verify_password(password, user.hashed_password):
+        return None
+    if not user.is_active:
         return None
     if settings.email_verification_required and not user.is_verified:
         return None
@@ -123,7 +130,7 @@ def _send_email(to: str, subject: str, body: str) -> None:
 async def create_password_reset_token(db: AsyncSession, user: User) -> str:
     """Create and persist a single-use password reset token; returns the raw token."""
     token = secrets.token_urlsafe(32)
-    expires = datetime.utcnow() + timedelta(seconds=settings.password_reset_ttl_seconds)
+    expires = utcnow() + timedelta(seconds=settings.password_reset_ttl_seconds)
     record = PasswordResetToken(
         user_id=user.id, token_hash=security.hash_token(token), expires_at=expires
     )
@@ -152,7 +159,7 @@ async def reset_password(db: AsyncSession, token: str, new_password: str) -> Non
         )
     )
     record = result.scalar_one_or_none()
-    if record is None or record.used_at is not None or record.expires_at < datetime.utcnow():
+    if record is None or record.used_at is not None or record.expires_at < utcnow():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token"
         )
@@ -160,14 +167,14 @@ async def reset_password(db: AsyncSession, token: str, new_password: str) -> Non
     if user is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
     user.hashed_password = security.hash_password(new_password)
-    record.used_at = datetime.utcnow()
+    record.used_at = utcnow()
     await db.flush()
 
 
 async def create_email_verification_token(db: AsyncSession, user: User) -> str:
     """Create and persist an email verification token; returns the raw token."""
     token = secrets.token_urlsafe(32)
-    expires = datetime.utcnow() + timedelta(seconds=settings.email_verification_ttl_seconds)
+    expires = utcnow() + timedelta(seconds=settings.email_verification_ttl_seconds)
     record = EmailVerificationToken(
         user_id=user.id, token_hash=security.hash_token(token), expires_at=expires
     )
@@ -186,15 +193,31 @@ async def verify_email(db: AsyncSession, token: str) -> None:
         )
     )
     record = result.scalar_one_or_none()
-    if record is None or record.used_at is not None or record.expires_at < datetime.utcnow():
+    if record is None or record.used_at is not None or record.expires_at < utcnow():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token"
         )
     user = await db.get(User, record.user_id)
     if user is not None:
         user.is_verified = True
-    record.used_at = datetime.utcnow()
+    record.used_at = utcnow()
     await db.flush()
+
+
+async def _unique_username_from_email(db: AsyncSession, email: str) -> str:
+    """Derive a free username from an email local-part.
+
+    ``email.split("@")[0]`` alone raised an unhandled IntegrityError (HTTP 500)
+    whenever two providers' addresses shared a local part.
+    """
+    base = email.split("@")[0][:56] or "user"
+    candidate = base
+    for suffix in range(1, 1000):
+        existing = await db.execute(select(User).where(User.username == candidate))
+        if existing.scalar_one_or_none() is None:
+            return candidate
+        candidate = f"{base}{suffix}"
+    return f"{base}{secrets.token_hex(4)}"
 
 
 async def oauth_login(db: AsyncSession, provider: str, code: str) -> TokenResponse:
@@ -205,31 +228,42 @@ async def oauth_login(db: AsyncSession, provider: str, code: str) -> TokenRespon
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="OAuth not configured"
         )
+    from fastapi import HTTPException, status
+
     profile = await exchange_code(provider, code)
     email = profile.get("email")
     if not email:
-        from fastapi import HTTPException, status
-
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth missing email")
+
+    # An unverified provider email must never be trusted: it would let anyone who
+    # can create an account at the provider claim an address that already exists
+    # locally, and be logged straight into that account.
+    if not profile.get("email_verified"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="OAuth provider has not verified this email address",
+        )
+
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
-    if user is None:
-        if not settings.registration_enabled:
-            from fastapi import HTTPException, status
+    if user is not None:
+        if not user.is_active:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive account")
+        return issue_tokens(user)
 
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Registration disabled"
-            )
-        user = User(
-            email=email,
-            username=email.split("@")[0],
-            full_name=profile.get("full_name", ""),
-            hashed_password="",
-            role=settings.default_role,
-            is_verified=True,
-        )
-        db.add(user)
-        await db.flush()
+    if not settings.registration_enabled:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Registration disabled")
+
+    user = User(
+        email=email,
+        username=await _unique_username_from_email(db, email),
+        full_name=profile.get("full_name", ""),
+        hashed_password="",
+        role=settings.default_role,
+        is_verified=True,
+    )
+    db.add(user)
+    await db.flush()
     return issue_tokens(user)
 
 
@@ -382,13 +416,22 @@ async def create_conversation(
 
 
 async def list_conversations(
-    db: AsyncSession, user: User, workspace_id: str | None = None
+    db: AsyncSession,
+    user: User,
+    workspace_id: str | None = None,
+    *,
+    limit: int = 50,
+    offset: int = 0,
 ) -> list[Conversation]:
-    """List the user's conversations (optionally within a workspace)."""
+    """List the user's conversations (optionally within a workspace).
+
+    Paginated: an unbounded query grew linearly with account age and could
+    return the user's entire history in a single response.
+    """
     stmt = select(Conversation).where(Conversation.user_id == user.id)
     if workspace_id is not None:
         stmt = stmt.where(Conversation.workspace_id == workspace_id)
-    stmt = stmt.order_by(Conversation.updated_at.desc())
+    stmt = stmt.order_by(Conversation.updated_at.desc()).limit(limit).offset(offset)
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
@@ -421,7 +464,7 @@ async def add_message(db: AsyncSession, conversation: Conversation, data: Messag
         token_count=data.token_count,
     )
     db.add(message)
-    conversation.updated_at = datetime.utcnow()
+    conversation.updated_at = utcnow()
     await db.flush()
     return message
 
@@ -437,16 +480,26 @@ async def delete_conversation(db: AsyncSession, conversation: Conversation) -> N
     await db.delete(conversation)
 
 
-async def search_conversations(db: AsyncSession, user: User, query: str) -> list[Conversation]:
+async def search_conversations(
+    db: AsyncSession, user: User, query: str, *, limit: int = 50
+) -> list[Conversation]:
     """Search the user's conversations by title or message content."""
-    q = f"%{query.lower()}%"
+    # Escape LIKE wildcards so a query of "%" does not match every row.
+    escaped = query.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
+    q = f"%{escaped}%"
     stmt = (
         select(Conversation)
         .outerjoin(Message, Message.conversation_id == Conversation.id)
         .where(Conversation.user_id == user.id)
-        .where(or_(Conversation.title.ilike(q), Message.content.ilike(q)))
+        .where(
+            or_(
+                Conversation.title.ilike(q, escape="\\"),
+                Message.content.ilike(q, escape="\\"),
+            )
+        )
         .distinct()
         .order_by(Conversation.updated_at.desc())
+        .limit(limit)
     )
     result = await db.execute(stmt)
     return list(result.scalars().all())

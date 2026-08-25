@@ -1,16 +1,31 @@
 # Retrieval Intelligence Platform - local and staging orchestration.
 #
 # Services:
-#   api      - FastAPI application (multi-stage image built from ./Dockerfile)
-#   redis    - cache / (future) shared rate-limit store
-#   postgres - optional metadata/experiment store
-#   prometheus - scrape the API /metrics endpoint
+#   frontend   - React SPA served by nginx, proxies /api to the API service
+#   api        - FastAPI application (multi-stage image built from ./Dockerfile)
+#   postgres   - metadata / conversation store
+#   redis      - cache (reserved for shared rate limiting)
+#   prometheus - scrapes the API /metrics endpoint
 #
 # Usage:
+#   cp .env.example .env      # then set ENTERPRISE_JWT_SECRET_KEY
 #   docker compose up --build
-#   docker compose -f docker-compose.yml -f docker-compose.override.yml up
+#
+# Open http://localhost:3000
 
 services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: retrieval-intelligence-platform-frontend:latest
+    ports:
+      - "${FRONTEND_PORT:-3000}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
   api:
     build:
       context: .
@@ -23,25 +38,59 @@ services:
       API_HOST: "0.0.0.0"
       API_PORT: "8000"
       API_LOG_FORMAT: ${API_LOG_FORMAT:-json}
+      API_LOG_LEVEL: ${API_LOG_LEVEL:-INFO}
       API_DOCS_ENABLED: ${API_DOCS_ENABLED:-true}
       API_CORS_ORIGINS: ${API_CORS_ORIGINS:-["http://localhost:3000"]}
+      # Required in production: validate_for_environment refuses to boot on the
+      # ["*"] default. Without this line the variable could be set in .env and
+      # would still never reach the container, making a production compose
+      # deploy impossible.
+      API_TRUSTED_HOSTS: ${API_TRUSTED_HOSTS:-["*"]}
+      # Only meaningful behind TLS termination; off by default for plain HTTP.
+      API_HSTS_ENABLED: ${API_HSTS_ENABLED:-false}
+      API_METRICS_REQUIRE_AUTH: ${API_METRICS_REQUIRE_AUTH:-true}
       API_RATE_LIMIT_PER_MINUTE: ${API_RATE_LIMIT_PER_MINUTE:-120}
+      API_RATE_LIMIT_AUTH_PER_MINUTE: ${API_RATE_LIMIT_AUTH_PER_MINUTE:-10}
       API_PROMETHEUS_ENABLED: "true"
-      DATABASE_URL: ${DATABASE_URL:-postgresql://rip:rip@postgres:5432/rip}
+      # Requests arrive via the nginx frontend, so forwarded headers are
+      # trustworthy from that hop only.
+      API_TRUST_PROXY_HEADERS: ${API_TRUST_PROXY_HEADERS:-true}
+      API_TRUSTED_PROXY_COUNT: ${API_TRUSTED_PROXY_COUNT:-1}
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-*}
+      # Token Prometheus presents when scraping /metrics.
+      API_METRICS_TOKEN: ${API_METRICS_TOKEN:-}
+      # Async driver is required; a sync URL is upgraded automatically.
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://rip:${POSTGRES_PASSWORD:-rip}@postgres:5432/rip}
+      # Alembic owns the schema (applied by the entrypoint).
+      DB_AUTO_CREATE: "false"
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}
-    env_file:
-      - .env
+      # REQUIRED. Generate with: python -c "import secrets; print(secrets.token_hex(32))"
+      ENTERPRISE_JWT_SECRET_KEY: ${ENTERPRISE_JWT_SECRET_KEY:?set ENTERPRISE_JWT_SECRET_KEY in .env}
+      GENERATION_PROVIDER: ${GENERATION_PROVIDER:-fake}
+      GENERATION_MODEL_NAME: ${GENERATION_MODEL_NAME:-fake-model}
+      GENERATION_API_KEY: ${GENERATION_API_KEY:-}
+      INTELLIGENT_RETRIEVAL_ENABLED: ${INTELLIGENT_RETRIEVAL_ENABLED:-false}
+    volumes:
+      # Without this the FAISS index is lost on every restart.
+      - apidata:/app/data
     depends_on:
-      - redis
-      - postgres
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready').status == 200 else 1)"]
+      test:
+        - CMD
+        - python
+        - -c
+        - |
+          import urllib.request, sys
+          sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready').status == 200 else 1)
       interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
 
   redis:
     image: redis:7-alpine
@@ -56,24 +105,33 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: rip
-      POSTGRES_PASSWORD: rip
+      # Override in .env; the default is for local development only.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rip}
       POSTGRES_DB: rip
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U rip"]
-      interval: 30s
+      interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
 
   prometheus:
     image: prom/prometheus:latest
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
-      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Mount the whole directory, not just prometheus.yml: the scrape config
+      # reads its bearer token from /etc/prometheus/metrics_token, and a
+      # single-file bind of a path that does not exist yet would have Docker
+      # silently create a *directory* there. The official image keeps its
+      # consoles under /usr/share/prometheus, so nothing is shadowed.
+      - ./deploy:/etc/prometheus:ro
+    depends_on:
+      - api
     restart: unless-stopped
 
 volumes:
   pgdata:
+  apidata:

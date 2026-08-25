@@ -109,9 +109,9 @@ export const enterpriseApi = {
     const { data } = await api.post('/conversations', payload);
     return data;
   },
-  listConversations: async (workspaceId?: string): Promise<Conversation[]> => {
+  listConversations: async (workspaceId?: string, limit = 50): Promise<Conversation[]> => {
     const { data } = await api.get('/conversations', {
-      params: workspaceId ? { workspace_id: workspaceId } : {},
+      params: { limit, ...(workspaceId ? { workspace_id: workspaceId } : {}) },
     });
     return data;
   },

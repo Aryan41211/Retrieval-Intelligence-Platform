@@ -7,7 +7,9 @@ client credentials are configured. Without credentials the endpoints return
 ``501 Not Implemented``.
 """
 
+import time
 from typing import Any
+from urllib.parse import urlencode
 
 import httpx
 
@@ -28,6 +30,43 @@ def is_oauth_configured(provider: str) -> bool:
     return bool(settings.oauth_google_client_id and settings.oauth_google_client_secret)
 
 
+# In-process store of issued OAuth state values -> expiry timestamp. Single
+# process only; a multi-instance deployment must move this to Redis alongside
+# the rate limiter. Entries are single-use and short-lived.
+_OAUTH_STATE_TTL_SECONDS = 600
+_issued_states: dict[str, float] = {}
+
+
+def _purge_expired_states(now: float) -> None:
+    for value, expires_at in list(_issued_states.items()):
+        if expires_at <= now:
+            _issued_states.pop(value, None)
+
+
+def remember_state(state: str) -> None:
+    """Record an issued OAuth state so the callback can verify it."""
+    now = time.time()
+    _purge_expired_states(now)
+    _issued_states[state] = now + _OAUTH_STATE_TTL_SECONDS
+
+
+def consume_state(state: str | None) -> bool:
+    """Validate and single-use-consume an OAuth state value.
+
+    Args:
+        state: The ``state`` query parameter returned by the provider.
+
+    Returns:
+        True if the state was issued by us and has not expired or been used.
+    """
+    if not state:
+        return False
+    now = time.time()
+    _purge_expired_states(now)
+    expires_at = _issued_states.pop(state, None)
+    return expires_at is not None and expires_at > now
+
+
 def get_authorization_url(provider: str, state: str) -> str:
     """Build the provider authorization URL for the given CSRF state."""
     settings = get_enterprise_settings()
@@ -40,7 +79,9 @@ def get_authorization_url(provider: str, state: str) -> str:
         "scope": "openid email profile",
         "state": state,
     }
-    query = "&".join(f"{k}={v}" for k, v in params.items() if v)
+    # urlencode, not manual join: redirect_uri contains ':' and '/' and was
+    # previously emitted raw into the query string.
+    query = urlencode({k: v for k, v in params.items() if v})
     return f"{GOOGLE_AUTH_URL}?{query}"
 
 
@@ -70,4 +111,8 @@ async def exchange_code(provider: str, code: str) -> dict[str, Any]:
         return {
             "email": data.get("email"),
             "full_name": data.get("name", ""),
+            # Google returns email_verified; without checking it an attacker can
+            # register an unverified address matching an existing local account.
+            "email_verified": bool(data.get("email_verified", False)),
+            "subject": data.get("sub"),
         }

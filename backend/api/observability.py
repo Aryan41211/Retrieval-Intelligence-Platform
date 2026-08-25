@@ -116,6 +116,56 @@ def configure_logging(api_settings: APISettings | None = None) -> None:
     # Replace handlers to avoid duplicate logs when called more than once.
     root.handlers = [handler]
 
+    _quiet_noisy_loggers(level)
+
+
+# Libraries that emit request/statement-level detail at DEBUG. At API_LOG_LEVEL
+# =DEBUG these dumped every SQL statement together with its bind parameters
+# (user ids, token lookups) into the application log, which conflicts with the
+# project rule never to log PII or secrets.
+_NOISY_LOGGERS = (
+    "aiosqlite",
+    "sqlalchemy.engine",
+    "sqlalchemy.pool",
+    "sqlalchemy.dialects",
+    "sqlalchemy.orm",
+    "httpcore",
+    "httpx",
+    "urllib3",
+    "asyncio",
+    "multipart",
+)
+
+
+# Loggers that emit SQL statements (and their bind parameters) at INFO, not
+# DEBUG. Clamping these to INFO is not enough - they must be held at WARNING.
+_SQL_LOGGERS = (
+    "sqlalchemy.engine",
+    "sqlalchemy.engine.Engine",
+    "sqlalchemy.pool",
+    "sqlalchemy.dialects",
+    "sqlalchemy.orm",
+    "aiosqlite",
+)
+
+
+def _quiet_noisy_loggers(level: str) -> None:
+    """Clamp chatty third-party loggers away from statement-level output.
+
+    Args:
+        level: The configured application log level.
+    """
+    configured = getattr(logging, level, logging.INFO)
+    floor = max(configured, logging.INFO)
+
+    for name in _NOISY_LOGGERS:
+        logging.getLogger(name).setLevel(floor)
+
+    # SQL text and bind parameters must never reach the application log, whatever
+    # the configured level; the project rule is never to log PII or secrets.
+    for name in _SQL_LOGGERS:
+        logging.getLogger(name).setLevel(max(floor, logging.WARNING))
+
 
 def get_logger(name: str) -> logging.Logger:
     """Return a named logger with correlation-ID support already configured."""

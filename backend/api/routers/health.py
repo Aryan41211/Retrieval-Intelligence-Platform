@@ -8,19 +8,28 @@ These endpoints are consumed by container orchestrators and monitoring systems:
 - ``/metrics``      : Prometheus exposition format (when enabled).
 """
 
+import logging
 import os
+import secrets
 import time
 from typing import Literal
 
-from fastapi import APIRouter, Response
+import jwt
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
 from backend.configs.settings import get_settings as get_app_settings
+from backend.enterprise.security import decode_token
 
 from ..config import get_settings
 from ..observability import render_metrics
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+_metrics_bearer = HTTPBearer(auto_error=False)
 
 _START_TIME = time.time()
 
@@ -31,6 +40,12 @@ class HealthStatus(BaseModel):
     status: Literal["ok", "degraded", "unavailable"]
     service: str
     uptime_seconds: float
+
+
+class ReadinessStatus(HealthStatus):
+    """Readiness payload including per-dependency results."""
+
+    checks: dict[str, str] = {}
 
 
 class ServiceInfo(BaseModel):
@@ -57,27 +72,48 @@ async def liveness() -> HealthStatus:
     )
 
 
-@router.get("/health/ready", response_model=HealthStatus, tags=["health"])
-async def readiness() -> HealthStatus:
-    """Readiness probe: required runtime dependencies are available."""
+@router.get("/health/ready", response_model=ReadinessStatus, tags=["health"])
+async def readiness(response: Response) -> ReadinessStatus:
+    """Readiness probe: required runtime dependencies are available.
+
+    Checks the database and the vector-store directory. The previous version
+    only tested a directory and *created* it as a side effect, reporting ready
+    while the database was unreachable.
+    """
     settings = get_settings()
     app_settings = get_app_settings()
-    vector_store_dir = app_settings.vector_store.storage_dir or "./data/vectorstore"
+    checks: dict[str, str] = {}
 
-    # Vector store persistence directory must be reachable/writable.
-    store_dir = vector_store_dir
-    parent = os.path.dirname(store_dir) or "."
-    is_ready = True
-    if parent and not (os.path.isdir(parent) and os.access(parent, os.W_OK | os.R_OK)):
-        try:
-            os.makedirs(parent, exist_ok=True)
-        except OSError:
-            is_ready = False
+    # --- Database round-trip.
+    try:
+        from sqlalchemy import text
 
-    return HealthStatus(
+        from backend.enterprise.database import get_session_factory
+
+        factory = get_session_factory()
+        async with factory() as session:
+            await session.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception as exc:  # pragma: no cover - exercised via failure injection
+        logger.warning("Readiness: database check failed: %s", exc)
+        checks["database"] = "unavailable"
+
+    # --- Vector store directory must be readable and writable (no creation here).
+    store_dir = app_settings.vector_store.storage_dir or "./data/vectorstore"
+    if os.path.isdir(store_dir) and os.access(store_dir, os.W_OK | os.R_OK):
+        checks["vector_store"] = "ok"
+    else:
+        checks["vector_store"] = "unavailable"
+
+    is_ready = all(value == "ok" for value in checks.values())
+    if not is_ready:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    return ReadinessStatus(
         status="ok" if is_ready else "unavailable",
         service=settings.app_name,
         uptime_seconds=round(_uptime(), 2),
+        checks=checks,
     )
 
 
@@ -93,7 +129,46 @@ async def health() -> ServiceInfo:
     )
 
 
-@router.get("/metrics", tags=["observability"])
+async def _authorize_metrics(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_metrics_bearer),
+) -> None:
+    """Authorize a /metrics scrape.
+
+    The endpoint was previously unauthenticated, publishing the full endpoint
+    inventory plus traffic, latency and error counts to anyone who asked.
+
+    Accepts either the dedicated ``API_METRICS_TOKEN`` (for Prometheus, which
+    cannot perform a login) or a valid user access token.
+
+    Raises:
+        HTTPException: 401 when the caller presents no acceptable credential.
+    """
+    settings = get_settings()
+    if not settings.metrics_require_auth:
+        return
+
+    presented = credentials.credentials if credentials else None
+    if not presented:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Metrics require authentication",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if settings.metrics_token and secrets.compare_digest(presented, settings.metrics_token):
+        return
+
+    try:
+        decode_token(presented, "access")
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid metrics credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from None
+
+
+@router.get("/metrics", tags=["observability"], dependencies=[Depends(_authorize_metrics)])
 async def metrics() -> Response:
     """Prometheus metrics exposition endpoint."""
     settings = get_settings()

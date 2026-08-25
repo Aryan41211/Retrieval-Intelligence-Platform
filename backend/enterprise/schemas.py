@@ -3,9 +3,27 @@ Pydantic schemas for enterprise API request/response validation.
 """
 
 from datetime import datetime
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field
+
+
+class MessageRole(str, Enum):
+    """Permitted message roles."""
+
+    USER = "user"
+    ASSISTANT = "assistant"
+    SYSTEM = "system"
+
+
+class WorkspaceRole(str, Enum):
+    """Permitted workspace membership roles."""
+
+    OWNER = "owner"
+    ADMIN = "admin"
+    MEMBER = "member"
+    VIEWER = "viewer"
 
 
 # --- Auth -------------------------------------------------------------------
@@ -17,8 +35,8 @@ class UserCreate(BaseModel):
 
 
 class UserLogin(BaseModel):
-    identifier: str = Field(description="Email or username")
-    password: str
+    identifier: str = Field(min_length=1, max_length=320, description="Email or username")
+    password: str = Field(min_length=1, max_length=128)
 
 
 class TokenResponse(BaseModel):
@@ -29,7 +47,7 @@ class TokenResponse(BaseModel):
 
 
 class RefreshRequest(BaseModel):
-    refresh_token: str
+    refresh_token: str = Field(min_length=1, max_length=4096)
 
 
 class PasswordResetRequest(BaseModel):
@@ -37,12 +55,12 @@ class PasswordResetRequest(BaseModel):
 
 
 class PasswordResetConfirm(BaseModel):
-    token: str
+    token: str = Field(min_length=1, max_length=512)
     new_password: str = Field(min_length=8, max_length=128)
 
 
 class EmailVerificationRequest(BaseModel):
-    token: str
+    token: str = Field(min_length=1, max_length=512)
 
 
 class OAuthStartResponse(BaseModel):
@@ -88,8 +106,9 @@ class WorkspacePublic(BaseModel):
 
 
 class WorkspaceMemberAdd(BaseModel):
-    user_id: str
-    role: str = "member"
+    user_id: str = Field(min_length=1, max_length=36)
+    # Previously an unconstrained str, so any value could be stored as a role.
+    role: WorkspaceRole = WorkspaceRole.MEMBER
 
 
 class WorkspaceMemberPublic(BaseModel):
@@ -100,16 +119,16 @@ class WorkspaceMemberPublic(BaseModel):
 
 # --- Conversations -----------------------------------------------------------
 class ConversationCreate(BaseModel):
-    title: str | None = None
-    workspace_id: str | None = None
+    title: str | None = Field(default=None, max_length=300)
+    workspace_id: str | None = Field(default=None, max_length=36)
 
 
 class MessageCreate(BaseModel):
-    role: str = "user"
-    content: str
+    role: MessageRole = MessageRole.USER
+    content: str = Field(min_length=1, max_length=100_000)
     citations: dict[str, Any] | None = None
-    correlation_id: str | None = None
-    token_count: int = 0
+    correlation_id: str | None = Field(default=None, max_length=64)
+    token_count: int = Field(default=0, ge=0, le=10_000_000)
 
 
 class MessagePublic(BaseModel):
