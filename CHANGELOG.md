@@ -61,6 +61,8 @@ owning user's or workspace's knowledge base.
   anchored to the artifact directories, and a test now asserts that no Python
   file under `backend/` is git-ignored: a passing working tree is not evidence
   that a checkout works.
+  Un-ignoring the package also exposed six lint errors CI would have failed on:
+  ruff honours `.gitignore`, so those files had never once been checked.
 - **Every Prometheus scrape failed in production.** Compose scrapes
   `http://api:8000/api/v1/metrics`, so the `Host` is the service name `api` -
   not something anyone would think to add to `API_TRUSTED_HOSTS` - and the

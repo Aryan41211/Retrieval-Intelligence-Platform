@@ -1,10 +1,6 @@
 """Configuration for document ingestion."""
 
-from pathlib import Path
-
 from pydantic import BaseModel, Field, field_validator
-
-from backend.core.exceptions import ValidationError
 
 
 class IngestionConfig(BaseModel):
