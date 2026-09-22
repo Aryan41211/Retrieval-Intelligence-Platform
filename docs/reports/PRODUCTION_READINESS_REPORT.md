@@ -37,7 +37,7 @@ All subsystems that do not require a live paid provider are verifiable and verif
 | Deployment / DevOps | READY | `docker compose config --quiet` validated (with `POSTGRES_PASSWORD` set); `POSTGRES_PASSWORD` now *required* (`:?` expansion); Prometheus image pinned `prom/prometheus:v3.14.0`; nginx security headers incl. CSP added. Live nginx validation NOT run (Docker engine not started). |
 | CI / code quality | READY | `ruff check backend/` clean; `black --check backend/` clean; pre-commit configured (ruff, ruff-format, black, hooks). CI workflow present for lint/unit/integration/security/build. |
 | Automated evaluation (RAG metrics) | BLOCKED (external) | Metric *infrastructure* exists and dead code was removed (`evaluation_engine.py` was broken and unreferenced). Real model-based evaluation (RAGAS/DeepEval/hallucination) **cannot run without paid provider credentials** — external blocker. |
-| Frontend build | PARTIAL | `npm run lint` clean, `npm test` 20/20 pass. `npm run build` was interrupted during final verification this session; previous builds in earlier phases succeeded (tsc + vite), but the final-state build is pending re-verification. |
+| Frontend build | READY | `npm run lint` clean, `npm test` 20/20 pass, `npm run build` (tsc + vite) exit-0 (7.5s). One non-blocking warning: the markdown vendor chunk is ~800 kB minified (~279 kB gzip) — consider code-splitting when it matters. |
 
 ---
 
@@ -104,16 +104,14 @@ Working tree is clean; all changes above are committed on `main`.
    Design note only; swap for a shared Redis store when scaling out (optional dep
    `cache` extras already declared).
 
-4. **Partially verified — frontend `npm run build`.** Interrupted during this session's
-   final run; earlier builds succeeded, lint and tests pass. Re-run `npm run build`
-   before release.
+4. **Closed — frontend `npm run build`.** Re-verified after the draft: `tsc --noEmit` exit 0, `vite build` exit 0 (7.5s). Advisory only: ~800 kB (279 kB gzip) markdown vendor chunk — ship-safe, split later.
 
 5. **Environmental notes.** Docker daemon not running, so `docker run`/nginx
-   configuration*was not live-validated* (compose config parses). The pre-existing
-   OpenBLAS subprocess flake in `test_env_example_loads_into_the_settings_models`
-   did not reproduce in the final full run. `deploy/metrics_token` holds a live token
-   on disk and is **gitignored/untracked** (verified) — rotate it now that the
-   repository has been audited.
+   configuration*was not live-validated* (`docker compose config --quiet` re-verified
+   clean with `POSTGRES_PASSWORD` set). The pre-existing OpenBLAS subprocess flake in
+   `test_env_example_loads_into_the_settings_models` did not reproduce in the final
+   full run. `deploy/metrics_token` holds a live token on disk and is
+   **gitignored/untracked** (verified) — rotate it now that the repository has been audited.
 
 ---
 
