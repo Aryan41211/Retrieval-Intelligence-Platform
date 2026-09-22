@@ -114,6 +114,10 @@ async def refresh_tokens(db: AsyncSession, refresh_token: str) -> TokenResponse:
         from fastapi import HTTPException, status
 
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    if settings.email_verification_required and not user.is_verified:
+        from fastapi import HTTPException, status
+
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not verified")
     return issue_tokens(user)
 
 
@@ -404,7 +408,23 @@ async def user_workspace_role(db: AsyncSession, user_id: str, workspace_id: str)
 async def create_conversation(
     db: AsyncSession, user: User, title: str | None, workspace_id: str | None
 ) -> Conversation:
-    """Create a conversation owned by the user."""
+    """Create a conversation owned by the user.
+
+    ``workspace_id`` is client-supplied and therefore untrusted: the workspace
+    must exist and the caller must be a member before a conversation can be
+    planted in another tenant's workspace.
+    """
+    from fastapi import HTTPException, status
+
+    if workspace_id is not None:
+        workspace = await db.get(Workspace, workspace_id)
+        if workspace is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
+        role = await user_workspace_role(db, user.id, workspace_id)
+        if role is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not a member of this workspace"
+            )
     conv = Conversation(
         user_id=user.id,
         workspace_id=workspace_id,

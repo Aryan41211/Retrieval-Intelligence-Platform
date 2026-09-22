@@ -90,6 +90,22 @@ async def get_current_user(
     user = result.scalar_one_or_none()
     if user is None:
         raise _unauthorized("User no longer exists")
+    return await _confirm_authorized(user)
+
+
+async def _confirm_authorized(user: User) -> User:
+    """Enforce account-level gates that apply to every authenticated route.
+
+    ``is_active`` is rejected here (403) rather than leaving deactivated accounts
+    usable until token expiry across the data-plane routers, which previously
+    depended only on :func:`get_current_user`.
+    """
+    from backend.enterprise.config import get_enterprise_settings
+
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive account")
+    if get_enterprise_settings().email_verification_required and not user.is_verified:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not verified")
     return user
 
 

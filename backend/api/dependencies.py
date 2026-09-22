@@ -24,7 +24,10 @@ from backend.data.embeddings.embedding_factory import EmbeddingFactory
 from backend.data.models.chunk import ChunkingStrategy
 
 # Real authentication dependency (JWT / bearer) provided by the enterprise layer.
-from backend.enterprise.rbac import get_current_user  # noqa: F401  (re-exported for routers)
+from backend.enterprise.rbac import (  # noqa: F401  (re-exported for routers)
+    get_current_active_user,
+    get_current_user,
+)
 from backend.generation.generation_pipeline import GenerationPipeline
 from backend.retrieval.exceptions import EmptyRetrievalResultError, RetrievalError
 from backend.retrieval.retrieval_engine import RetrievalEngine
@@ -352,6 +355,7 @@ __all__ = [
     "get_generation_pipeline",
     "get_chunker",
     "get_current_user",
+    "get_current_active_user",
     "warm_up_caches",
     "active_retrieval_strategy",
 ]

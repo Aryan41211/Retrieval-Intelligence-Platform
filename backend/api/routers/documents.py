@@ -29,7 +29,7 @@ from starlette.concurrency import run_in_threadpool
 
 from backend.api.dependencies import (
     get_chunker,
-    get_current_user,
+    get_current_active_user,
     get_embedding_provider,
     get_namespace_store,
 )
@@ -57,7 +57,7 @@ from backend.enterprise.models import User
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(dependencies=[Depends(get_current_user)])
+router = APIRouter(dependencies=[Depends(get_current_active_user)])
 
 
 async def _resolve_namespace(db: AsyncSession, user: User, workspace_id: str | None):
@@ -125,7 +125,7 @@ async def supported_formats() -> dict[str, object]:
 @router.post("/documents/upload", response_model=DocumentUploadResponse)
 async def upload_document(
     payload: DocumentUploadRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
     embedding_provider: object = Depends(get_embedding_provider),
     chunker: object = Depends(get_chunker),
@@ -207,7 +207,7 @@ def _load_document(path: Path, filename: str) -> Document:
 async def upload_document_file(
     file: UploadFile = File(..., description="PDF, DOCX, Markdown or plain-text file"),
     workspace_id: str | None = Form(default=None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
     embedding_provider: object = Depends(get_embedding_provider),
     chunker: object = Depends(get_chunker),
@@ -277,7 +277,7 @@ async def upload_document_file(
 
 @router.get("/documents/list", response_model=list[DocumentSummary])
 async def list_documents(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[DocumentSummary]:
     """List the documents indexed in every knowledge base the caller can read.
@@ -318,7 +318,7 @@ async def list_documents(
 async def delete_document(
     document_id: str,
     workspace_id: str | None = None,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, object]:
     """Remove a document's chunks from a knowledge base the caller may write to.

@@ -7,9 +7,9 @@ configured in this build. Per the release policy, these endpoints report evaluat
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from backend.api.dependencies import get_current_user
+from backend.api.dependencies import get_current_active_user
 
-router = APIRouter(dependencies=[Depends(get_current_user)])
+router = APIRouter(dependencies=[Depends(get_current_active_user)])
 
 _UNAVAILABLE_DETAIL = (
     "Evaluation is not available: RAGAS/DeepEval integration is not configured in this build."

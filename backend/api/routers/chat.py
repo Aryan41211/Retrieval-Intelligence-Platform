@@ -19,7 +19,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.dependencies import (
-    get_current_user,
+    get_current_active_user,
     get_generation_pipeline,
 )
 from backend.api.namespaces import readable_namespaces
@@ -36,7 +36,7 @@ from backend.retrieval.retrieval_result import RetrievalChunkResult
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(dependencies=[Depends(get_current_user)])
+router = APIRouter(dependencies=[Depends(get_current_active_user)])
 
 
 def create_chat_message_from_result(result: Any) -> ChatMessage:
@@ -124,7 +124,7 @@ async def get_chat() -> dict[str, str]:
 @router.post("/chat")
 async def chat_with_context(
     request: ChatRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
     retrieval_service: ScopedRetrievalService = Depends(get_scoped_retrieval_service),
     generation_pipeline: GenerationPipeline = Depends(get_generation_pipeline),

@@ -62,3 +62,32 @@ def test_admin_can_deactivate_user(client, db_path):
         db_path, "SELECT is_active FROM enterprise_users WHERE email=?", ("victim@example.com",)
     )
     assert row["is_active"] == 0
+
+
+def test_deactivated_user_loses_data_plane_access(client, db_path):
+    """Deactivation must revoke access to document/chat/retrieval routes
+    immediately (not merely block future refresh)."""
+    admin_tokens = register(client, email="gboss@example.com", username="gboss")
+    promote_user(db_path, "gboss@example.com", "admin")
+    victim_tokens = register(client, email="gvictim@example.com", username="gvictim")
+
+    assert client.get("/api/v1/documents", headers=auth_headers(victim_tokens["access_token"])).status_code == 200
+
+    victim = query_one(
+        db_path, "SELECT id FROM enterprise_users WHERE email=?", ("gvictim@example.com",)
+    )
+    resp = client.post(
+        f"/api/v1/users/{victim['id']}/deactivate",
+        headers=auth_headers(admin_tokens["access_token"]),
+    )
+    assert resp.status_code == 200
+
+    for endpoint in ("/api/v1/documents", "/api/v1/chat", "/api/v1/retrieval"):
+        r = client.get(endpoint, headers=auth_headers(victim_tokens["access_token"]))
+        assert r.status_code == 403, endpoint
+
+    refresh = client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": victim_tokens["refresh_token"]},
+    )
+    assert refresh.status_code in (401, 403)

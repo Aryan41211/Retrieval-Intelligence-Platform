@@ -118,3 +118,48 @@ def test_cannot_access_other_users_conversation(client):
     ).json()["id"]
     resp = client.get(f"/api/v1/conversations/{conv_id}", headers=auth_headers(other_token))
     assert resp.status_code in (403, 404)
+
+
+def test_conversation_in_foreign_workspace_rejected(client):
+    """A client-supplied workspace_id must not let a user plant a
+    conversation in a workspace they are not a member of."""
+    owner = _token(client, "cwsowner@example.com", "cwsowner")
+    outsider = _token(client, "cwsoutsider@example.com", "cwsoutsider")
+    ws_id = client.post(
+        "/api/v1/workspaces",
+        headers=auth_headers(owner),
+        json={"name": "Team Private"},
+    ).json()["id"]
+    resp = client.post(
+        "/api/v1/conversations",
+        headers=auth_headers(outsider),
+        json={"title": "Implanted", "workspace_id": ws_id},
+    )
+    assert resp.status_code == 403
+
+
+def test_conversation_in_missing_workspace_rejected(client):
+    token = _token(client, "cwsmiss@example.com", "cwsmiss")
+    resp = client.post(
+        "/api/v1/conversations",
+        headers=auth_headers(token),
+        json={"title": "Ghost", "workspace_id": "does-not-exist"},
+    )
+    assert resp.status_code == 404
+
+
+def test_conversation_in_own_workspace_allowed(client):
+    owner = _token(client, "cwsown@example.com", "cwsown")
+    h = auth_headers(owner)
+    ws_id = client.post(
+        "/api/v1/workspaces",
+        headers=h,
+        json={"name": "My Team"},
+    ).json()["id"]
+    resp = client.post(
+        "/api/v1/conversations",
+        headers=h,
+        json={"title": "Mine", "workspace_id": ws_id},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["workspace_id"] == ws_id

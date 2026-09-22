@@ -6,9 +6,9 @@ report unavailability honestly instead of returning placeholder success messages
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from backend.api.dependencies import get_current_user
+from backend.api.dependencies import get_current_active_user
 
-router = APIRouter(dependencies=[Depends(get_current_user)])
+router = APIRouter(dependencies=[Depends(get_current_active_user)])
 
 _UNAVAILABLE_DETAIL = "Experiment tracking is not available in this build."
 

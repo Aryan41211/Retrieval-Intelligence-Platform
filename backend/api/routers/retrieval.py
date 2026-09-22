@@ -7,7 +7,7 @@ to read: their own private namespace plus every workspace they belong to.
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.api.dependencies import active_retrieval_strategy, get_current_user
+from backend.api.dependencies import active_retrieval_strategy, get_current_active_user
 from backend.api.namespaces import readable_namespaces
 from backend.api.schemas import RetrievalRequest, RetrievalResponse, RetrievalResult
 from backend.api.scoped_retrieval import (
@@ -17,7 +17,7 @@ from backend.api.scoped_retrieval import (
 from backend.enterprise.database import get_db
 from backend.enterprise.models import User
 
-router = APIRouter(dependencies=[Depends(get_current_user)])
+router = APIRouter(dependencies=[Depends(get_current_active_user)])
 
 
 @router.get("/retrieval")
@@ -29,7 +29,7 @@ async def get_retrieval() -> dict[str, str]:
 @router.post("/retrieval/search", response_model=RetrievalResponse)
 async def search_retrieval(
     payload: RetrievalRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
     retrieval_service: ScopedRetrievalService = Depends(get_scoped_retrieval_service),
 ) -> RetrievalResponse:
@@ -67,7 +67,7 @@ async def search_retrieval(
 
 @router.post("/retrieval/inspect")
 async def inspect_retrieval(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, object]:
     """Report the retrieval configuration in effect for the caller."""
