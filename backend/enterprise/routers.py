@@ -84,8 +84,17 @@ async def refresh(data: RefreshRequest, db: AsyncSession = Depends(get_db)) -> T
 
 
 @auth_router.post("/logout")
-async def logout() -> dict[str, str]:
-    """Stateless logout: clients should discard tokens."""
+async def logout(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """Revoke every outstanding token for the current user.
+
+    Bumping ``token_version`` invalidates all previously issued JWTs (both
+    access and refresh) server-side, rather than asking the client to discard
+    them.
+    """
+    await services.revoke_user_tokens(db, current_user)
     return {"detail": "logged out"}
 
 

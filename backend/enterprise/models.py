@@ -13,6 +13,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Integer,
     String,
     UniqueConstraint,
 )
@@ -53,6 +54,9 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(32), default="member")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Monotonic counter embedded in every issued JWT. Bumping it (logout, admin
+    # deactivation, password change) revokes all previously issued tokens.
+    token_version: Mapped[int] = mapped_column(Integer, default=0)
     preferences: Mapped[dict] = mapped_column(JSON, default=dict)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)

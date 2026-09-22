@@ -37,7 +37,13 @@ def _utcnow() -> datetime:
     return datetime.now(UTC)
 
 
-def create_access_token(*, subject: str, role: str, expires_in: int | None = None) -> str:
+def create_access_token(
+    *,
+    subject: str,
+    role: str,
+    token_version: int = 0,
+    expires_in: int | None = None,
+) -> str:
     """Create a signed JWT access token carrying role and permissions."""
     settings = get_enterprise_settings()
     ttl = expires_in or settings.access_token_ttl_seconds
@@ -46,13 +52,19 @@ def create_access_token(*, subject: str, role: str, expires_in: int | None = Non
         "type": "access",
         "role": role,
         "permissions": permissions_for_role(role),
+        "ver": token_version,
         "iat": _utcnow(),
         "exp": _utcnow() + timedelta(seconds=ttl),
     }
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
-def create_refresh_token(*, subject: str, expires_in: int | None = None) -> str:
+def create_refresh_token(
+    *,
+    subject: str,
+    token_version: int = 0,
+    expires_in: int | None = None,
+) -> str:
     """Create a signed JWT refresh token (stateless)."""
     settings = get_enterprise_settings()
     ttl = expires_in or settings.refresh_token_ttl_seconds
@@ -60,6 +72,7 @@ def create_refresh_token(*, subject: str, expires_in: int | None = None) -> str:
         "sub": subject,
         "type": "refresh",
         "jti": uuid.uuid4().hex,
+        "ver": token_version,
         "iat": _utcnow(),
         "exp": _utcnow() + timedelta(seconds=ttl),
     }

@@ -2,7 +2,7 @@
 
 import time
 
-from .fixtures import create_token_row, query_one, register
+from .fixtures import auth_headers, create_token_row, query_one, register
 
 
 def test_register_returns_tokens_and_persists_user(client, db_path):
@@ -76,9 +76,53 @@ def test_refresh_invalid_token_rejected(client):
     assert resp.status_code == 401
 
 
-def test_logout_is_stateless_ok(client):
+def test_logout_requires_authentication(client):
     resp = client.post("/api/v1/auth/logout")
+    assert resp.status_code == 401
+
+
+def test_logout_revokes_access_and_refresh_tokens(client):
+    tokens = register(client)
+    headers = auth_headers(tokens["access_token"])
+
+    assert client.get("/api/v1/users/me", headers=headers).status_code == 200
+
+    logout = client.post("/api/v1/auth/logout", headers=headers)
+    assert logout.status_code == 200
+
+    # The access token is dead against every protected endpoint.
+    assert client.get("/api/v1/users/me", headers=headers).status_code == 401, (
+        "access token survived logout"
+    )
+    # The refresh token is dead too.
+    refreshed = client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
+    )
+    assert refreshed.status_code == 401, "refresh token survived logout"
+
+
+def test_password_reset_revokes_issued_tokens(client, db_path):
+    tokens = register(client, email="revoke@example.com", username="revoke")
+    headers = auth_headers(tokens["access_token"])
+
+    user = query_one(
+        db_path, "SELECT id FROM enterprise_users WHERE email=?", ("revoke@example.com",)
+    )
+    raw = "reset-token-" + str(int(time.time()))
+    create_token_row(db_path, "enterprise_password_reset_tokens", user["id"], raw, ttl=3600)
+    resp = client.post(
+        "/api/v1/auth/password-reset/confirm",
+        json={"token": raw, "new_password": "fresh-secret-123"},
+    )
     assert resp.status_code == 200
+
+    assert client.get("/api/v1/users/me", headers=headers).status_code == 401, (
+        "access token survived password reset"
+    )
+    refreshed = client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
+    )
+    assert refreshed.status_code == 401, "refresh token survived password reset"
 
 
 def test_password_reset_flow(client, db_path):

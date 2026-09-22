@@ -84,7 +84,9 @@ def test_deactivated_user_loses_data_plane_access(client, db_path):
 
     for endpoint in ("/api/v1/documents", "/api/v1/chat", "/api/v1/retrieval"):
         r = client.get(endpoint, headers=auth_headers(victim_tokens["access_token"]))
-        assert r.status_code == 403, endpoint
+        # 401 = the issued token was revoked server-side; 403 = the account is
+        # inactive. Either satisfies "access stops immediately".
+        assert r.status_code in (401, 403), endpoint
 
     refresh = client.post(
         "/api/v1/auth/refresh",

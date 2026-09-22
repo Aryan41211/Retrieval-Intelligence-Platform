@@ -90,6 +90,8 @@ async def get_current_user(
     user = result.scalar_one_or_none()
     if user is None:
         raise _unauthorized("User no longer exists")
+    if payload.get("ver", 0) != (getattr(user, "token_version", 0) or 0):
+        raise _unauthorized("Token revoked")
     return await _confirm_authorized(user)
 
 

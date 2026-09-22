@@ -90,11 +90,21 @@ async def authenticate_user(db: AsyncSession, identifier: str, password: str) ->
 
 def issue_tokens(user: User) -> TokenResponse:
     """Issue a new access/refresh token pair for a user."""
+    version = getattr(user, "token_version", 0) or 0
     return TokenResponse(
-        access_token=security.create_access_token(subject=user.id, role=user.role),
-        refresh_token=security.create_refresh_token(subject=user.id),
+        access_token=security.create_access_token(
+            subject=user.id, role=user.role, token_version=version
+        ),
+        refresh_token=security.create_refresh_token(subject=user.id, token_version=version),
         expires_in=settings.access_token_ttl_seconds,
     )
+
+
+async def revoke_user_tokens(db: AsyncSession, user: User) -> TokenResponse:
+    """Bump the user's token_version, invalidating every outstanding token."""
+    user.token_version = (user.token_version or 0) + 1
+    await db.flush()
+    return issue_tokens(user)
 
 
 async def refresh_tokens(db: AsyncSession, refresh_token: str) -> TokenResponse:
@@ -114,6 +124,12 @@ async def refresh_tokens(db: AsyncSession, refresh_token: str) -> TokenResponse:
         from fastapi import HTTPException, status
 
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    if payload.get("ver", 0) != (user.token_version or 0):
+        from fastapi import HTTPException, status
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token revoked"
+        )
     if settings.email_verification_required and not user.is_verified:
         from fastapi import HTTPException, status
 
@@ -171,6 +187,9 @@ async def reset_password(db: AsyncSession, token: str, new_password: str) -> Non
     if user is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
     user.hashed_password = security.hash_password(new_password)
+    # Revoke every previously issued token: the password they were issued
+    # against is no longer the account's secret.
+    user.token_version = (user.token_version or 0) + 1
     record.used_at = utcnow()
     await db.flush()
 
@@ -300,6 +319,10 @@ async def set_user_active(db: AsyncSession, user_id: str, active: bool) -> User:
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     user.is_active = active
+    # Revoke outstanding tokens when deactivating so the account cannot keep
+    # using issued credentials.
+    if not active:
+        user.token_version = (user.token_version or 0) + 1
     await db.flush()
     return user
 
