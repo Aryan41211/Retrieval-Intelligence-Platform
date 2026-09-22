@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
+from typing import Any
 
 from backend.generation.exceptions import (
     GenerationError,
@@ -19,6 +20,7 @@ class LLMGateway:
     def __init__(self, *, provider: LLMProvider, timeout_s: float = 60.0):
         self._provider = provider
         self._timeout_s = timeout_s
+        self._last_usage: dict[str, Any] | None = None
 
     @property
     def provider_name(self) -> str:
@@ -27,6 +29,11 @@ class LLMGateway:
     @property
     def model_name(self) -> str:
         return self._provider.model_name
+
+    @property
+    def last_usage(self) -> dict[str, Any] | None:
+        """Token usage from the most recent successful generation, if reported."""
+        return self._last_usage
 
     async def generate(
         self, *, prompt: str, temperature: float = 0.2, max_tokens: int = 512
@@ -40,6 +47,7 @@ class LLMGateway:
                 timeout_s=self._timeout_s,
                 stream=False,
             )
+            self._last_usage = getattr(self._provider, "token_usage", None)
             latency_ms = int((time.perf_counter() - t0) * 1000)
             logger.info(
                 "LLM generation completed",

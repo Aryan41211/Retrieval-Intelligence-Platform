@@ -156,6 +156,21 @@ def test_chat_uses_real_retrieval_not_mock(auth_client: TestClient):
     assert "RIP chunk" in body
 
 
+def test_chat_stream_emits_meta_frame_and_accurate_timing(auth_client: TestClient):
+    """The SSE body must carry a pre-generation meta frame and accurate total
+    latency instead of a pre-generation X-Processing-Time header (F12)."""
+    resp = auth_client.post("/api/v1/chat", json={"query": "retrieval"}, headers=AUTH)
+    assert resp.status_code == 200
+    assert "X-Processing-Time" not in resp.headers
+
+    body = resp.text
+    assert "meta: {" in body
+    assert '"retrieved_chunks_count"' in body
+    assert '"processing_time_ms"' in body
+    # meta frame precedes the data frame
+    assert body.index("meta: {") < body.index("data: {")
+
+
 def test_retrieval_search_returns_real_chunks(auth_client: TestClient):
     resp = auth_client.post(
         "/api/v1/retrieval/search",

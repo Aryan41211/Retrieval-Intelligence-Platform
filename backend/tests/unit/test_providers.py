@@ -193,6 +193,40 @@ class TestOpenAICompatibleProvider:
                     stream=False,
                 )
 
+    @pytest.mark.asyncio
+    async def test_generate_captures_token_usage(self, provider, mock_httpx_response):
+        """Token usage from the response must be recorded on the provider."""
+        with patch.object(
+            provider._http_client,
+            "_request_with_retry",
+            AsyncMock(return_value=mock_httpx_response),
+        ):
+            await provider.generate(
+                prompt="Test prompt", temperature=0.2, max_tokens=512, timeout_s=60.0, stream=False
+            )
+        assert provider.token_usage == {
+            "prompt_tokens": 10,
+            "completion_tokens": 20,
+            "total_tokens": 30,
+        }
+
+    @pytest.mark.asyncio
+    async def test_generate_streaming_has_no_usage(self, provider, mock_httpx_response):
+        """Streaming responses come back without a usage dict."""
+        mock_httpx_response.json.return_value = {
+            "id": "test-id",
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": "streamed"}}],
+        }
+        with patch.object(
+            provider._http_client,
+            "_request_with_retry",
+            AsyncMock(return_value=mock_httpx_response),
+        ):
+            await provider.generate(
+                prompt="Test prompt", temperature=0.2, max_tokens=512, timeout_s=60.0, stream=True
+            )
+        assert provider.token_usage is None
+
     def test_extract_token_usage(self, provider, mock_httpx_response):
         """Test token usage extraction."""
         usage = provider.extract_token_usage(mock_httpx_response)

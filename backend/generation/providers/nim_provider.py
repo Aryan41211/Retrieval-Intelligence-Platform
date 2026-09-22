@@ -63,6 +63,7 @@ class NIMProvider(LLMProvider):
         self._api_key = kwargs.get("api_key")
         self._top_p = kwargs.get("top_p", 0.95)
         self._top_k = kwargs.get("top_k", 50)
+        self._token_usage: dict[str, Any] | None = None
 
     @property
     def provider_name(self) -> str:
@@ -71,6 +72,11 @@ class NIMProvider(LLMProvider):
     @property
     def model_name(self) -> str:
         return self._model
+
+    @property
+    def token_usage(self) -> dict[str, Any] | None:
+        """Token usage from the most recent non-streaming generation."""
+        return self._token_usage
 
     async def health_check(self) -> dict[str, Any]:
         """Check if the NVIDIA NIM API is healthy."""
@@ -129,6 +135,7 @@ class NIMProvider(LLMProvider):
                 return await self._handle_streaming_response(response)
             else:
                 data = response.json()
+                self._token_usage = data.get("usage")
                 return self._extract_text_from_response(data)
 
         except (TimeoutException, GenerationTimeoutError) as exc:

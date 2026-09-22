@@ -61,6 +61,7 @@ class OpenAICompatibleProvider(LLMProvider):
         self._api_key = kwargs.get("api_key")
         self._organization = kwargs.get("organization")
         self._project = kwargs.get("project")
+        self._token_usage: dict[str, Any] | None = None
 
     @property
     def provider_name(self) -> str:
@@ -69,6 +70,11 @@ class OpenAICompatibleProvider(LLMProvider):
     @property
     def model_name(self) -> str:
         return self._model
+
+    @property
+    def token_usage(self) -> dict[str, Any] | None:
+        """Token usage from the most recent non-streaming generation."""
+        return self._token_usage
 
     async def health_check(self) -> dict[str, Any]:
         """Check if the OpenAI-compatible API is healthy."""
@@ -126,6 +132,7 @@ class OpenAICompatibleProvider(LLMProvider):
                 return await self._handle_streaming_response(response)
             else:
                 data = response.json()
+                self._token_usage = data.get("usage")
                 return self._extract_text_from_response(data)
 
         except (TimeoutException, GenerationTimeoutError) as exc:

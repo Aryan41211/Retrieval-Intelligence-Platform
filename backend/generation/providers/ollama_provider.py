@@ -59,6 +59,7 @@ class OllamaProvider(LLMProvider):
 
         self._num_predict = kwargs.get("num_predict", 512)
         self._num_ctx = kwargs.get("num_ctx", 2048)
+        self._token_usage: dict[str, Any] | None = None
 
     @property
     def provider_name(self) -> str:
@@ -67,6 +68,11 @@ class OllamaProvider(LLMProvider):
     @property
     def model_name(self) -> str:
         return self._model
+
+    @property
+    def token_usage(self) -> dict[str, Any] | None:
+        """Token usage from the most recent non-streaming generation."""
+        return self._token_usage
 
     async def health_check(self) -> dict[str, Any]:
         """Check if the Ollama API is healthy."""
@@ -121,6 +127,7 @@ class OllamaProvider(LLMProvider):
                 return await self._handle_streaming_response(response)
             else:
                 data = response.json()
+                self._token_usage = data.get("usage")
                 return self._extract_text_from_response(data)
 
         except (TimeoutException, GenerationTimeoutError) as exc:

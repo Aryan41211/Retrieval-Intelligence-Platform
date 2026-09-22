@@ -89,6 +89,8 @@ class ChatResponse(BaseModel):
     conversation_id: str
     retrieved_chunks: list[dict[str, Any]] | None = None
     citations: list[dict[str, Any]] | None = None
+    token_usage: dict[str, Any] | None = None
+    processing_time_ms: int | None = None
 
 
 # Retrieval schemas

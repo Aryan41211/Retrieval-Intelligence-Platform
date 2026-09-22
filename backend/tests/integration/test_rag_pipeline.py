@@ -272,3 +272,36 @@ class TestRAGPipelineEndToEnd:
         )
         assert isinstance(response, str)
         assert len(response) > 0
+
+    async def test_llm_gateway_exposes_last_usage(self):
+        """The gateway must surface provider-reported token usage (F14)."""
+
+        class _UsageProvider(FakeProvider):
+            @property
+            def token_usage(self):
+                return {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30}
+
+        gateway = LLMGateway(provider=_UsageProvider())
+        await gateway.generate(prompt="hi", temperature=0.1, max_tokens=64)
+        assert gateway.last_usage == {
+            "prompt_tokens": 10,
+            "completion_tokens": 20,
+            "total_tokens": 30,
+        }
+
+    async def test_generation_pipeline_records_token_usage(self):
+        """Reported usage must land on the generation metadata (F14)."""
+        gen = GenerationPipeline.from_config()
+
+        class _UsageProvider(FakeProvider):
+            @property
+            def token_usage(self):
+                return {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30}
+
+        gen._llm_gateway = LLMGateway(provider=_UsageProvider())
+
+        chunks = [_make_chunk(chunk_text="Python is a language.", source_filename="py.txt")]
+        result = await gen.generate(query="What is Python?", retrieved_chunks=chunks)
+
+        assert result.metadata.token_estimate_completion == 20
+        assert result.metadata.extra["token_usage"]["total_tokens"] == 30

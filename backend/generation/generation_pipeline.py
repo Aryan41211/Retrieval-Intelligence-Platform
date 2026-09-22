@@ -190,6 +190,16 @@ class GenerationPipeline:
         final_result.metadata.provider = self._llm_gateway.provider_name
         final_result.metadata.model = self._llm_gateway.model_name
 
+        # Surface provider-reported token usage so downstream consumers can
+        # record cost/usage instead of falling back to client-supplied values.
+        token_usage = self._llm_gateway.last_usage
+        if token_usage:
+            completion = int(
+                token_usage.get("completion_tokens") or token_usage.get("total_tokens") or 0
+            )
+            final_result.metadata.token_estimate_completion = completion
+            final_result.metadata.extra["token_usage"] = dict(token_usage)
+
         return final_result
 
     def _empty_metadata(

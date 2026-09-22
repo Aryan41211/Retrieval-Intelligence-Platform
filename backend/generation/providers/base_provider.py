@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Any
 
 
 class LLMProvider(ABC):
@@ -15,6 +16,15 @@ class LLMProvider(ABC):
     @abstractmethod
     def model_name(self) -> str:
         raise NotImplementedError
+
+    @property
+    def token_usage(self) -> dict[str, Any] | None:
+        """Token usage from the most recent generation, if the provider reports it.
+
+        Non-streaming chat completions carry a ``usage`` object; streaming
+        responses may not. Providers that cannot report usage return ``None``.
+        """
+        return None
 
     @abstractmethod
     async def generate(

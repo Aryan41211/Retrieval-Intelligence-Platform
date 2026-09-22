@@ -53,13 +53,38 @@ async def stream_chat_response(
     query: str,
     context_chunks: list[RetrievalChunkResult],
     conversation_id: str | None = None,
+    start_time: float | None = None,
 ) -> AsyncGenerator[str, None]:
-    """Stream chat response through the generation pipeline."""
+    """Stream chat response through the generation pipeline.
+
+    Emits one ``meta:`` frame (retrieval stats, parity with real-time status)
+    before generation starts, then a single ``data:`` frame carrying the full
+    grounded answer. The X-Processing-Time response header is deliberately not
+    used here: for an SSE response the headers are written before the body is
+    produced, so any header value would misreport end-to-end time. Accurate
+    total latency is delivered inside the data frame as ``processing_time_ms``.
+    """
+    request_started = start_time or time.time()
+
+    def elapsed_ms() -> int:
+        return int((time.time() - request_started) * 1000)
+
+    correlation_id = get_correlation_id() or conversation_id or "default_conversation"
+
+    meta_frame = {
+        "status": "processing",
+        "correlation_id": correlation_id,
+        "conversation_id": conversation_id or "default_conversation",
+        "retrieved_chunks_count": len(context_chunks),
+        "retrieval_time_ms": elapsed_ms(),
+    }
+    yield f"meta: {json.dumps(meta_frame)}\n\n"
+
     try:
         result = await pipeline.generate(
             query=query,
             retrieved_chunks=context_chunks,
-            correlation_id=conversation_id,
+            correlation_id=correlation_id,
         )
 
         response = ChatResponse(
@@ -93,6 +118,8 @@ async def stream_chat_response(
                 if result.citations
                 else None
             ),
+            token_usage=result.metadata.extra.get("token_usage"),
+            processing_time_ms=elapsed_ms(),
         )
 
         yield f"data: {json.dumps(response.model_dump(mode='json'))}\n\n"
@@ -101,7 +128,6 @@ async def stream_chat_response(
         # Never surface raw exception text: provider errors embed upstream
         # response bodies, which can carry endpoint and credential detail. The
         # full traceback goes to the log, keyed by correlation id.
-        correlation_id = get_correlation_id() or conversation_id or "unknown"
         logger.exception(
             "Chat generation failed",
             extra={"correlation_id": correlation_id},
@@ -151,10 +177,9 @@ async def chat_with_context(
             query=request.query,
             context_chunks=context_chunks,
             conversation_id=request.conversation_id,
+            start_time=start_time,
         ):
             yield chunk_data
-
-    processing_time_ms = int((time.time() - start_time) * 1000)
 
     return StreamingResponse(
         generate_stream(),
@@ -162,6 +187,5 @@ async def chat_with_context(
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-            "X-Processing-Time": f"{processing_time_ms}ms",
         },
     )
