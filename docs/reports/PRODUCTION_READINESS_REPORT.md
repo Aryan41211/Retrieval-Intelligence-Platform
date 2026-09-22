@@ -115,13 +115,25 @@ Working tree is clean; all changes above are committed on `main`.
 
 ---
 
-## 6. Recommended next steps
+## 6. Status update (2026-09-22, post-review)
 
-1. Provide LLM provider credentials and run a smoke RAG query through `/chat` against
-   a real model; confirm `token_usage` appears in the SSE `data:` frame.
-2. Rotate `deploy/metrics_token`.
-3. Run `npm run build` in CI (already wired) so the frontend bundle is rebuilt and
-   verified on every merge.
-4. Plan the session-cookie migration for the token store (item 2 above) before
-   launching with an XSS-sensitive user population.
-5. When scaling beyond a single API replica, move rate limiting to Redis.
+- `deploy/metrics_token` and `ENTERPRISE_JWT_SECRET_KEY` were **rotated** via
+  `python scripts/bootstrap_deployment.py --force`; `.env` and the token file stay in
+  sync and are both gitignored. Post-rotation `--check` passes.
+- Frontend `npm run build` re-verified: `tsc --noEmit` and `vite build` both exit 0.
+- Docker live-stack validation and real-model verification remain **blocked by the
+  host environment** (engine cannot be started from this session; no paid LLM
+  credentials).
+- **Decision: the session-cookie migration (item 2 / HIGH residual) is DEFERRED.**
+  Residual XSS risk is presently bounded by short-lived access tokens, rotating
+  refresh tokens, server-side `token_version` revocation, and the strict CSP.
+  Revisit before launching with a broad, XSS-sensitive user population.
+
+## 7. Recommended next steps
+
+1. Provide LLM provider credentials and run a smoke RAG query through `/chat` against a
+   real model; confirm `token_usage` appears in the SSE `data:` frame.
+2. On a machine with Docker Desktop running: `docker compose up --build` and validate
+   nginx + Postgres migration live.
+3. Plan the session-cookie migration for the token store before public launch.
+4. When scaling beyond a single API replica, move rate limiting to Redis.
