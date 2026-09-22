@@ -112,6 +112,37 @@ def test_non_member_cannot_view_workspace(client, db_path):
     assert resp.status_code == 403
 
 
+def test_outsider_cannot_enumerate_shared_kbs(client, db_path):
+    owner = _register(client, "sharenum@example.com", "sharenum")
+    outsider = _register(client, "outsider2@example.com", "outsider2")
+    client.post(
+        "/api/v1/workspaces",
+        headers=auth_headers(owner["access_token"]),
+        json={"name": "Confidential KB", "is_shared_kb": True},
+    )
+    resp = client.get(
+        "/api/v1/workspaces/shared",
+        headers=auth_headers(outsider["access_token"]),
+    )
+    assert resp.status_code == 200
+    assert all(w["name"] != "Confidential KB" for w in resp.json())
+
+
+def test_add_member_for_unknown_user_returns_404(client, db_path):
+    owner = _register(client, "addowner2@example.com", "addowner2")
+    ws_id = client.post(
+        "/api/v1/workspaces",
+        headers=auth_headers(owner["access_token"]),
+        json={"name": "FK Guard"},
+    ).json()["id"]
+    resp = client.post(
+        f"/api/v1/workspaces/{ws_id}/members",
+        headers=auth_headers(owner["access_token"]),
+        json={"user_id": "does-not-exist", "role": "member"},
+    )
+    assert resp.status_code == 404
+
+
 def test_get_missing_workspace_returns_404(client):
     tokens = _register(client, "miss@example.com", "miss")
     resp = client.get(

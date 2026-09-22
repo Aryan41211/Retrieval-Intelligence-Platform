@@ -91,13 +91,11 @@ def test_logout_revokes_access_and_refresh_tokens(client):
     assert logout.status_code == 200
 
     # The access token is dead against every protected endpoint.
-    assert client.get("/api/v1/users/me", headers=headers).status_code == 401, (
-        "access token survived logout"
-    )
+    assert (
+        client.get("/api/v1/users/me", headers=headers).status_code == 401
+    ), "access token survived logout"
     # The refresh token is dead too.
-    refreshed = client.post(
-        "/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
-    )
+    refreshed = client.post("/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
     assert refreshed.status_code == 401, "refresh token survived logout"
 
 
@@ -116,12 +114,10 @@ def test_password_reset_revokes_issued_tokens(client, db_path):
     )
     assert resp.status_code == 200
 
-    assert client.get("/api/v1/users/me", headers=headers).status_code == 401, (
-        "access token survived password reset"
-    )
-    refreshed = client.post(
-        "/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
-    )
+    assert (
+        client.get("/api/v1/users/me", headers=headers).status_code == 401
+    ), "access token survived password reset"
+    refreshed = client.post("/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
     assert refreshed.status_code == 401, "refresh token survived password reset"
 
 

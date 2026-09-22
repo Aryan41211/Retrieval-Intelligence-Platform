@@ -11,7 +11,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.enterprise import security, services
 from backend.enterprise.database import get_db
 from backend.enterprise.exporters import export_conversation
-from backend.enterprise.models import AuditLog, Conversation, Message, User, Workspace
+from backend.enterprise.models import (
+    AuditLog,
+    Conversation,
+    Message,
+    User,
+    Workspace,
+    WorkspaceMembership,
+)
 from backend.enterprise.rbac import (
     get_current_active_user,
     require_permissions,
@@ -229,7 +236,16 @@ async def shared_knowledge_bases(
 ) -> list[Workspace]:
     from sqlalchemy import select
 
-    result = await db.execute(select(Workspace).where(Workspace.is_shared_kb.is_(True)))
+    # Return only shared knowledge bases the caller is a member of, so
+    # authenticated users cannot enumerate every shared workspace.
+    result = await db.execute(
+        select(Workspace)
+        .join(WorkspaceMembership, WorkspaceMembership.workspace_id == Workspace.id)
+        .where(
+            Workspace.is_shared_kb.is_(True),
+            WorkspaceMembership.user_id == current_user.id,
+        )
+    )
     return list(result.scalars().all())
 
 
@@ -252,7 +268,8 @@ async def add_member(
 ) -> WorkspaceMemberPublic:
     ws = await _ensure_workspace_admin(db, workspace_id, current_user)
     member = await db.get(User, data.user_id)
-    member_username = member.username if member else data.user_id
+    if member is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     membership = await services.add_workspace_member(db, ws, data.user_id, data.role)
     await services.record_audit(
         db,
@@ -263,7 +280,7 @@ async def add_member(
         resource_id=workspace_id,
     )
     return WorkspaceMemberPublic(
-        user_id=membership.user_id, role=membership.role, username=member_username
+        user_id=membership.user_id, role=membership.role, username=member.username
     )
 
 

@@ -71,7 +71,12 @@ def test_deactivated_user_loses_data_plane_access(client, db_path):
     promote_user(db_path, "gboss@example.com", "admin")
     victim_tokens = register(client, email="gvictim@example.com", username="gvictim")
 
-    assert client.get("/api/v1/documents", headers=auth_headers(victim_tokens["access_token"])).status_code == 200
+    assert (
+        client.get(
+            "/api/v1/documents", headers=auth_headers(victim_tokens["access_token"])
+        ).status_code
+        == 200
+    )
 
     victim = query_one(
         db_path, "SELECT id FROM enterprise_users WHERE email=?", ("gvictim@example.com",)
