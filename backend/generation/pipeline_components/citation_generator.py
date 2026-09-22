@@ -13,25 +13,26 @@ class CitationGenerator:
 
     def __init__(self, *, marker_pattern: str = r"\[doc_(\d+)\]"):
         self._marker_pattern = re.compile(marker_pattern)
-        self._marker_to_index: dict[str, int] = {}
+        self._marker_to_index: dict[int, int] = {}
 
     def generate(self, *, answer: str, context_items: list[ContextItem]) -> list[Citation]:
         if not context_items:
             return []
 
-        markers = sorted(set(self._marker_pattern.findall(answer)))
+        # Sort numerically: a lexicographic sort maps "10" before "2", which
+        # attached every multi-digit marker to the wrong context chunk.
+        markers = sorted({int(m) for m in self._marker_pattern.findall(answer)})
         if not markers:
             return []
 
-        self._marker_to_index = {m: idx + 1 for idx, m in enumerate(markers)}
+        self._marker_to_index = {m: m for m in markers}
 
         citations: list[Citation] = []
-        for marker in markers:
-            doc_idx = self._marker_to_index[marker]
+        for doc_idx in markers:
             if doc_idx < 1 or doc_idx > len(context_items):
                 logger.warning(
-                    "Citation marker [doc_%s] out of range for %d context items",
-                    marker,
+                    "Citation marker [doc_%d] out of range for %d context items",
+                    doc_idx,
                     len(context_items),
                 )
                 continue
