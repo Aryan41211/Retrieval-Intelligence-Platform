@@ -20,10 +20,10 @@ from starlette.concurrency import run_in_threadpool
 
 logger = logging.getLogger(__name__)
 
-# Guards the create/load/add/save sequence against the shared vector store.
+# Guards the create/load/remove/save sequence against the shared vector store.
 # A threading.Lock (not asyncio.Lock) because the critical section executes
 # inside a worker thread and must not be bound to a particular event loop.
-_INDEX_WRITE_LOCK = threading.Lock()
+INDEX_WRITE_LOCK = threading.Lock()
 
 
 class IngestionError(RuntimeError):
@@ -118,7 +118,7 @@ def _ingest_sync(
 
     # Serialise against index mutations before reading the existing records, so
     # the duplicate scan sees a stable index for the namespace.
-    with _INDEX_WRITE_LOCK:
+    with INDEX_WRITE_LOCK:
         indexed = getattr(vector_store, "_vector_records", {}) or {}
         if _is_duplicate(indexed, document):
             raise DuplicateDocumentError(
@@ -160,7 +160,7 @@ def _ingest_sync(
     # Serialise every index mutation. Without this, two concurrent uploads
     # interleaved create/load/add/save and one silently discarded the other's
     # embeddings by reloading the on-disk state.
-    with _INDEX_WRITE_LOCK:
+    with INDEX_WRITE_LOCK:
         if not vector_store.index_exists(index_id):
             vector_store.create_index(index_id, dimension=embedding_provider.dimension)
         elif getattr(vector_store, "_index", None) is None:
@@ -218,5 +218,69 @@ async def ingest_document(
         embedding_provider=embedding_provider,
         vector_store=vector_store,
         index_id=index_id,
+        auto_save=auto_save,
+    )
+
+
+def _remove_document_sync(
+    *,
+    vector_store: Any,
+    index_id: str,
+    document_id: str,
+    auto_save: bool,
+) -> int:
+    """Remove every chunk of a document, serialised against other mutations.
+
+    Deletion mutates the same shared FAISS store as ingestion, so it must run
+    under the same write lock. Without this, a concurrent upload could reload
+    or write state while a delete was mid-flight.
+
+    Args:
+        vector_store: Target vector store.
+        index_id: Index to remove from.
+        document_id: Document whose chunks should be removed.
+        auto_save: Persist the index after the write.
+
+    Returns:
+        Number of embeddings removed, or 0 if the document was not found.
+    """
+    with INDEX_WRITE_LOCK:
+        records = getattr(vector_store, "_vector_records", {}) or {}
+        doomed = [
+            embedding_id
+            for embedding_id, record in records.items()
+            if str(record.get("document_id") or "") == document_id
+        ]
+        if not doomed:
+            return 0
+        removed = vector_store.remove_embeddings(doomed)
+        if auto_save:
+            vector_store.save_index(index_id)
+        return removed
+
+
+async def remove_document(
+    *,
+    vector_store: Any,
+    index_id: str,
+    document_id: str,
+    auto_save: bool,
+) -> int:
+    """Remove a document's chunks without blocking the event loop.
+
+    Args:
+        vector_store: Target vector store.
+        index_id: Index to remove from.
+        document_id: Document whose chunks should be removed.
+        auto_save: Persist the index after the write.
+
+    Returns:
+        Number of embeddings removed, or 0 if the document was not found.
+    """
+    return await run_in_threadpool(
+        _remove_document_sync,
+        vector_store=vector_store,
+        index_id=index_id,
+        document_id=document_id,
         auto_save=auto_save,
     )

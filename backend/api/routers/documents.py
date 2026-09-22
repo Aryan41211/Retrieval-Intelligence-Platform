@@ -38,6 +38,7 @@ from backend.api.ingestion import (
     DuplicateDocumentError,
     IngestionError,
     ingest_document,
+    remove_document,
 )
 from backend.api.namespaces import (
     NamespaceError,
@@ -383,20 +384,16 @@ async def delete_document(
     namespace = await _resolve_namespace(db, current_user, workspace_id)
     store = get_namespace_store(namespace.index_id)
 
-    records = getattr(store, "_vector_records", {}) or {}
-    doomed = [
-        embedding_id
-        for embedding_id, record in records.items()
-        if str(record.get("document_id") or "") == document_id
-    ]
-    if not doomed:
+    removed = await remove_document(
+        vector_store=store,
+        index_id=namespace.index_id,
+        document_id=document_id,
+        auto_save=get_settings().vector_store.auto_save,
+    )
+    if not removed:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found in this knowledge base",
         )
-
-    removed = await run_in_threadpool(store.remove_embeddings, doomed)
-    if get_settings().vector_store.auto_save:
-        await run_in_threadpool(store.save_index, namespace.index_id)
 
     return {"document_id": document_id, "chunks_removed": removed, "namespace": namespace.label}

@@ -65,6 +65,7 @@ class _RecordingStore:
         self.events: list[str] = []
         self.overlaps = 0
         self._in_section = 0
+        self._vector_records: dict[str, dict] = {}
 
     def index_exists(self, index_id: str) -> bool:
         return self._index is not None
@@ -81,9 +82,24 @@ class _RecordingStore:
             self.overlaps += 1
         # Widen the window in which a race would be observable.
         time.sleep(0.01)
-        self.total_added += len(ids or [])
+        ids = ids or []
+        self.total_added += len(ids)
+        for i, meta in zip(ids, metadata or [], strict=False):
+            self._vector_records[str(i)] = {"document_id": str((meta or {}).get("document_id"))}
         self._in_section -= 1
-        return len(ids or [])
+        return len(ids)
+
+    def remove_embeddings(self, ids) -> int:
+        self._in_section += 1
+        if self._in_section > 1:
+            self.overlaps += 1
+        time.sleep(0.01)
+        removed = 0
+        for i in ids:
+            if self._vector_records.pop(str(i), None) is not None:
+                removed += 1
+        self._in_section -= 1
+        return removed
 
     def save_index(self, index_id: str) -> None:
         self.events.append("save")
@@ -139,6 +155,50 @@ class TestConcurrentIngestion:
             )
         assert store.events.count("load") == 0
         assert store.total_added == 3
+
+    @pytest.mark.asyncio
+    async def test_deletes_do_not_interleave_with_uploads(self) -> None:
+        """C10b: removal must take the same lock as ingestion."""
+        store = _RecordingStore()
+        chunker = _FakeChunker(count=2)
+        provider = _FakeProvider()
+
+        docs = [_document(f"doc{i}.txt") for i in range(4)]
+
+        async def upload(doc) -> None:
+            await ingestion.ingest_document(
+                document=doc,
+                chunker=chunker,
+                embedding_provider=provider,
+                vector_store=store,
+                index_id="test-index",
+                auto_save=False,
+            )
+
+        async def delete(doc) -> None:
+            await ingestion.remove_document(
+                vector_store=store,
+                index_id="test-index",
+                document_id=doc.document_id,
+                auto_save=False,
+            )
+
+        await asyncio.gather(
+            *[upload(doc) for doc in docs],
+            *[delete(doc) for doc in docs],
+        )
+
+        # Every mutating critical section must be serialised.
+        assert store.overlaps == 0, "critical section was entered concurrently"
+        assert store.total_added == 8
+        # Each cleanly-deleted document must have zero surviving chunks.
+        for doc in docs:
+            surviving = [
+                rec
+                for rec in store._vector_records.values()
+                if rec.get("document_id") == str(doc.document_id)
+            ]
+            assert surviving == [], f"doc {doc.document_id} left chunks behind"
 
 
 class TestIngestionDoesNotBlockEventLoop:

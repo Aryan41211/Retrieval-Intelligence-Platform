@@ -260,14 +260,16 @@ class FAISSVectorStore(BaseVectorStore):
     def remove_embeddings(self, ids: list[str]) -> int:
         """Remove embeddings from the index.
 
-        Note: FAISS does not support direct removal. This method marks embeddings
-        as removed by setting them to zero vectors. For true removal, rebuild the index.
+        FAISS flat indexes do not support in-place removal, so the index is
+        rebuilt from the surviving vectors. This physically drops deleted
+        vectors instead of leaving tombstones behind, which otherwise kept
+        consuming top-k slots, memory and disk space forever.
 
         Args:
             ids: List of embedding IDs to remove.
 
         Returns:
-            Number of embeddings marked as removed.
+            Number of embeddings removed.
 
         Raises:
             VectorStoreError: If removal fails.
@@ -276,25 +278,50 @@ class FAISSVectorStore(BaseVectorStore):
             if self._index is None:
                 raise VectorStoreError("No index loaded")
 
-            removed_count = 0
-            for embedding_id in ids:
-                embedding_id = str(embedding_id)
-                if embedding_id in self._id_map:
-                    int_id = self._id_map[embedding_id]
-                    # FAISS doesn't support direct removal; we remove mapping + records
-                    del self._id_map[embedding_id]
-                    if int_id in self._reverse_id_map:
-                        del self._reverse_id_map[int_id]
-                    if embedding_id in self._vector_records:
-                        del self._vector_records[embedding_id]
-                    removed_count += 1
+            import faiss
+
+            remove_ids = {str(embedding_id) for embedding_id in ids}
+            doomed_int_ids = {
+                self._id_map[embedding_id]
+                for embedding_id in remove_ids
+                if embedding_id in self._id_map
+            }
+            if not doomed_int_ids:
+                return 0
+
+            if self._metadata.distance_metric == DistanceMetric.EUCLIDEAN:
+                rebuilt_index = faiss.IndexFlatL2(self._index.d)
+            else:
+                rebuilt_index = faiss.IndexFlatIP(self._index.d)
+
+            survivors = sorted(
+                (int_id, str(embedding_id))
+                for embedding_id, int_id in self._id_map.items()
+                if int_id not in doomed_int_ids
+            )
+
+            # Rebuild the index with only the surviving vectors and rebase the
+            # integer ids so they stay contiguous and consistent.
+            self._id_map = {}
+            self._reverse_id_map = {}
+            if survivors:
+                survivor_vectors = np.vstack(
+                    [self._index.reconstruct(int_id) for int_id, _ in survivors]
+                )
+                rebuilt_index.add(survivor_vectors)
+                for new_int_id, (_, embedding_id) in enumerate(survivors):
+                    self._id_map[embedding_id] = new_int_id
+                    self._reverse_id_map[new_int_id] = embedding_id
+
+            self._index = rebuilt_index
+
+            for embedding_id in remove_ids:
+                self._vector_records.pop(embedding_id, None)
 
             if self._metadata:
-                # Keep metadata synchronized with the logical set of active vectors we can return.
-                # FAISS itself doesn't support true deletions; we remove mappings + records.
                 self._metadata.num_embeddings = len(self._vector_records)
 
-            return removed_count
+            return len(doomed_int_ids)
 
         except Exception as e:
             raise VectorStoreError(f"Failed to remove embeddings: {e}") from e

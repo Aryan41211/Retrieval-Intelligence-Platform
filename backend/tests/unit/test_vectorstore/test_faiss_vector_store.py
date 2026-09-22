@@ -192,6 +192,76 @@ class TestFAISSVectorStore:
         removed = vector_store.remove_embeddings(["id-0", "id-1"])
         assert removed == 2
         assert vector_store._metadata.num_embeddings == 8
+        # Removal compacts the index so deleted vectors cannot occupy
+        # top-k slots on later searches.
+        assert vector_store._index.ntotal == 8
+
+    def test_removed_embeddings_are_not_returned_by_search(
+        self, vector_store, sample_embeddings, sample_metadata
+    ):
+        """A deleted vector must not surface as a near-duplicate hit."""
+        vector_store.create_index(index_id="test-index", dimension=384)
+        metadata = [dict(m, chunk_id=str(UUID(int=i))) for i, m in enumerate(sample_metadata)]
+        vector_store.add_embeddings(
+            embeddings=sample_embeddings,
+            ids=[f"id-{i}" for i in range(10)],
+            metadata=metadata,
+        )
+        vector_store.remove_embeddings(["id-0"])
+
+        request = RetrievalRequest(
+            query_vector=sample_embeddings[0].tolist(),
+            top_k=10,
+        )
+        results = vector_store.search(request)
+        # The deleted chunk is gone; only the remaining nine can be returned.
+        assert len(results) == 9
+        assert all(str(r.chunk_id) != metadata[0]["chunk_id"] for r in results)
+
+    def test_remove_is_idempotent_for_unknown_ids(
+        self, vector_store, sample_embeddings, sample_metadata
+    ):
+        """Removing ids that are not present is a no-op, not an error."""
+        vector_store.create_index(index_id="test-index", dimension=384)
+        vector_store.add_embeddings(
+            embeddings=sample_embeddings[:3],
+            ids=[f"id-{i}" for i in range(3)],
+            metadata=sample_metadata[:3],
+        )
+        assert vector_store.remove_embeddings(["missing"]) == 0
+        assert vector_store.remove_embeddings([]) == 0
+        assert vector_store._index.ntotal == 3
+
+    def test_compaction_survives_save_and_reload(self, tmp_path, sample_embeddings):
+        """A compacted index must reload with the deletions still applied."""
+        store = FAISSVectorStore(tmp_path)
+        store.create_index(index_id="persisted", dimension=384)
+        metadata = [
+            {"chunk_id": str(UUID(int=i)), "document_id": str(UUID(int=i)), "chunk_text": f"t{i}"}
+            for i in range(5)
+        ]
+        store.add_embeddings(
+            embeddings=sample_embeddings[:5],
+            ids=[f"id-{i}" for i in range(5)],
+            metadata=metadata,
+        )
+        store.remove_embeddings(["id-1", "id-3"])
+        store.save_index("persisted")
+
+        reloaded = FAISSVectorStore(tmp_path)
+        reloaded.load_index("persisted")
+        assert reloaded._index.ntotal == 3
+        assert sorted(reloaded._vector_records) == ["id-0", "id-2", "id-4"]
+
+        results = reloaded.search(
+            RetrievalRequest(query_vector=sample_embeddings[4].tolist(), top_k=5)
+        )
+        assert len(results) == 3
+        assert {str(r.chunk_id) for r in results} == {
+            str(UUID(int=0)),
+            str(UUID(int=2)),
+            str(UUID(int=4)),
+        }
 
     def test_update_embeddings(self, vector_store, sample_embeddings, sample_metadata):
         """Test updating embeddings."""
@@ -210,9 +280,9 @@ class TestFAISSVectorStore:
         )
 
         assert updated == 2
-        # Note: FAISS doesn't support true removal, so update adds new embeddings
-        # The metadata count reflects the actual FAISS index size
-        assert vector_store._metadata.num_embeddings == 12
+        # Update removes the old vectors (compacting the index) and re-adds them.
+        assert vector_store._metadata.num_embeddings == 10
+        assert vector_store._index.ntotal == 10
 
     def test_get_embedding(self, vector_store, sample_embeddings, sample_metadata):
         """Test getting a single embedding."""
