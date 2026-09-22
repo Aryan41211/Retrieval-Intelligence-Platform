@@ -31,8 +31,11 @@ services:
       context: .
       dockerfile: Dockerfile
     image: retrieval-intelligence-platform:latest
+    # The nginx frontend proxies /api over the compose network, so the API does
+    # not need to be reachable from other hosts. Bind to 127.0.0.1 so the port
+    # is not exposed to the LAN.
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "127.0.0.1:${API_PORT:-8000}:8000"
     environment:
       API_ENVIRONMENT: ${API_ENVIRONMENT:-development}
       API_HOST: "0.0.0.0"
@@ -105,8 +108,9 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: rip
-      # Override in .env; the default is for local development only.
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rip}
+      # Required (no default). A predictable database password is a trivial
+      # credential for anyone who reaches the container or the network.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: rip
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -118,7 +122,7 @@ services:
       retries: 5
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.14.0
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:

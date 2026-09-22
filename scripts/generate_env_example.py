@@ -109,6 +109,11 @@ EXTRA_SECTION = """
 #   sqlite+aiosqlite:///./rip.db
 #   postgresql+asyncpg://user:password@host:5432/dbname
 DATABASE_URL=sqlite+aiosqlite:///./rip.db
+
+# Postgres superuser password used by docker-compose (postgres + the api
+# DATABASE_URL default). Required when running the compose stack; assign a
+# non-empty value in .env.
+# POSTGRES_PASSWORD=
 """
 
 
