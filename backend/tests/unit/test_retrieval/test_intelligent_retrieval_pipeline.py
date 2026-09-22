@@ -56,6 +56,60 @@ class _FakeDenseEngine:
         return self._dense_results[: request.top_k]
 
 
+def _candidate(rank: int, similarity_score: float) -> RetrievalChunkResult:
+    return RetrievalChunkResult(
+        chunk_id=UUID(int=rank),
+        document_id=UUID(int=rank),
+        chunk_text=f"chunk {rank}",
+        similarity_score=similarity_score,
+        rank=rank,
+    )
+
+
+def test_dynamic_topk_never_exceeds_caller_top_k():
+    """Dynamic selection may shrink results by confidence but must never grow
+    them beyond the caller's requested top_k (F17 regression)."""
+    selector = DynamicTopKSelector(
+        enabled=True,
+        min_k=5,
+        max_k=15,
+        min_confidence=0.2,
+        max_confidence=0.9,
+    )
+    candidates = [_candidate(i + 1, 1.0 - i * 0.05) for i in range(20)]
+    request = RetrievalRequest(
+        query_vector=[0.0] * 64,
+        top_k=3,
+        extra={"query_text": "ai retrieval"},
+    )
+
+    results, meta = selector.select(candidates=candidates, request=request)
+
+    assert len(results) <= 3
+    assert meta["k"] <= 3
+
+
+def test_dynamic_topk_disabled_still_uses_caller_top_k():
+    selector = DynamicTopKSelector(
+        enabled=False,
+        min_k=5,
+        max_k=15,
+        min_confidence=0.2,
+        max_confidence=0.9,
+    )
+    candidates = [_candidate(i + 1, 0.9) for i in range(20)]
+    request = RetrievalRequest(
+        query_vector=[0.0] * 64,
+        top_k=7,
+        extra={"query_text": "ai retrieval"},
+    )
+
+    results, meta = selector.select(candidates=candidates, request=request)
+
+    assert len(results) == 7
+    assert meta["k"] == 7
+
+
 class TestIntelligentRetrievalPipeline:
     def test_intelligent_pipeline_runs(self, populated_vector_store):
         vector_records = populated_vector_store.get_vector_records()

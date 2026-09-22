@@ -67,9 +67,12 @@ class DynamicTopKSelector:
 
         k = self._k_from_confidence(confidence)
 
-        # Ensure at least min_k (unless fewer candidates) and at most max_k.
+        # Ensure at least min_k (unless fewer candidates) and at most max_k, then
+        # apply the caller's top_k as a hard ceiling: dynamic selection can
+        # shrink the result set by confidence, but must never return more than
+        # the caller asked for.
         k = max(self._min_k, min(k, self._max_k))
-        k = min(k, len(candidates))
+        k = min(k, int(request.top_k), len(candidates))
 
         out_meta: dict[str, Any] = {
             "enabled": True,
