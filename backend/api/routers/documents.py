@@ -12,6 +12,7 @@ and synchronous, so it runs in a worker thread under a per-namespace write lock.
 """
 
 import logging
+import re
 import tempfile
 from pathlib import Path
 
@@ -33,7 +34,11 @@ from backend.api.dependencies import (
     get_embedding_provider,
     get_namespace_store,
 )
-from backend.api.ingestion import IngestionError, ingest_document
+from backend.api.ingestion import (
+    DuplicateDocumentError,
+    IngestionError,
+    ingest_document,
+)
 from backend.api.namespaces import (
     NamespaceError,
     readable_namespaces,
@@ -91,6 +96,8 @@ async def _ingest(
             index_id=namespace.index_id,
             auto_save=get_settings().vector_store.auto_save,
         )
+    except DuplicateDocumentError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except IngestionError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
@@ -162,18 +169,56 @@ async def upload_document(
 
 
 def _safe_filename(raw: str | None) -> str:
-    """Return a filename stripped of any directory component.
+    """Return a filename safe to use as a temporary path component.
 
     The uploaded name is attacker-controlled and is used to build a temporary
-    path, so only the final component is kept.
+    path, so only the final component is kept, Windows-illegal characters and
+    control characters are stripped, and reserved device names are rejected.
     """
+    import re as _re
+
     candidate = Path(raw or "upload").name.strip()
+    candidate = _re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", candidate)
     if not candidate or candidate in {".", ".."}:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Invalid filename",
         )
+    if _re.match(r"^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$", candidate, re.IGNORECASE):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid filename",
+        )
     return candidate[:255]
+
+
+_FILE_SIGNATURES: dict[str, tuple[bytes, str]] = {
+    ".pdf": (b"%PDF-", "PDF"),
+    ".docx": (b"PK\x03\x04", "Word/zip"),
+}
+
+
+def _validate_file_signature(contents: bytes, extension: str) -> None:
+    """Reject files whose declared extension does not match their content.
+
+    The extension check alone routes arbitrary attacker bytes into the selected
+    parser. Content sniffing keeps a renamed executable (or any random payload)
+    out of pypdf/python-docx/lxml, which are not hardened against hostile input.
+    """
+    expected = _FILE_SIGNATURES.get(extension)
+    if expected is not None:
+        magic, label = expected
+        if not contents.startswith(magic):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"File does not appear to be a {label} document",
+            )
+        return
+    if contents[:8192].count(b"\x00") > 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Text files must not contain binary data",
+        )
 
 
 def _load_document(path: Path, filename: str) -> Document:
@@ -187,6 +232,7 @@ def _load_document(path: Path, filename: str) -> Document:
         The loaded document, re-labelled with the original filename.
     """
     loader = LoaderFactory.get_loader(Path(filename).suffix.lower())
+    loader.config["max_pages"] = get_settings().ingestion.max_pages
     document = loader.load(str(path))
     # The loader records the temporary path; restore the user-facing name so
     # citations and filters show what the user actually uploaded.
@@ -244,12 +290,19 @@ async def upload_document_file(
         )
 
     namespace = await _resolve_namespace(db, current_user, workspace_id)
+    _validate_file_signature(contents, extension)
 
     # Loaders read from a path, so the upload is staged in a temporary file that
     # is always removed, including on parse failure.
     with tempfile.TemporaryDirectory() as tmp_dir:
         staged = Path(tmp_dir) / filename
-        staged.write_bytes(contents)
+        try:
+            staged.write_bytes(contents)
+        except OSError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Could not stage uploaded file: {exc}",
+            ) from exc
         try:
             document = await run_in_threadpool(_load_document, staged, filename)
         except EmptyDocumentError as exc:

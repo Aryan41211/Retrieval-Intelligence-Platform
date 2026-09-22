@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from backend.core.exceptions import EmptyDocumentError
+from backend.core.exceptions import DocumentLoadError, EmptyDocumentError
 from backend.data.loaders.base_loader import BaseLoader
 from backend.data.models.document import Document
 
@@ -31,8 +31,6 @@ class PDFLoader(BaseLoader):
             DocumentLoadError: If the PDF cannot be loaded.
             EmptyDocumentError: If the PDF has no text content.
         """
-        from backend.core.exceptions import DocumentLoadError
-
         path = self.validate_file(file_path)
         checksum = self.compute_checksum(path)
         file_extension = path.suffix.lower()
@@ -41,12 +39,17 @@ class PDFLoader(BaseLoader):
         if path.stat().st_size == 0:
             raise DocumentLoadError(f"File is empty: {path}")
 
+        max_pages = int(self.config.get("max_pages", 2000))
+
         try:
             import pypdf
 
             reader = pypdf.PdfReader(str(path))
         except Exception as e:
             raise DocumentLoadError(f"Failed to read PDF: {e}") from e
+
+        if len(reader.pages) > max_pages:
+            raise DocumentLoadError(f"PDF has {len(reader.pages)} pages; the limit is {max_pages}")
 
         # Extract text from all pages
         pages_text = []

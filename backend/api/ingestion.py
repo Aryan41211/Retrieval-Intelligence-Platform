@@ -30,6 +30,10 @@ class IngestionError(RuntimeError):
     """Raised when a document cannot be ingested."""
 
 
+class DuplicateDocumentError(IngestionError):
+    """Raised when a document with identical content is already indexed."""
+
+
 @dataclass(frozen=True)
 class IngestionResult:
     """Outcome of ingesting a single document."""
@@ -57,9 +61,22 @@ def _build_metadata(
         "metadata": {
             "document_id": str(document.document_id),
             "filename": filename,
+            "checksum": getattr(document, "checksum", "") or "",
         },
         "custom": {},
     }
+
+
+def _is_duplicate(indexed: dict[str, Any], document: Any) -> bool:
+    """Return whether any indexed record shares the document's content checksum."""
+    checksum = getattr(document, "checksum", "") or ""
+    if not checksum:
+        return False
+    for record in indexed.values():
+        meta = record.get("metadata") or {}
+        if meta.get("checksum") == checksum:
+            return True
+    return False
 
 
 def _ingest_sync(
@@ -87,10 +104,26 @@ def _ingest_sync(
     Raises:
         IngestionError: If the document produces no chunks, no embeddings, or no
             embedding can be matched back to its source chunk.
+        DuplicateDocumentError: If a document with identical content is already
+            indexed in this namespace.
     """
+    from backend.configs.settings import get_settings
+
+    max_chunks = get_settings().ingestion.max_chunks
     chunks = chunker.chunk(document)
     if not chunks:
         raise IngestionError("Document produced no chunks")
+    if len(chunks) > max_chunks:
+        raise IngestionError(f"Document produced {len(chunks)} chunks; the limit is {max_chunks}")
+
+    # Serialise against index mutations before reading the existing records, so
+    # the duplicate scan sees a stable index for the namespace.
+    with _INDEX_WRITE_LOCK:
+        indexed = getattr(vector_store, "_vector_records", {}) or {}
+        if _is_duplicate(indexed, document):
+            raise DuplicateDocumentError(
+                f"Document '{document.filename}' is already indexed in this knowledge base"
+            )
 
     batch = embedding_provider.embed_chunks(chunks)
     embeddings = batch.successful_embeddings
@@ -134,6 +167,16 @@ def _ingest_sync(
             # Only read from disk when nothing is loaded yet. Reloading on every
             # upload threw away in-memory additions that had not been saved.
             vector_store.load_index(index_id)
+
+        current_dim = getattr(getattr(vector_store, "_index", None), "d", None)
+        provider_dim = embedding_provider.dimension
+        if current_dim is not None and provider_dim is not None and current_dim != provider_dim:
+            raise IngestionError(
+                "Embedding model dimension mismatch: the index stores "
+                f"{current_dim}-dimensional vectors but the configured model "
+                f"produces {provider_dim}. Re-index the knowledge base or restore "
+                "the original embedding model."
+            )
 
         added = vector_store.add_embeddings(vectors, ids=ids, metadata=metadatas)
 

@@ -262,6 +262,90 @@ class TestFileUpload:
         )
         assert resp.status_code == 401
 
+    def test_pdf_extension_requires_pdf_content(self, client: TestClient) -> None:
+        """A non-PDF payload renamed .pdf must not reach the PDF parser."""
+        headers = _register(client, "fakepdf")
+        resp = client.post(
+            "/api/v1/documents/upload/file",
+            files={"file": ("report.pdf", io.BytesIO(b"not a pdf at all"), "application/pdf")},
+            headers=headers,
+        )
+        assert resp.status_code == 422
+
+    def test_docx_extension_requires_zip_content(self, client: TestClient) -> None:
+        headers = _register(client, "fakedocx")
+        resp = client.post(
+            "/api/v1/documents/upload/file",
+            files={"file": ("notes.docx", io.BytesIO(b"plain text"), "application/octet-stream")},
+            headers=headers,
+        )
+        assert resp.status_code == 422
+
+    def test_text_file_with_hidden_binary_data_is_rejected(self, client: TestClient) -> None:
+        headers = _register(client, "binarytxt")
+        resp = client.post(
+            "/api/v1/documents/upload/file",
+            files={"file": ("weird.txt", io.BytesIO(b"text\n\x00\x00\x00binary"), "text/plain")},
+            headers=headers,
+        )
+        assert resp.status_code == 422
+
+    def test_windows_illegal_filename_characters_are_sanitised(self, client: TestClient) -> None:
+        headers = _register(client, "winillegal")
+        resp = client.post(
+            "/api/v1/documents/upload/file",
+            files={
+                "file": (
+                    'bad"name*.txt',
+                    io.BytesIO(b"Safe content for indexing and retrieval."),
+                    "text/plain",
+                )
+            },
+            headers=headers,
+        )
+        assert resp.status_code == 201, resp.text
+        assert '"' not in resp.json()["filename"]
+        assert "*" not in resp.json()["filename"]
+
+    def test_duplicate_content_is_rejected_in_same_namespace(self, client: TestClient) -> None:
+        headers = _register(client, "dupcontent")
+        body = b"Unique content that should only be indexed once ever."
+        first = client.post(
+            "/api/v1/documents/upload/file",
+            files={"file": ("dup.txt", io.BytesIO(body), "text/plain")},
+            headers=headers,
+        )
+        assert first.status_code == 201, first.text
+
+        second = client.post(
+            "/api/v1/documents/upload/file",
+            files={"file": ("dup.txt", io.BytesIO(body), "text/plain")},
+            headers=headers,
+        )
+        assert second.status_code == 409, second.text
+
+    def test_delete_then_reupload_same_content_is_allowed(self, client: TestClient) -> None:
+        """Deleting a document removes its checksum, so re-upload must work."""
+        headers = _register(client, "reupload")
+        body = b"Ephemeral content for the delete-then-reupload cycle."
+        first = client.post(
+            "/api/v1/documents/upload/file",
+            files={"file": ("cycle.txt", io.BytesIO(body), "text/plain")},
+            headers=headers,
+        )
+        assert first.status_code == 201, first.text
+        document_id = first.json()["document_id"]
+
+        removed = client.delete(f"/api/v1/documents/{document_id}", headers=headers)
+        assert removed.status_code == 200
+
+        again = client.post(
+            "/api/v1/documents/upload/file",
+            files={"file": ("cycle.txt", io.BytesIO(body), "text/plain")},
+            headers=headers,
+        )
+        assert again.status_code == 201, again.text
+
 
 class TestDocumentRegistry:
     """Listing and deletion are derived from the vector store's own records."""

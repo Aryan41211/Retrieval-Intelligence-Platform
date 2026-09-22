@@ -377,6 +377,18 @@ class IngestionSettings(BaseSettings):
     """Settings for document ingestion."""
 
     max_file_size_mb: int = Field(default=100, ge=1, le=1000)
+    max_pages: int = Field(
+        default=2000,
+        ge=1,
+        le=100000,
+        description="Maximum number of pages a PDF may contain; larger files are rejected.",
+    )
+    max_chunks: int = Field(
+        default=50000,
+        ge=1,
+        le=1000000,
+        description="Maximum number of chunks a single document may produce.",
+    )
     supported_extensions: list[str] = Field(
         default_factory=lambda: [".pdf", ".docx", ".txt", ".md", ".markdown"]
     )
