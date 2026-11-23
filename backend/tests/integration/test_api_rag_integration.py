@@ -206,9 +206,32 @@ def test_documents_upload_then_retrievable(auth_client: TestClient):
 
 
 def test_evaluation_run_is_unavailable_not_simulated(auth_client: TestClient):
-    resp = auth_client.post("/api/v1/evaluation/run", json={}, headers=AUTH)
-    assert resp.status_code == 501
-    assert "not configured" in resp.json()["detail"].lower()
+    resp = auth_client.post(
+        "/api/v1/evaluation/run",
+        json=[
+            {
+                "question": "What is the platform?",
+                "ground_truth": "A RAG platform.",
+                "answer": "A RAG platform.",
+                "contexts": ["The platform is a RAG system."],
+            }
+        ],
+        headers=AUTH,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["successful_evaluations"] == 0
+    assert data["metrics"] == {}
+    assert data["note"] is not None
+    assert "not configured" in data["note"].lower()
+
+
+def test_evaluation_availability_endpoint(auth_client: TestClient):
+    resp = auth_client.get("/api/v1/evaluation", headers=AUTH)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "status" in data
+    assert data["status"] == "unavailable"
 
 
 def test_settings_returns_non_sensitive_summary(auth_client: TestClient):
