@@ -1,0 +1,935 @@
+{
+  "n_documents": 31,
+  "n_queries": 19,
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "embedding_dim": 384,
+  "methods": {
+    "Dense (MiniLM)": {
+      "n_queries": 19,
+      "metrics": {
+        "citation_precision": 0.0,
+        "context_recall": 0.7895,
+        "faithfulness": 0.9737,
+        "citation_coverage": 0.0,
+        "unsupported_claim_rate": 0.0263,
+        "context_precision": 0.5579,
+        "answer_relevancy": 0.6017
+      },
+      "context_recall_ci95": {
+        "lo": 0.5789473684210527,
+        "hi": 0.9473684210526315
+      },
+      "latency_ms": {
+        "p50_ms": 4.59,
+        "p95_ms": 9.08,
+        "p99_ms": 21.49,
+        "mean_ms": 5.88
+      },
+      "per_sample": [
+        {
+          "query_id": "rip-eval-001",
+          "question": "What is machine learning?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8542,
+            "context_precision": 1.0,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 24.59620000445284
+        },
+        {
+          "query_id": "rip-eval-002",
+          "question": "How does FAISS vector search work?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.5622,
+            "context_precision": 1.0,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 7.361100011621602
+        },
+        {
+          "query_id": "rip-eval-003",
+          "question": "What is Retrieval-Augmented Generation (RAG)?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8018,
+            "context_precision": 1.0,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.56560000020545
+        },
+        {
+          "query_id": "rip-eval-004",
+          "question": "What is BM25 in information retrieval?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8587,
+            "context_precision": 0.8,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.612900011125021
+        },
+        {
+          "query_id": "rip-eval-005",
+          "question": "What is Reciprocal Rank Fusion (RRF)?",
+          "metrics": {
+            "faithfulness": 0.5,
+            "answer_relevancy": 0.9136,
+            "context_precision": 0.2,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.5
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.642999992938712
+        },
+        {
+          "query_id": "rip-eval-006",
+          "question": "What is a vector database?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8507,
+            "context_precision": 0.6,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 5.410500001744367
+        },
+        {
+          "query_id": "rip-eval-007",
+          "question": "What is cosine similarity?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8071,
+            "context_precision": 0.2,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 6.98129998636432
+        },
+        {
+          "query_id": "rip-eval-008",
+          "question": "What is sentence-transformers?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.3102,
+            "context_precision": 0.0,
+            "context_recall": 0.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 3.972799997427501
+        },
+        {
+          "query_id": "rip-eval-009",
+          "question": "How does RAG use vector databases to reduce hallucination?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.6305,
+            "context_precision": 1.0,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.77080000564456
+        },
+        {
+          "query_id": "rip-eval-010",
+          "question": "What is the relationship between embeddings and semantic search?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.7226,
+            "context_precision": 1.0,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.3147999967914075
+        },
+        {
+          "query_id": "rip-eval-011",
+          "question": "How does chunking affect RAG context window usage?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.6892,
+            "context_precision": 0.6,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 3.8868999981787056
+        },
+        {
+          "query_id": "rip-eval-012",
+          "question": "What is the capital of Australia?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.0925,
+            "context_precision": 0.0,
+            "context_recall": 0.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.408700013300404
+        },
+        {
+          "query_id": "rip-eval-013",
+          "question": "Who won the 2024 World Series?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.0666,
+            "context_precision": 0.0,
+            "context_recall": 0.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.477100010262802
+        },
+        {
+          "query_id": "rip-eval-014",
+          "question": "What is the stock price of Apple today?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.0566,
+            "context_precision": 0.0,
+            "context_recall": 0.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.593500008923002
+        },
+        {
+          "query_id": "rip-eval-015",
+          "question": "What is embedding?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.7888,
+            "context_precision": 1.0,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.652000003261492
+        },
+        {
+          "query_id": "rip-eval-016",
+          "question": "How does search work?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.4865,
+            "context_precision": 0.8,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.418299999088049
+        },
+        {
+          "query_id": "rip-eval-017",
+          "question": "Why does BM25 use neural networks for ranking?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.6244,
+            "context_precision": 0.4,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.536499996902421
+        },
+        {
+          "query_id": "rip-eval-018",
+          "question": "How does RAG train neural networks on retrieved documents?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.5907,
+            "context_precision": 0.8,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 5.028899991884828
+        },
+        {
+          "query_id": "rip-eval-019",
+          "question": "Is cosine similarity the same as Euclidean distance?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.7262,
+            "context_precision": 0.2,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.5129000063752756
+        }
+      ]
+    },
+    "BM25": {
+      "n_queries": 19,
+      "metrics": {
+        "citation_precision": 0.0,
+        "context_recall": 0.7895,
+        "faithfulness": 0.9474,
+        "citation_coverage": 0.0,
+        "unsupported_claim_rate": 0.0526,
+        "context_precision": 0.3684,
+        "answer_relevancy": 0.5173
+      },
+      "context_recall_ci95": {
+        "lo": 0.5789473684210527,
+        "hi": 0.9473684210526315
+      },
+      "latency_ms": {
+        "p50_ms": 0.18,
+        "p95_ms": 0.38,
+        "p99_ms": 1.22,
+        "mean_ms": 0.25
+      },
+      "per_sample": [
+        {
+          "query_id": "rip-eval-001",
+          "question": "What is machine learning?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8542,
+            "context_precision": 0.6,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 1.4228999934857711
+        },
+        {
+          "query_id": "rip-eval-002",
+          "question": "How does FAISS vector search work?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.4896,
+            "context_precision": 1.0,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.18950000230688602
+        },
+        {
+          "query_id": "rip-eval-003",
+          "question": "What is Retrieval-Augmented Generation (RAG)?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8018,
+            "context_precision": 0.8,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.18259999342262745
+        },
+        {
+          "query_id": "rip-eval-004",
+          "question": "What is BM25 in information retrieval?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8587,
+            "context_precision": 0.4,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.20680000307038426
+        },
+        {
+          "query_id": "rip-eval-005",
+          "question": "What is Reciprocal Rank Fusion (RRF)?",
+          "metrics": {
+            "faithfulness": 0.5,
+            "answer_relevancy": 0.9136,
+            "context_precision": 0.2,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.5
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.2690999972401187
+        },
+        {
+          "query_id": "rip-eval-006",
+          "question": "What is a vector database?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8507,
+            "context_precision": 0.4,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.22370000078808516
+        },
+        {
+          "query_id": "rip-eval-007",
+          "question": "What is cosine similarity?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8071,
+            "context_precision": 0.2,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.17910001042764634
+        },
+        {
+          "query_id": "rip-eval-008",
+          "question": "What is sentence-transformers?",
+          "metrics": {
+            "faithfulness": 0.5,
+            "answer_relevancy": 0.0885,
+            "context_precision": 0.0,
+            "context_recall": 0.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.5
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.18139999883715063
+        },
+        {
+          "query_id": "rip-eval-009",
+          "question": "How does RAG use vector databases to reduce hallucination?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.6305,
+            "context_precision": 0.2,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.17800000205170363
+        },
+        {
+          "query_id": "rip-eval-010",
+          "question": "What is the relationship between embeddings and semantic search?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.7226,
+            "context_precision": 0.8,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.17989998741541058
+        },
+        {
+          "query_id": "rip-eval-011",
+          "question": "How does chunking affect RAG context window usage?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.6892,
+            "context_precision": 0.6,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.17810000281315297
+        },
+        {
+          "query_id": "rip-eval-012",
+          "question": "What is the capital of Australia?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.0102,
+            "context_precision": 0.0,
+            "context_recall": 0.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.17689999367576092
+        },
+        {
+          "query_id": "rip-eval-013",
+          "question": "Who won the 2024 World Series?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.0481,
+            "context_precision": 0.0,
+            "context_recall": 0.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.1500999933341518
+        },
+        {
+          "query_id": "rip-eval-014",
+          "question": "What is the stock price of Apple today?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.0389,
+            "context_precision": 0.0,
+            "context_recall": 0.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.17300000763498247
+        },
+        {
+          "query_id": "rip-eval-015",
+          "question": "What is embedding?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.466,
+            "context_precision": 0.8,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.1657999964663759
+        },
+        {
+          "query_id": "rip-eval-016",
+          "question": "How does search work?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.331,
+            "context_precision": 0.2,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.16929999401327223
+        },
+        {
+          "query_id": "rip-eval-017",
+          "question": "Why does BM25 use neural networks for ranking?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.6244,
+            "context_precision": 0.2,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.1799000019673258
+        },
+        {
+          "query_id": "rip-eval-018",
+          "question": "How does RAG train neural networks on retrieved documents?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.2981,
+            "context_precision": 0.4,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.1584999990882352
+        },
+        {
+          "query_id": "rip-eval-019",
+          "question": "Is cosine similarity the same as Euclidean distance?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.3049,
+            "context_precision": 0.2,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 0.19999999494757503
+        }
+      ]
+    },
+    "Hybrid (RRF)": {
+      "n_queries": 19,
+      "metrics": {
+        "citation_precision": 0.0,
+        "context_recall": 0.7895,
+        "faithfulness": 0.9474,
+        "citation_coverage": 0.0,
+        "unsupported_claim_rate": 0.0526,
+        "context_precision": 0.4421,
+        "answer_relevancy": 0.5944
+      },
+      "context_recall_ci95": {
+        "lo": 0.5789473684210527,
+        "hi": 0.9473684210526315
+      },
+      "latency_ms": {
+        "p50_ms": 4.51,
+        "p95_ms": 6.6,
+        "p99_ms": 7.52,
+        "mean_ms": 4.8
+      },
+      "per_sample": [
+        {
+          "query_id": "rip-eval-001",
+          "question": "What is machine learning?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8542,
+            "context_precision": 0.6,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 5.4019999952288345
+        },
+        {
+          "query_id": "rip-eval-002",
+          "question": "How does FAISS vector search work?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.5622,
+            "context_precision": 1.0,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.486200006795116
+        },
+        {
+          "query_id": "rip-eval-003",
+          "question": "What is Retrieval-Augmented Generation (RAG)?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8018,
+            "context_precision": 0.8,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.3846000044140965
+        },
+        {
+          "query_id": "rip-eval-004",
+          "question": "What is BM25 in information retrieval?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8587,
+            "context_precision": 0.6,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 3.9596999995410442
+        },
+        {
+          "query_id": "rip-eval-005",
+          "question": "What is Reciprocal Rank Fusion (RRF)?",
+          "metrics": {
+            "faithfulness": 0.5,
+            "answer_relevancy": 0.9136,
+            "context_precision": 0.2,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.5
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.604499990819022
+        },
+        {
+          "query_id": "rip-eval-006",
+          "question": "What is a vector database?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8507,
+            "context_precision": 0.4,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 7.751400000415742
+        },
+        {
+          "query_id": "rip-eval-007",
+          "question": "What is cosine similarity?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.8071,
+            "context_precision": 0.2,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.119799996260554
+        },
+        {
+          "query_id": "rip-eval-008",
+          "question": "What is sentence-transformers?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.2199,
+            "context_precision": 0.0,
+            "context_recall": 0.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.066900000907481
+        },
+        {
+          "query_id": "rip-eval-009",
+          "question": "How does RAG use vector databases to reduce hallucination?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.6305,
+            "context_precision": 0.4,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.510400001890957
+        },
+        {
+          "query_id": "rip-eval-010",
+          "question": "What is the relationship between embeddings and semantic search?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.7226,
+            "context_precision": 1.0,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.435999988345429
+        },
+        {
+          "query_id": "rip-eval-011",
+          "question": "How does chunking affect RAG context window usage?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.6892,
+            "context_precision": 0.6,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.855799998040311
+        },
+        {
+          "query_id": "rip-eval-012",
+          "question": "What is the capital of Australia?",
+          "metrics": {
+            "faithfulness": 0.5,
+            "answer_relevancy": 0.0797,
+            "context_precision": 0.0,
+            "context_recall": 0.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.5
+          },
+          "n_contexts": 5,
+          "latency_ms": 5.052799999248236
+        },
+        {
+          "query_id": "rip-eval-013",
+          "question": "Who won the 2024 World Series?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.0481,
+            "context_precision": 0.0,
+            "context_recall": 0.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.193900007521734
+        },
+        {
+          "query_id": "rip-eval-014",
+          "question": "What is the stock price of Apple today?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.0389,
+            "context_precision": 0.0,
+            "context_recall": 0.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.607900002156384
+        },
+        {
+          "query_id": "rip-eval-015",
+          "question": "What is embedding?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.7888,
+            "context_precision": 1.0,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 6.472699998994358
+        },
+        {
+          "query_id": "rip-eval-016",
+          "question": "How does search work?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.4865,
+            "context_precision": 0.6,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.834899998968467
+        },
+        {
+          "query_id": "rip-eval-017",
+          "question": "Why does BM25 use neural networks for ranking?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.6244,
+            "context_precision": 0.4,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.987799999071285
+        },
+        {
+          "query_id": "rip-eval-018",
+          "question": "How does RAG train neural networks on retrieved documents?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.5907,
+            "context_precision": 0.4,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.043399996589869
+        },
+        {
+          "query_id": "rip-eval-019",
+          "question": "Is cosine similarity the same as Euclidean distance?",
+          "metrics": {
+            "faithfulness": 1.0,
+            "answer_relevancy": 0.7262,
+            "context_precision": 0.2,
+            "context_recall": 1.0,
+            "citation_precision": 0.0,
+            "citation_coverage": 0.0,
+            "unsupported_claim_rate": 0.0
+          },
+          "n_contexts": 5,
+          "latency_ms": 4.495600005611777
+        }
+      ]
+    }
+  }
+}
