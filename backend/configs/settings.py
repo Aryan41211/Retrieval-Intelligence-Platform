@@ -200,12 +200,15 @@ class IntelligentRetrievalSettings(BaseSettings):
     dense_enabled: bool = Field(default=True, description="Enable dense retrieval stage")
     sparse_enabled: bool = Field(default=True, description="Enable sparse BM25 retrieval stage")
     retrieval_weight_dense: float = Field(
-        default=1.0, ge=0.0, le=10.0, description="Weight for dense in fusion (optional)"
+        default=0.7, ge=0.0, le=10.0, description="Weight for dense in fusion (optional)"
     )
     retrieval_weight_sparse: float = Field(
-        default=1.0, ge=0.0, le=10.0, description="Weight for sparse in fusion (optional)"
+        default=0.2, ge=0.0, le=10.0, description="Weight for sparse in fusion (optional)"
     )
-
+    fusion_type: str = Field(
+        default="weighted",
+        description="Fusion strategy: 'rrf' (Reciprocal Rank Fusion) or 'weighted' (weighted score fusion)",
+    )
     rerank: CrossEncoderRerankSettings = Field(default_factory=CrossEncoderRerankSettings)
     bm25: BM25Settings = Field(default_factory=BM25Settings)
     rrf: RRFSettings = Field(default_factory=RRFSettings)
@@ -217,6 +220,16 @@ class IntelligentRetrievalSettings(BaseSettings):
         env_file=".env",
         extra="ignore",
     )
+
+    @field_validator("fusion_type")
+    @classmethod
+    def _validate_fusion_type(cls, value: str) -> str:
+        normalized = (value or "").strip().lower()
+        if normalized not in ("rrf", "weighted"):
+            raise ValueError(
+                f"INTELLIGENT_RETRIEVAL__FUSION_TYPE must be 'rrf' or 'weighted', got {value!r}"
+            )
+        return normalized
 
 
 # Providers that reach a real LLM. ``fake`` is deliberately excluded: it is a

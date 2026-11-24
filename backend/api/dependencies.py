@@ -228,6 +228,7 @@ def _build_intelligent_pipeline(store: Any) -> Any:
         A configured :class:`IntelligentRetrievalPipeline`.
     """
     from backend.retrieval.fusion.rrf_fusion import RRFFuser
+    from backend.retrieval.fusion.weighted_fusion import WeightedFuser
     from backend.retrieval.intelligent_retrieval_pipeline import IntelligentRetrievalPipeline
     from backend.retrieval.query_expansion.query_expander import QueryExpander
     from backend.retrieval.rerank.cross_encoder_reranker import CrossEncoderReranker
@@ -245,11 +246,24 @@ def _build_intelligent_pipeline(store: Any) -> Any:
         b=intelligent.bm25.b,
         lowercase=intelligent.bm25.lowercase,
     )
-    fusion = RRFFuser(
-        k=intelligent.rrf.k,
-        remove_duplicates=intelligent.rrf.remove_duplicates,
-        stable_ranking=intelligent.rrf.stable_ranking,
-    )
+
+    # Select fusion strategy based on configuration
+    fusion_type = intelligent.fusion_type.lower()
+    if fusion_type == "weighted":
+        fusion = WeightedFuser(
+            weights={
+                "dense": intelligent.retrieval_weight_dense,
+                "sparse": intelligent.retrieval_weight_sparse,
+                "tfidf": 0.0,
+            },
+            remove_duplicates=intelligent.rrf.remove_duplicates,
+        )
+    else:
+        fusion = RRFFuser(
+            k=intelligent.rrf.k,
+            remove_duplicates=intelligent.rrf.remove_duplicates,
+            stable_ranking=intelligent.rrf.stable_ranking,
+        )
     reranker = (
         CrossEncoderReranker(
             enabled=True,

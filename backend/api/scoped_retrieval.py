@@ -8,8 +8,10 @@ results are merged into a single ranking.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import time
+import uuid
 from dataclasses import dataclass
 from typing import Any
 
@@ -23,6 +25,7 @@ from backend.api.dependencies import (
 )
 from backend.api.namespaces import Namespace
 from backend.configs.settings import get_settings
+from backend.data.embeddings.embedding_cache import EmbeddingCache
 from backend.retrieval.exceptions import EmptyRetrievalResultError, RetrievalError
 from backend.retrieval.retrieval_request import RetrievalRequest
 from backend.vectorstore.exceptions import VectorStoreError
@@ -113,6 +116,13 @@ class ScopedRetrievalService:
     def __init__(self, *, embedding_provider: Any, top_k: int) -> None:
         self._embedding_provider = embedding_provider
         self._top_k = top_k
+        # Query embedding cache: avoids re-encoding identical queries on repeated
+        # searches. Keyed by (query checksum, model name, model version).
+        self._embedding_cache = EmbeddingCache(
+            max_size=10000,
+            ttl_seconds=None,
+            persist_path=None,
+        )
 
     def retrieve(
         self,
@@ -139,8 +149,36 @@ class ScopedRetrievalService:
         limit = top_k or self._top_k
 
         try:
-            embedding = self._embedding_provider.embed_text(query)
-            query_vector = list(embedding.embedding_vector)
+            # Check embedding cache first to avoid re-encoding identical queries.
+            import hashlib
+
+            query_checksum = hashlib.sha256(query.encode("utf-8")).hexdigest()
+            model_info = self._embedding_provider.model_info
+            cached = self._embedding_cache.get(
+                chunk_checksum=query_checksum,
+                model_name=model_info.name,
+                model_version=model_info.version,
+                config={
+                    "device": self._embedding_provider.get_device(),
+                    "batch_size": self._embedding_provider.get_batch_size(),
+                },
+            )
+            if cached is not None:
+                query_vector = list(cached.embedding_vector)
+            else:
+                embedding = self._embedding_provider.embed_text(query)
+                query_vector = list(embedding.embedding_vector)
+                # Store in cache for future identical queries
+                embedding.chunk_id = uuid.UUID(int=0)
+                embedding.document_id = uuid.UUID(int=0)
+                self._embedding_cache.set(
+                    embedding=embedding,
+                    chunk_checksum=query_checksum,
+                    config={
+                        "device": self._embedding_provider.get_device(),
+                        "batch_size": self._embedding_provider.get_batch_size(),
+                    },
+                )
         except Exception as exc:  # pragma: no cover - defensive
             logger.warning("Query embedding failed: %s", exc)
             return ScopedRetrievalResult([], 0.0, [])

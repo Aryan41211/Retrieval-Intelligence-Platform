@@ -11,6 +11,7 @@ from backend.retrieval.exceptions import (
     RetrievalConfigurationError,
 )
 from backend.retrieval.fusion.rrf_fusion import RRFFuser
+from backend.retrieval.fusion.weighted_fusion import WeightedFuser
 from backend.retrieval.query_expansion.query_expander import QueryExpander
 from backend.retrieval.rerank.cross_encoder_reranker import CrossEncoderReranker
 from backend.retrieval.retrieval_engine import RetrievalEngine
@@ -23,11 +24,14 @@ from backend.retrieval.utils.analytics import RetrievalAnalytics
 
 logger = logging.getLogger(__name__)
 
+# Union type for fusion strategies
+FusionType = RRFFuser | WeightedFuser
+
 
 class IntelligentRetrievalPipeline:
     """
     Intelligent retrieval pipeline:
-    Query expansion → Dense retrieval → BM25 retrieval → RRF fusion → optional reranking → dynamic top-k.
+    Query expansion → Dense retrieval → BM25 retrieval → Fusion (RRF or Weighted) → optional reranking → dynamic top-k.
     """
 
     def __init__(
@@ -35,7 +39,7 @@ class IntelligentRetrievalPipeline:
         *,
         dense_engine: RetrievalEngine,
         bm25_retriever: BM25Retriever,
-        fusion: RRFFuser,
+        fusion: FusionType,
         reranker: CrossEncoderReranker | None,
         query_expander: QueryExpander,
         topk_selector: DynamicTopKSelector,
