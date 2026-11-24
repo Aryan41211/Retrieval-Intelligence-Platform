@@ -1,18 +1,18 @@
 {
   "evaluation": {
-    "total_samples": 8,
-    "successful_evaluations": 8,
+    "total_samples": 60,
+    "successful_evaluations": 60,
     "failed_evaluations": 0,
     "metrics": {
-      "citation_coverage": 0.0,
-      "unsupported_claim_rate": 0.1667,
-      "context_recall": 0.8333,
+      "answer_relevancy": 0.7316,
+      "faithfulness": 0.7894,
+      "unsupported_claim_rate": 0.2106,
+      "context_recall": 0.7894,
       "context_precision": 1.0,
-      "citation_precision": 0.0,
-      "faithfulness": 0.8333,
-      "answer_relevancy": 0.7932
+      "citation_coverage": 0.0,
+      "citation_precision": 0.0
     },
-    "latency_ms": 9656,
+    "latency_ms": 15318,
     "per_sample": [
       {
         "query_id": "rag-eval-001",
@@ -123,6 +123,734 @@
           "citation_precision": 0.0,
           "citation_coverage": 0.0,
           "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-009",
+        "question": "How does logistic regression work for binary classification?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8095,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-010",
+        "question": "What is the difference between supervised and unsupervised learning?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7817,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-011",
+        "question": "What is overfitting in machine learning and how to prevent it?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.8137,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-012",
+        "question": "What is precision and recall in classification evaluation?",
+        "metrics": {
+          "faithfulness": 0.6667,
+          "answer_relevancy": 0.735,
+          "context_precision": 1.0,
+          "context_recall": 0.6667,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.3333
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-013",
+        "question": "How does k-means clustering algorithm work?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.7716,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-014",
+        "question": "What is PCA and when is it used?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.793,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-015",
+        "question": "What is cross-validation and why is it important?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7678,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-016",
+        "question": "What is the bias-variance tradeoff?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.79,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-017",
+        "question": "What is a decision tree in machine learning?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.8073,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-018",
+        "question": "What is gradient descent and how does it optimize models?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.8018,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-019",
+        "question": "What is a confusion matrix in classification?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.8508,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-020",
+        "question": "What is TF-IDF and how is it used in information retrieval?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8014,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-021",
+        "question": "What is cosine similarity and when is it used in vector search?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8969,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-022",
+        "question": "What is an embedding in natural language processing?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8254,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-023",
+        "question": "What is HNSW index in vector databases?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.5765,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-024",
+        "question": "What is IVF index in FAISS?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.4912,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-025",
+        "question": "What is RAG (Retrieval-Augmented Generation)?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.6034,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-026",
+        "question": "What is semantic search vs keyword search?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8097,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-027",
+        "question": "What is a vector database used for?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.6082,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-028",
+        "question": "What is chunking in document processing for RAG?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.6098,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-029",
+        "question": "What is a citation in RAG systems and why is it important?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7029,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-030",
+        "question": "What is context window in LLMs?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.8018,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-031",
+        "question": "What is hallucination in language models?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.5102,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-032",
+        "question": "What is embedding dimensionality and how does it affect search?",
+        "metrics": {
+          "faithfulness": 0.6667,
+          "answer_relevancy": 0.7307,
+          "context_precision": 1.0,
+          "context_recall": 0.6667,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.3333
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-033",
+        "question": "What is a retrieval pipeline in RAG?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.5186,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-034",
+        "question": "What is query expansion and when is it useful?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8148,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-035",
+        "question": "What is a language model and how is it trained?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.6013,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-036",
+        "question": "What is the difference between embedding models and LLMs?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.6207,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-037",
+        "question": "What is metadata filtering in vector search?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7659,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-038",
+        "question": "What is a reranker in retrieval systems?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8294,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-039",
+        "question": "What is context precision in RAG evaluation?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.5735,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-040",
+        "question": "What is context recall in RAG evaluation?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.6194,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-041",
+        "question": "What is answer relevancy in RAG evaluation?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.5257,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-042",
+        "question": "What is faithfulness in RAG evaluation?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.5329,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-043",
+        "question": "What is hybrid search and why use it?",
+        "metrics": {
+          "faithfulness": 0.3333,
+          "answer_relevancy": 0.6102,
+          "context_precision": 1.0,
+          "context_recall": 0.3333,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.6667
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-044",
+        "question": "What is Reciprocal Rank Fusion (RRF)?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.7015,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-045",
+        "question": "What is weighted score fusion in hybrid retrieval?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7847,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-046",
+        "question": "What is a vector index and why is it needed?",
+        "metrics": {
+          "faithfulness": 0.6667,
+          "answer_relevancy": 0.7338,
+          "context_precision": 1.0,
+          "context_recall": 0.6667,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.3333
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-047",
+        "question": "What is approximate nearest neighbor search?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.7844,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-048",
+        "question": "What is the difference between recall and precision in retrieval?",
+        "metrics": {
+          "faithfulness": 0.6667,
+          "answer_relevancy": 0.8147,
+          "context_precision": 1.0,
+          "context_recall": 0.6667,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.3333
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-049",
+        "question": "What is nDCG and when is it used?",
+        "metrics": {
+          "faithfulness": 0.6667,
+          "answer_relevancy": 0.6161,
+          "context_precision": 1.0,
+          "context_recall": 0.6667,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.3333
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-050",
+        "question": "What is MRR (Mean Reciprocal Rank) in retrieval?",
+        "metrics": {
+          "faithfulness": 0.2,
+          "answer_relevancy": 0.8063,
+          "context_precision": 1.0,
+          "context_recall": 0.2,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.8
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-051",
+        "question": "What is a knowledge base in RAG systems?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.8481,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-052",
+        "question": "What is document ingestion pipeline?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.8031,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-053",
+        "question": "What is query understanding in RAG?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.6121,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-054",
+        "question": "What is a system prompt in LLM applications?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8073,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-055",
+        "question": "What is few-shot prompting and how does it help?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.7169,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-056",
+        "question": "What is temperature in LLM sampling?",
+        "metrics": {
+          "faithfulness": 0.3333,
+          "answer_relevancy": 0.672,
+          "context_precision": 1.0,
+          "context_recall": 0.3333,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.6667
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-057",
+        "question": "What is a token in language models?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.867,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-058",
+        "question": "What is prompt injection and how to prevent it?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8188,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-059",
+        "question": "What is retrieval latency and why does it matter?",
+        "metrics": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 0.8379,
+          "context_precision": 1.0,
+          "context_recall": 1.0,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.0
+        },
+        "error": null
+      },
+      {
+        "query_id": "rip-eval-060",
+        "question": "What is embedding model quantization?",
+        "metrics": {
+          "faithfulness": 0.5,
+          "answer_relevancy": 0.6203,
+          "context_precision": 1.0,
+          "context_recall": 0.5,
+          "citation_precision": 0.0,
+          "citation_coverage": 0.0,
+          "unsupported_claim_rate": 0.5
         },
         "error": null
       }
