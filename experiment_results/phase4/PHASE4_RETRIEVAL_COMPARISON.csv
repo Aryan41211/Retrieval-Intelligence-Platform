@@ -1,0 +1,4 @@
+Method,Faithfulness,AnswerRelevancy,ContextPrecision,ContextRecall,UnsupportedRate,p50_ms,p95_ms,p99_ms
+Dense (MiniLM),1.0000,0.5702,0.5684,0.8421,0.0000,4.67,8.31,12.04
+BM25,1.0000,0.5196,0.3895,0.8421,0.0000,0.21,0.50,0.91
+Hybrid (RRF),1.0000,0.5620,0.4947,0.8421,0.0000,5.87,11.46,16.53
