@@ -1,0 +1,56 @@
+{
+  "project": "Retrieval Intelligence Platform",
+  "phase": 2,
+  "baseline_created": "2026-11-24T19:00:00Z",
+  "git_sha": "1cf0ee01dcbd053384e810b64d40ce7c4031c715",
+  "branch": "main",
+  "environment": {
+    "cpu_cores": 16,
+    "ram_gb": 15.65,
+    "gpu_available": false,
+    "python_version": "3.12",
+    "os": "win32"
+  },
+  "test_status": {
+    "tests_passed": 547,
+    "tests_failed": 4,
+    "failures": [
+      "test_chat_uses_real_retrieval_not_mock",
+      "test_retrieval_search_returns_real_chunks",
+      "test_documents_upload_then_retrievable",
+      "test_env_example_is_in_sync_with_the_settings_classes"
+    ]
+  },
+  "server_status": "running",
+  "server_port": 8000,
+  "evaluation": {
+    "ragas_configured": false,
+    "generation_provider": "fake",
+    "status": "unavailable",
+    "reason": "Ragas evaluation is not configured. Set GENERATION_PROVIDER and GENERATION_API_KEY."
+  },
+  "eval_dataset": {
+    "file": "backend/evaluation/core/eval_dataset.jsonl",
+    "n_queries": 8,
+    "label_source": "human-validated",
+    "status": "created but not tracked by git"
+  },
+  "previous_load_test": {
+    "rate_limiting_on": {
+      "C=1": "224.2 RPS, p95=5.6ms, err=0%",
+      "C=5": "1044.6 RPS, p95=5.4ms, err=99.2%",
+      "C=10": "1043.1 RPS, p95=13.9ms, err=100%",
+      "C=25": "659.5 RPS, p95=112.3ms, err=99.5%",
+      "C=50": "334.9 RPS, p95=405.5ms, err=99.4%"
+    },
+    "highest_concurrency_meeting_err_lt_1_p95_lt_500ms": 1
+  },
+  "limitations": [
+    "Ragas evaluation not configured - returns 'unavailable' without API keys",
+    "No offline retrieval/generation metrics computed",
+    "Load testing only done with rate limiting ON",
+    "No retrieval quality benchmark (BM25 vs dense vs hybrid)",
+    "No reliability/failure mode testing",
+    "4 pre-existing test failures (integration tests need DB)"
+  ]
+}

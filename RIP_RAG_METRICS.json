@@ -1,0 +1,149 @@
+{
+  "project": "Retrieval Intelligence Platform",
+  "phase": 2,
+  "evaluation_date": "2026-11-24",
+  "git_sha": "1cf0ee0",
+  "eval_dataset": {
+    "file": "backend/evaluation/core/eval_dataset.jsonl",
+    "n_queries": 8,
+    "label_source": "human-validated",
+    "categories": ["machine_learning", "retrieval", "rag", "database", "mathematics", "embeddings"],
+    "difficulty_distribution": {"easy": 5, "medium": 3}
+  },
+  "offline_metrics": {
+    "faithfulness": 0.8333,
+    "answer_relevancy": 0.7932,
+    "context_precision": 1.0000,
+    "context_recall": 0.8333,
+    "citation_precision": 0.0000,
+    "citation_coverage": 0.0000,
+    "unsupported_claim_rate": 0.1667
+  },
+  "per_sample": [
+    {
+      "query_id": "rag-eval-001",
+      "question": "What is machine learning?",
+      "faithfulness": 0.50,
+      "answer_relevancy": 0.85,
+      "context_precision": 1.00,
+      "context_recall": 0.50,
+      "citation_precision": 0.00,
+      "citation_coverage": 0.00,
+      "unsupported_claim_rate": 0.50
+    },
+    {
+      "query_id": "rag-eval-002",
+      "question": "How does FAISS vector search work?",
+      "faithfulness": 0.50,
+      "answer_relevancy": 0.55,
+      "context_precision": 1.00,
+      "context_recall": 0.50,
+      "citation_precision": 0.00,
+      "citation_coverage": 0.00,
+      "unsupported_claim_rate": 0.50
+    },
+    {
+      "query_id": "rag-eval-003",
+      "question": "What is RAG?",
+      "faithfulness": 1.00,
+      "answer_relevancy": 0.80,
+      "context_precision": 1.00,
+      "context_recall": 1.00,
+      "citation_precision": 0.00,
+      "citation_coverage": 0.00,
+      "unsupported_claim_rate": 0.00
+    },
+    {
+      "query_id": "rag-eval-004",
+      "question": "What is BM25?",
+      "faithfulness": 1.00,
+      "answer_relevancy": 0.86,
+      "context_precision": 1.00,
+      "context_recall": 1.00,
+      "citation_precision": 0.00,
+      "citation_coverage": 0.00,
+      "unsupported_claim_rate": 0.00
+    },
+    {
+      "query_id": "rag-eval-005",
+      "question": "What is RRF?",
+      "faithfulness": 1.00,
+      "answer_relevancy": 0.90,
+      "context_precision": 1.00,
+      "context_recall": 1.00,
+      "citation_precision": 0.00,
+      "citation_coverage": 0.00,
+      "unsupported_claim_rate": 0.00
+    },
+    {
+      "query_id": "rag-eval-006",
+      "question": "What is a vector database?",
+      "faithfulness": 1.00,
+      "answer_relevancy": 0.85,
+      "context_precision": 1.00,
+      "context_recall": 1.00,
+      "citation_precision": 0.00,
+      "citation_coverage": 0.00,
+      "unsupported_claim_rate": 0.00
+    },
+    {
+      "query_id": "rag-eval-007",
+      "question": "What is cosine similarity?",
+      "faithfulness": 0.67,
+      "answer_relevancy": 0.86,
+      "context_precision": 1.00,
+      "context_recall": 0.67,
+      "citation_precision": 0.00,
+      "citation_coverage": 0.00,
+      "unsupported_claim_rate": 0.33
+    },
+    {
+      "query_id": "rag-eval-008",
+      "question": "What is sentence-transformers?",
+      "faithfulness": 1.00,
+      "answer_relevancy": 0.67,
+      "context_precision": 1.00,
+      "context_recall": 1.00,
+      "citation_precision": 0.00,
+      "citation_coverage": 0.00,
+      "unsupported_claim_rate": 0.00
+    }
+  ],
+  "ragas_status": {
+    "configured": false,
+    "provider": "fake",
+    "endpoint_behavior": "returns status: unavailable with explanatory message",
+    "no_scores_fabricated": true
+  },
+  "load_test_rate_limiting_on": {
+    "server_url": "http://127.0.0.1:8000",
+    "rate_limit_per_min": 120,
+    "results_by_concurrency": {
+      "C=1": {"requests": 5, "successful": 5, "errors": 0, "error_rate": 0.0, "rps": 6.1, "p50_ms": 253.4, "p95_ms": 270.1, "p99_ms": 272.3},
+      "C=5": {"requests": 25, "successful": 24, "errors": 1, "error_rate": 0.04, "rps": 3.3, "p50_ms": 495.4, "p95_ms": 6457.8, "p99_ms": 6507.9},
+      "C=10": {"requests": 50, "successful": 16, "errors": 34, "error_rate": 0.68, "rps": 108.7, "p50_ms": 16.1, "p95_ms": 353.6, "p99_ms": 387.4},
+      "C=25": {"requests": 125, "successful": 0, "errors": 125, "error_rate": 1.0, "rps": 568.8, "p50_ms": 40.2, "p95_ms": 47.1, "p99_ms": 48.3},
+      "C=50": {"requests": 250, "successful": 1, "errors": 249, "error_rate": 0.996, "rps": 520.9, "p50_ms": 89.6, "p95_ms": 107.2, "p99_ms": 110.5},
+      "C=100": {"requests": 500, "successful": 4, "errors": 496, "error_rate": 0.992, "rps": 309.8, "p50_ms": 171.2, "p95_ms": 915.3, "p99_ms": 919.3}
+    },
+    "highest_concurrency_err_lt_1_p95_lt_500ms": 1,
+    "primary_bottleneck": "per-IP rate limiter (120 req/min)"
+  },
+  "test_status": {
+    "tests_passed": 547,
+    "tests_failed": 4,
+    "failures": [
+      "test_chat_uses_real_retrieval_not_mock",
+      "test_retrieval_search_returns_real_chunks",
+      "test_documents_upload_then_retrievable",
+      "test_env_example_is_in_sync_with_the_settings_classes"
+    ]
+  },
+  "limitations": [
+    "Ragas not configured — offline metrics used instead",
+    "Only 8 human-validated eval queries",
+    "Rate limiting constrains production concurrency to C=1",
+    "No retrieval quality benchmark (BM25 vs dense vs hybrid) implemented yet",
+    "Docker verification blocked — Docker Desktop unavailable"
+  ]
+}

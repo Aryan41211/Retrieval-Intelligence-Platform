@@ -1,0 +1,126 @@
+{
+  "server_url": "http://127.0.0.1:8000",
+  "rate_limiting": "enabled",
+  "concurrency_results": [
+    {
+      "concurrency": 1,
+      "total_requests": 5,
+      "successful": 5,
+      "errors": 0,
+      "error_rate": 0.0,
+      "rps": 6.08,
+      "total_time_sec": 0.82,
+      "p50_ms": 253.43,
+      "p90_ms": 267.41,
+      "p95_ms": 270.14,
+      "p99_ms": 272.32,
+      "mean_ms": 162.66,
+      "min_ms": 11.23,
+      "max_ms": 272.86,
+      "status_counts": {
+        "200": 5
+      }
+    },
+    {
+      "concurrency": 5,
+      "total_requests": 25,
+      "successful": 24,
+      "errors": 1,
+      "error_rate": 0.04,
+      "rps": 3.25,
+      "total_time_sec": 7.69,
+      "p50_ms": 495.44,
+      "p90_ms": 6274.05,
+      "p95_ms": 6457.81,
+      "p99_ms": 6507.93,
+      "mean_ms": 1238.51,
+      "min_ms": 2.51,
+      "max_ms": 6519.98,
+      "status_counts": {
+        "200": 24,
+        "429": 1
+      }
+    },
+    {
+      "concurrency": 10,
+      "total_requests": 50,
+      "successful": 16,
+      "errors": 34,
+      "error_rate": 0.68,
+      "rps": 108.72,
+      "total_time_sec": 0.46,
+      "p50_ms": 16.14,
+      "p90_ms": 270.45,
+      "p95_ms": 353.62,
+      "p99_ms": 387.37,
+      "mean_ms": 81.67,
+      "min_ms": 3.91,
+      "max_ms": 388.71,
+      "status_counts": {
+        "200": 16,
+        "429": 34
+      }
+    },
+    {
+      "concurrency": 25,
+      "total_requests": 125,
+      "successful": 0,
+      "errors": 125,
+      "error_rate": 1.0,
+      "rps": 568.8,
+      "total_time_sec": 0.22,
+      "p50_ms": 40.2,
+      "p90_ms": 45.84,
+      "p95_ms": 47.05,
+      "p99_ms": 48.25,
+      "mean_ms": 37.68,
+      "min_ms": 9.04,
+      "max_ms": 48.9,
+      "status_counts": {
+        "429": 125
+      }
+    },
+    {
+      "concurrency": 50,
+      "total_requests": 250,
+      "successful": 1,
+      "errors": 249,
+      "error_rate": 0.996,
+      "rps": 520.89,
+      "total_time_sec": 0.48,
+      "p50_ms": 89.62,
+      "p90_ms": 105.45,
+      "p95_ms": 107.23,
+      "p99_ms": 110.53,
+      "mean_ms": 81.75,
+      "min_ms": 6.09,
+      "max_ms": 123.45,
+      "status_counts": {
+        "429": 249,
+        "200": 1
+      }
+    },
+    {
+      "concurrency": 100,
+      "total_requests": 500,
+      "successful": 4,
+      "errors": 496,
+      "error_rate": 0.992,
+      "rps": 309.77,
+      "total_time_sec": 1.61,
+      "p50_ms": 171.22,
+      "p90_ms": 903.61,
+      "p95_ms": 915.28,
+      "p99_ms": 919.28,
+      "mean_ms": 294.42,
+      "min_ms": 10.7,
+      "max_ms": 1020.47,
+      "status_counts": {
+        "429": 496,
+        "200": 4
+      }
+    }
+  ],
+  "highest_concurrency_err_lt_1_p95_lt_500ms": 1,
+  "test_timestamp": 1795527135.3642073
+}

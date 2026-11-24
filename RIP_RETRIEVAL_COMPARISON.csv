@@ -1,0 +1,8 @@
+Metric,Value,Confidence,Notes
+faithfulness,0.8333,HIGH,"Fraction of answer sentences supported by retrieved context (8 samples)"
+answer_relevancy,0.7932,HIGH,"Semantic similarity between question and answer (8 samples)"
+context_precision,1.0000,HIGH,"Fraction of context chunks relevant to question (8 samples)"
+context_recall,0.8333,HIGH,"Fraction of ground truth sentences covered by contexts (8 samples)"
+citation_precision,0.0000,MEDIUM,"No citations in eval dataset — data gap"
+citation_coverage,0.0000,MEDIUM,"No citations in eval dataset — data gap"
+unsupported_claim_rate,0.1667,HIGH,"1 − faithfulness (8 samples)"
